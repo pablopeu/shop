@@ -1,0 +1,9 @@
+{
+    "primary": "ARS",
+    "secondary": "USD",
+    "exchange_rate": 1500,
+    "exchange_rate_source": "manual",
+    "api_enabled": false,
+    "api_url": "https://api.bluelytics.com.ar/v2/latest",
+    "last_update": "2025-11-01T19:57:00Z"
+}

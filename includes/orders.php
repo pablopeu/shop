@@ -1,0 +1,428 @@
+<?php
+/**
+ * Orders Management Functions
+ * Sistema de gestión de órdenes de compra
+ */
+
+require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/products.php';
+
+/**
+ * Get all orders
+ * @return array Orders array
+ */
+function get_all_orders() {
+    $orders_file = __DIR__ . '/../data/orders.json';
+    $data = read_json($orders_file);
+    return $data['orders'] ?? [];
+}
+
+/**
+ * Get order by ID
+ * @param string $order_id Order ID
+ * @return array|null Order data or null
+ */
+function get_order_by_id($order_id) {
+    $orders = get_all_orders();
+
+    foreach ($orders as $order) {
+        if ($order['id'] === $order_id) {
+            return $order;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Get order by tracking token
+ * @param string $token Tracking token
+ * @return array|null Order data or null
+ */
+function get_order_by_token($token) {
+    $orders = get_all_orders();
+
+    foreach ($orders as $order) {
+        if (isset($order['tracking_token']) && $order['tracking_token'] === $token) {
+            return $order;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Generate order number
+ * @return string Order number in format ORD-YYYY-XXXXX
+ */
+function generate_order_number() {
+    $orders = get_all_orders();
+    $year = date('Y');
+
+    // Count orders from current year
+    $count = 0;
+    foreach ($orders as $order) {
+        if (strpos($order['order_number'], "ORD-$year-") === 0) {
+            $count++;
+        }
+    }
+
+    $count++;
+    return sprintf("ORD-%s-%05d", $year, $count);
+}
+
+/**
+ * Create new order
+ * @param array $order_data Order data
+ * @return array Created order with ID or error
+ */
+function create_order($order_data) {
+    $orders_file = __DIR__ . '/../data/orders.json';
+    $data = read_json($orders_file);
+
+    if (!isset($data['orders'])) {
+        $data = ['orders' => []];
+    }
+
+    // Validate required fields
+    $required = ['items', 'total', 'currency', 'payment_method'];
+    foreach ($required as $field) {
+        if (!isset($order_data[$field])) {
+            return ['error' => "Missing required field: $field"];
+        }
+    }
+
+    // Validate stock availability for all items
+    foreach ($order_data['items'] as $item) {
+        $product = get_product_by_id($item['product_id']);
+        if (!$product) {
+            return ['error' => "Product not found: {$item['product_id']}"];
+        }
+
+        if ($product['stock'] < $item['quantity']) {
+            return ['error' => "Insufficient stock for: {$product['name']}"];
+        }
+    }
+
+    // Generate order ID and number
+    $order_id = generate_id('order-');
+    $order_number = generate_order_number();
+    $tracking_token = generate_token(32);
+    $timestamp = get_timestamp();
+
+    // Build complete order
+    $order = [
+        'id' => $order_id,
+        'order_number' => $order_number,
+        'user_id' => $order_data['user_id'] ?? 'guest',
+        'date' => $timestamp,
+        'items' => $order_data['items'],
+        'currency' => $order_data['currency'],
+        'subtotal' => $order_data['subtotal'],
+        'discount_promotion' => $order_data['discount_promotion'] ?? 0,
+        'discount_coupon' => $order_data['discount_coupon'] ?? 0,
+        'coupon_code' => $order_data['coupon_code'] ?? null,
+        'shipping_cost' => $order_data['shipping_cost'] ?? 0,
+        'total' => $order_data['total'],
+        'status' => 'pending',
+        'status_history' => [
+            [
+                'status' => 'pending',
+                'date' => $timestamp,
+                'user' => 'system'
+            ]
+        ],
+        'payment_method' => $order_data['payment_method'],
+        'payment_status' => 'pending',
+        'payment_id' => $order_data['payment_id'] ?? null,
+        'payment_link' => $order_data['payment_link'] ?? null,
+        'tracking_number' => null,
+        'tracking_url' => null,
+        'tracking_token' => $tracking_token,
+        'shipping_address' => $order_data['shipping_address'] ?? null,
+        'customer_email' => $order_data['customer_email'] ?? null,
+        'customer_phone' => $order_data['customer_phone'] ?? null,
+        'customer_name' => $order_data['customer_name'] ?? null,
+        'notes' => $order_data['notes'] ?? '',
+        'emails_sent' => [
+            'confirmation' => false,
+            'status_update' => false
+        ]
+    ];
+
+    // Add order to array
+    $data['orders'][] = $order;
+
+    // Save to file
+    if (write_json($orders_file, $data)) {
+        // Reduce stock for all items
+        foreach ($order_data['items'] as $item) {
+            update_stock($item['product_id'], -$item['quantity'], "Order {$order_number}");
+        }
+
+        // Log action
+        log_admin_action('order_created', 'system', [
+            'order_id' => $order_id,
+            'order_number' => $order_number,
+            'total' => $order_data['total']
+        ]);
+
+        return ['success' => true, 'order' => $order];
+    }
+
+    return ['error' => 'Failed to save order'];
+}
+
+/**
+ * Update order status
+ * @param string $order_id Order ID
+ * @param string $new_status New status
+ * @param string $user User who changed status
+ * @return bool Success status
+ */
+function update_order_status($order_id, $new_status, $user = 'system') {
+    $orders_file = __DIR__ . '/../data/orders.json';
+    $data = read_json($orders_file);
+
+    if (!isset($data['orders'])) {
+        return false;
+    }
+
+    $found = false;
+    foreach ($data['orders'] as &$order) {
+        if ($order['id'] === $order_id) {
+            $order['status'] = $new_status;
+            $order['status_history'][] = [
+                'status' => $new_status,
+                'date' => get_timestamp(),
+                'user' => $user
+            ];
+            $found = true;
+            break;
+        }
+    }
+
+    if ($found) {
+        write_json($orders_file, $data);
+        log_admin_action('order_status_updated', $user, [
+            'order_id' => $order_id,
+            'new_status' => $new_status
+        ]);
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Update order payment status
+ * @param string $order_id Order ID
+ * @param string $payment_status Payment status
+ * @param string $payment_id Payment ID (optional)
+ * @return bool Success status
+ */
+function update_order_payment($order_id, $payment_status, $payment_id = null) {
+    $orders_file = __DIR__ . '/../data/orders.json';
+    $data = read_json($orders_file);
+
+    if (!isset($data['orders'])) {
+        return false;
+    }
+
+    $found = false;
+    foreach ($data['orders'] as &$order) {
+        if ($order['id'] === $order_id) {
+            $order['payment_status'] = $payment_status;
+            if ($payment_id !== null) {
+                $order['payment_id'] = $payment_id;
+            }
+            $found = true;
+            break;
+        }
+    }
+
+    if ($found) {
+        return write_json($orders_file, $data);
+    }
+
+    return false;
+}
+
+/**
+ * Add tracking information to order
+ * @param string $order_id Order ID
+ * @param string $tracking_number Tracking number
+ * @param string $tracking_url Tracking URL (optional)
+ * @return bool Success status
+ */
+function add_order_tracking($order_id, $tracking_number, $tracking_url = null) {
+    $orders_file = __DIR__ . '/../data/orders.json';
+    $data = read_json($orders_file);
+
+    if (!isset($data['orders'])) {
+        return false;
+    }
+
+    $found = false;
+    foreach ($data['orders'] as &$order) {
+        if ($order['id'] === $order_id) {
+            $order['tracking_number'] = $tracking_number;
+            $order['tracking_url'] = $tracking_url;
+            $found = true;
+            break;
+        }
+    }
+
+    if ($found) {
+        return write_json($orders_file, $data);
+    }
+
+    return false;
+}
+
+/**
+ * Cancel order and restore stock
+ * @param string $order_id Order ID
+ * @param string $reason Cancellation reason
+ * @param string $user User who cancelled
+ * @return bool Success status
+ */
+function cancel_order($order_id, $reason = '', $user = 'system') {
+    $order = get_order_by_id($order_id);
+
+    if (!$order) {
+        return false;
+    }
+
+    // Restore stock for all items
+    foreach ($order['items'] as $item) {
+        update_stock($item['product_id'], $item['quantity'], "Order {$order['order_number']} cancelled");
+    }
+
+    // Update order status
+    update_order_status($order_id, 'cancelled', $user);
+
+    // Log action
+    log_admin_action('order_cancelled', $user, [
+        'order_id' => $order_id,
+        'order_number' => $order['order_number'],
+        'reason' => $reason
+    ]);
+
+    return true;
+}
+
+/**
+ * Get orders by status
+ * @param string $status Order status
+ * @return array Orders array
+ */
+function get_orders_by_status($status) {
+    $orders = get_all_orders();
+    return array_filter($orders, function($order) use ($status) {
+        return $order['status'] === $status;
+    });
+}
+
+/**
+ * Get orders by user ID
+ * @param string $user_id User ID
+ * @return array Orders array
+ */
+function get_orders_by_user($user_id) {
+    $orders = get_all_orders();
+    return array_filter($orders, function($order) use ($user_id) {
+        return $order['user_id'] === $user_id;
+    });
+}
+
+/**
+ * Validate coupon code
+ * @param string $code Coupon code
+ * @param float $subtotal Order subtotal
+ * @return array Validation result with discount info or error
+ */
+function validate_coupon($code, $subtotal) {
+    $coupons_file = __DIR__ . '/../data/coupons.json';
+    $data = read_json($coupons_file);
+
+    if (!isset($data['coupons'])) {
+        return ['valid' => false, 'error' => 'Cupón no encontrado'];
+    }
+
+    foreach ($data['coupons'] as $coupon) {
+        if (strtoupper($coupon['code']) === strtoupper($code)) {
+            // Check if active
+            if (!$coupon['active']) {
+                return ['valid' => false, 'error' => 'Cupón inactivo'];
+            }
+
+            // Check dates
+            $now = time();
+            $start = strtotime($coupon['start_date']);
+            $end = strtotime($coupon['end_date']);
+
+            if ($now < $start || $now > $end) {
+                return ['valid' => false, 'error' => 'Cupón expirado o aún no válido'];
+            }
+
+            // Check minimum purchase
+            if ($subtotal < $coupon['min_purchase']) {
+                return [
+                    'valid' => false,
+                    'error' => 'Compra mínima no alcanzada: ' . format_price($coupon['min_purchase'])
+                ];
+            }
+
+            // Check usage limit
+            if ($coupon['max_uses'] > 0 && $coupon['uses_count'] >= $coupon['max_uses']) {
+                return ['valid' => false, 'error' => 'Cupón agotado'];
+            }
+
+            // Calculate discount
+            $discount = 0;
+            if ($coupon['type'] === 'percentage') {
+                $discount = ($subtotal * $coupon['value']) / 100;
+            } else {
+                $discount = $coupon['value'];
+            }
+
+            return [
+                'valid' => true,
+                'coupon' => $coupon,
+                'discount' => $discount
+            ];
+        }
+    }
+
+    return ['valid' => false, 'error' => 'Cupón no encontrado'];
+}
+
+/**
+ * Increment coupon usage count
+ * @param string $code Coupon code
+ * @return bool Success status
+ */
+function increment_coupon_usage($code) {
+    $coupons_file = __DIR__ . '/../data/coupons.json';
+    $data = read_json($coupons_file);
+
+    if (!isset($data['coupons'])) {
+        return false;
+    }
+
+    $found = false;
+    foreach ($data['coupons'] as &$coupon) {
+        if (strtoupper($coupon['code']) === strtoupper($code)) {
+            $coupon['uses_count'] = ($coupon['uses_count'] ?? 0) + 1;
+            $found = true;
+            break;
+        }
+    }
+
+    if ($found) {
+        return write_json($coupons_file, $data);
+    }
+
+    return false;
+}

@@ -1,0 +1,13 @@
+{
+  "mercadopago": {
+    "enabled": true,
+    "mode": "sandbox",
+    "access_token_sandbox": "",
+    "access_token_prod": "",
+    "webhook_url": ""
+  },
+  "presencial": {
+    "enabled": true,
+    "instructions": "Retira tu pedido en nuestro local de Lunes a Viernes de 9 a 18hs. Dirección: Av. Ejemplo 1234, CABA."
+  }
+}

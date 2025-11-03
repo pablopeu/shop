@@ -1,0 +1,23 @@
+{
+    "site_name": "Mi Tienda",
+    "site_description": "Tu tienda online de confianza",
+    "site_keywords": "tienda, online, ecommerce",
+    "contact_email": "contacto@mitienda.com",
+    "whatsapp": {
+        "enabled": true,
+        "number": "+5491112345678",
+        "message": "Hola! Me interesa un producto de su tienda"
+    },
+    "social": {
+        "facebook": "",
+        "instagram": "",
+        "twitter": ""
+    },
+    "footer_text": "© 2025 Mi Tienda. Todos los derechos reservados.",
+    "analytics": {
+        "google_analytics_id": "",
+        "facebook_pixel": ""
+    },
+    "contact_phone": "",
+    "whatsapp_number": ""
+}

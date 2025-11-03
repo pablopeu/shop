@@ -1,0 +1,34 @@
+{
+    "widgets_order": [
+        "stock_bajo",
+        "productos_activos",
+        "sin_stock",
+        "ordenes_totales",
+        "promociones",
+        "cupones",
+        "reviews_pendientes"
+    ],
+    "widgets": {
+        "productos_activos": true,
+        "stock_bajo": true,
+        "sin_stock": true,
+        "ordenes_totales": true,
+        "promociones": true,
+        "cupones": true,
+        "reviews_pendientes": true
+    },
+    "quick_actions_order": [
+        "productos",
+        "ventas",
+        "cupones",
+        "reviews",
+        "config"
+    ],
+    "quick_actions": {
+        "productos": true,
+        "ventas": true,
+        "cupones": true,
+        "reviews": true,
+        "config": true
+    }
+}

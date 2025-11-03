@@ -1,0 +1,93 @@
+# ===== CREDENTIALS AND SENSITIVE DATA =====
+config/credentials.php
+config/*.key
+*.pem
+
+# ===== USER DATA (PRODUCTION) =====
+data/passwords/
+data/rate_limits/
+data/backups/
+data/admin_logs.json
+data/stock_logs.json
+data/visits.json
+
+# Keep structure but ignore content
+data/orders.json
+data/reviews.json
+data/coupons.json
+data/promotions.json
+data/wishlists.json
+data/newsletters.json
+
+# ===== UPLOADED IMAGES =====
+# Comment out if you want to version control images
+images/products/*
+!images/products/.gitkeep
+images/hero/*
+!images/hero/.gitkeep
+images/carousel/*
+!images/carousel/.gitkeep
+
+# ===== LOGS =====
+*.log
+logs/
+error_log
+
+# ===== SYSTEM FILES =====
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+.directory
+
+# ===== IDE / EDITORS =====
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+nbproject/
+.project
+.settings/
+
+# ===== TEMPORARY FILES =====
+tmp/
+temp/
+*.tmp
+*.bak
+*.cache
+
+# ===== DEPENDENCIES =====
+# Will be uploaded via FTP or installed via Composer
+vendor/
+node_modules/
+composer.phar
+
+# ===== ENVIRONMENT SPECIFIC =====
+.env
+.env.local
+.env.*.local
+.htaccess.local
+
+# ===== OS SPECIFIC =====
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.fuse_hidden*
+.nfs*

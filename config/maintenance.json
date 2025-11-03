@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "message": "Estamos realizando mejoras. Volvemos pronto!",
+  "estimated_time": "2 horas",
+  "bypass_code": "admin2025",
+  "allowed_ips": ["127.0.0.1"]
+}

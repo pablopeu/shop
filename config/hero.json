@@ -1,0 +1,8 @@
+{
+    "enabled": true,
+    "image": "",
+    "title": "Bienvenido a nuestra tienda",
+    "subtitle": "Encuentra los mejores productos al mejor precio",
+    "button_text": "Ver productos",
+    "button_link": "#productos"
+}
