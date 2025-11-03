@@ -74,12 +74,14 @@
     background: rgba(0, 0, 0, 0.5);
     z-index: 999;
     opacity: 0;
+    pointer-events: none;
     transition: opacity 0.3s ease;
     backdrop-filter: blur(2px);
 }
 
 .mobile-menu-overlay.active {
     opacity: 1;
+    pointer-events: auto;
 }
 
 /* Mobile Menu Drawer */
@@ -96,10 +98,12 @@
     transition: transform 0.3s ease;
     box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
     overflow-y: auto;
+    pointer-events: none;
 }
 
 .mobile-menu-drawer.active {
     transform: translateX(0);
+    pointer-events: auto;
 }
 
 .mobile-menu-header {

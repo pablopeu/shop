@@ -51,10 +51,17 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             box-sizing: border-box;
         }
 
+        html {
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
             color: #333;
+            margin: 0;
+            padding: 0;
         }
 
         /* Header */
@@ -64,7 +71,8 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             padding: 20px 0;
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 1001;
+            width: 100%;
         }
 
         .header-content {
@@ -506,12 +514,63 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             }
 
             .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-                gap: 15px;
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 0 10px;
+            }
+
+            .product-card {
+                max-width: 100%;
             }
 
             .product-image {
-                height: 180px;
+                height: 200px;
+            }
+
+            .product-info {
+                padding: 15px;
+            }
+
+            .product-name {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+
+            .product-price {
+                font-size: 18px;
+                margin-bottom: 8px;
+                word-break: break-word;
+                line-height: 1.3;
+            }
+
+            .product-price span {
+                display: block;
+                margin-top: 4px;
+                font-size: 0.8em !important;
+            }
+
+            .product-stock {
+                font-size: 13px;
+                margin-bottom: 12px;
+            }
+
+            .product-buttons {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .btn {
+                padding: 10px 16px;
+                font-size: 14px;
+                width: 100%;
+            }
+
+            .header-content {
+                padding: 0 15px;
+            }
+
+            .container {
+                padding: 30px 10px;
             }
         }
     </style>
@@ -530,7 +589,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                 <a href="/favoritos.php">Favoritos</a>
                 <a href="#" class="cart-link" onclick="openCartPanel(); return false;">
                     🛒 Carrito
-                    <span class="cart-badge hidden" id="cart-badge">0</span>
+                    <span class="cart-badge hidden" id="cart-count">0</span>
                 </a>
             </nav>
         </div>
@@ -651,6 +710,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
     <script>
         // Products data for cart panel
         const products = <?php echo json_encode($products); ?>;
+        const exchangeRate = <?php echo $currency_config['exchange_rate']; ?>;
 
         function addToCart(productId, event) {
             event.stopPropagation();
@@ -682,7 +742,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
         function updateCartBadge() {
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
             const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-            const badge = document.getElementById('cart-badge');
+            const badge = document.getElementById('cart-count');
 
             if (badge) {
                 badge.textContent = totalItems;
@@ -706,22 +766,51 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                 return;
             }
 
-            let total = 0;
+            let totalARS = 0;
+            let totalUSD = 0;
+            let allProductsUSD = true;
             let html = '';
 
             cart.forEach(item => {
                 const product = products.find(p => p.id === item.product_id);
                 if (!product) return;
 
-                const itemTotal = product.price_ars * item.quantity;
-                total += itemTotal;
+                const priceARS = parseFloat(product.price_ars) || 0;
+                const priceUSD = parseFloat(product.price_usd) || 0;
+
+                // Determinar si el producto está en USD o ARS
+                let itemPriceARS = 0;
+                let itemPriceUSD = 0;
+                let displayPrice = '';
+                let isUSDProduct = false;
+
+                if (priceUSD > 0 && priceARS === 0) {
+                    // Producto solo en USD
+                    isUSDProduct = true;
+                    itemPriceUSD = priceUSD;
+                    itemPriceARS = priceUSD * exchangeRate;
+                    displayPrice = 'U$D ' + priceUSD.toFixed(2);
+                } else if (priceARS > 0 && priceUSD === 0) {
+                    // Producto solo en ARS
+                    allProductsUSD = false;
+                    itemPriceARS = priceARS;
+                    displayPrice = '$' + priceARS.toFixed(2);
+                } else if (priceARS > 0 && priceUSD > 0) {
+                    // Producto con ambos precios - usar ARS
+                    allProductsUSD = false;
+                    itemPriceARS = priceARS;
+                    displayPrice = '$' + priceARS.toFixed(2);
+                }
+
+                totalARS += itemPriceARS * item.quantity;
+                totalUSD += itemPriceUSD * item.quantity;
 
                 html += `
                     <div class="cart-item">
                         <img src="${product.thumbnail || ''}" class="cart-item-image" alt="${product.name}">
                         <div class="cart-item-details">
                             <div class="cart-item-name">${product.name}</div>
-                            <div class="cart-item-price">$${product.price_ars.toFixed(2)}</div>
+                            <div class="cart-item-price">${displayPrice}</div>
                             <div class="cart-item-quantity">
                                 <button class="qty-btn" onclick="updateQuantity('${product.id}', -1)">-</button>
                                 <span>${item.quantity}</span>
@@ -734,7 +823,14 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             });
 
             body.innerHTML = html;
-            totalEl.textContent = '$' + total.toFixed(2);
+
+            // Mostrar total en USD si todos los productos están en USD, sino en ARS
+            if (allProductsUSD && totalUSD > 0) {
+                totalEl.textContent = 'U$D ' + totalUSD.toFixed(2);
+            } else {
+                totalEl.textContent = '$' + totalARS.toFixed(2);
+            }
+
             footer.style.display = 'block';
         }
 

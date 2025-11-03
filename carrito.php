@@ -271,25 +271,37 @@ if (isset($_POST['change_currency'])) {
             color: #2c3e50;
         }
 
-        .currency-selector {
+        /* Currency Toggle Buttons */
+        .currency-toggle {
+            display: flex;
+            gap: 10px;
             margin-bottom: 20px;
             padding-bottom: 20px;
             border-bottom: 2px solid #f0f0f0;
         }
 
-        .currency-selector label {
-            display: block;
+        .currency-btn {
+            flex: 1;
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
             font-size: 14px;
+            font-weight: 600;
             color: #666;
-            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        .currency-selector select {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 14px;
+        .currency-btn:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+
+        .currency-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
         }
 
         .coupon-section {
@@ -499,6 +511,11 @@ if (isset($_POST['change_currency'])) {
                 font-size: 16px;
             }
 
+            .currency-btn {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+
             .item-price {
                 font-size: 18px;
             }
@@ -541,13 +558,14 @@ if (isset($_POST['change_currency'])) {
             <div class="cart-summary" id="cartSummary" style="display: none;">
                 <h2 class="summary-title">Resumen de Compra</h2>
 
-                <!-- Currency Selector -->
-                <div class="currency-selector">
-                    <label>Moneda:</label>
-                    <select id="currencySelector" onchange="changeCurrency(this.value)">
-                        <option value="ARS" <?php echo $selected_currency === 'ARS' ? 'selected' : ''; ?>>ARS ($)</option>
-                        <option value="USD" <?php echo $selected_currency === 'USD' ? 'selected' : ''; ?>>USD (U$D)</option>
-                    </select>
+                <!-- Currency Toggle Buttons -->
+                <div class="currency-toggle" id="currency-toggle">
+                    <button class="currency-btn" data-currency="ARS" onclick="switchDisplayCurrency('ARS')">
+                        💵 Pesos (ARS)
+                    </button>
+                    <button class="currency-btn" data-currency="USD" onclick="switchDisplayCurrency('USD')">
+                        💵 Dólares (USD)
+                    </button>
                 </div>
 
                 <!-- Coupon -->
@@ -577,6 +595,7 @@ if (isset($_POST['change_currency'])) {
     <script>
         const CURRENCY = '<?php echo $selected_currency; ?>';
         const EXCHANGE_RATE = <?php echo $currency_config['exchange_rate']; ?>;
+        let displayCurrency = 'ARS'; // Currency for display purposes only
 
         let cartData = {
             items: [],
@@ -608,18 +627,38 @@ if (isset($_POST['change_currency'])) {
             return symbol + ' ' + price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
         }
 
+        // Determine if all products in cart are USD-only
+        function areAllProductsUSD(products, cart) {
+            for (const item of cart) {
+                const productId = item.product_id || item.id;
+                const product = products.find(p => p.id === productId);
+                if (!product) continue;
+
+                const priceArs = parseFloat(product.price_ars || 0);
+                if (priceArs > 0) {
+                    return false; // Found a product with ARS price
+                }
+            }
+            return true; // All products are USD-only
+        }
+
         // Get product price value for calculations
         function getProductPrice(product, currency) {
             const priceArs = parseFloat(product.price_ars || 0);
             const priceUsd = parseFloat(product.price_usd || 0);
 
-            // If only USD, use USD price
-            if (priceUsd > 0 && priceArs == 0) {
+            if (currency === 'USD') {
+                // All products USD, use USD price
                 return priceUsd;
+            } else {
+                // Mixed or all ARS
+                if (priceArs > 0) {
+                    return priceArs;
+                } else {
+                    // USD product in mixed cart, convert to ARS
+                    return priceUsd * EXCHANGE_RATE;
+                }
             }
-
-            // Otherwise use selected currency
-            return currency === 'USD' ? priceUsd : priceArs;
         }
 
         // Load cart from localStorage
@@ -744,6 +783,16 @@ if (isset($_POST['change_currency'])) {
 
             console.log('Rendering cart with products:', products);
 
+            // Determine currency based on cart contents
+            const allUSD = areAllProductsUSD(products, cartData.items);
+            const effectiveCurrency = allUSD ? 'USD' : 'ARS';
+
+            // Initialize display currency to match cart currency
+            displayCurrency = effectiveCurrency;
+
+            // Update currency button states
+            updateCurrencyButtons(effectiveCurrency);
+
             let html = '';
 
             cartData.items.forEach(item => {
@@ -759,7 +808,7 @@ if (isset($_POST['change_currency'])) {
 
                 console.log('Product:', product.name, 'Thumbnail:', product.thumbnail, 'Images:', product.images);
 
-                const price = getProductPrice(product, CURRENCY);
+                const price = getProductPrice(product, effectiveCurrency);
                 const stockWarning = item.quantity > product.stock;
 
                 // Use thumbnail or first image
@@ -788,7 +837,7 @@ if (isset($_POST['change_currency'])) {
                         </div>
                         <div class="item-details">
                             <div class="item-name">${product.name}</div>
-                            <div class="item-price">${formatProductPrice(product, CURRENCY)} × ${item.quantity}</div>
+                            <div class="item-price">${formatProductPrice(product, effectiveCurrency)} × ${item.quantity}</div>
                             <div class="item-stock ${stockWarning ? 'stock-warning' : ''}">
                                 ${stockWarning ?
                                     '⚠️ Stock insuficiente (' + product.stock + ' disponibles)' :
@@ -856,12 +905,22 @@ if (isset($_POST['change_currency'])) {
             let promotionDiscount = 0;
             let couponDiscount = 0;
 
+            // Determine currency based on cart contents
+            const allUSD = areAllProductsUSD(products, cartData.items);
+            const effectiveCurrency = allUSD ? 'USD' : 'ARS';
+
+            // Update display currency and buttons if not manually changed
+            if (!displayCurrency || displayCurrency === 'ARS' || displayCurrency === 'USD') {
+                displayCurrency = effectiveCurrency;
+                updateCurrencyButtons(effectiveCurrency);
+            }
+
             cartData.items.forEach(item => {
                 const productId = item.product_id || item.id;
                 const product = products.find(p => p.id === productId);
                 if (!product) return;
 
-                const price = getProductPrice(product, CURRENCY);
+                const price = getProductPrice(product, effectiveCurrency);
                 subtotal += price * item.quantity;
             });
 
@@ -875,20 +934,40 @@ if (isset($_POST['change_currency'])) {
             }
 
             const total = subtotal - promotionDiscount - couponDiscount;
-            const symbol = CURRENCY === 'ARS' ? '$' : 'U$D';
 
-            let html = `
-                <div class="summary-row">
-                    <span>Subtotal:</span>
-                    <span>${symbol} ${subtotal.toFixed(2)}</span>
-                </div>
-            `;
+            // Calculate in both currencies
+            let subtotalARS, subtotalUSD, couponDiscountARS, couponDiscountUSD, totalARS, totalUSD;
+
+            if (effectiveCurrency === 'USD') {
+                subtotalUSD = subtotal;
+                subtotalARS = subtotal * EXCHANGE_RATE;
+                couponDiscountUSD = couponDiscount;
+                couponDiscountARS = couponDiscount * EXCHANGE_RATE;
+                totalUSD = total;
+                totalARS = total * EXCHANGE_RATE;
+            } else {
+                subtotalARS = subtotal;
+                subtotalUSD = subtotal / EXCHANGE_RATE;
+                couponDiscountARS = couponDiscount;
+                couponDiscountUSD = couponDiscount / EXCHANGE_RATE;
+                totalARS = total;
+                totalUSD = total / EXCHANGE_RATE;
+            }
+
+            // Format price based on display currency
+            function formatDisplayPrice(ars, usd) {
+                const amount = displayCurrency === 'ARS' ? ars : usd;
+                const symbol = displayCurrency === 'ARS' ? '$' : 'U$D';
+                return `${symbol} ${amount.toFixed(2)}`;
+            }
+
+            let html = '';
 
             if (promotionDiscount > 0) {
                 html += `
                     <div class="summary-row promotion">
                         <span>Descuento promoción:</span>
-                        <span>-${symbol} ${promotionDiscount.toFixed(2)}</span>
+                        <span>-${formatDisplayPrice(promotionDiscount, promotionDiscount / EXCHANGE_RATE)}</span>
                     </div>
                 `;
             }
@@ -897,7 +976,9 @@ if (isset($_POST['change_currency'])) {
                 html += `
                     <div class="summary-row discount">
                         <span>Cupón "${cartData.coupon.code}":</span>
-                        <span>-${symbol} ${couponDiscount.toFixed(2)}</span>
+                        <span id="discount-display" data-ars="${couponDiscountARS.toFixed(2)}" data-usd="${couponDiscountUSD.toFixed(2)}">
+                            -${formatDisplayPrice(couponDiscountARS, couponDiscountUSD)}
+                        </span>
                     </div>
                 `;
             }
@@ -905,7 +986,9 @@ if (isset($_POST['change_currency'])) {
             html += `
                 <div class="summary-row total">
                     <span>Total:</span>
-                    <span>${symbol} ${total.toFixed(2)}</span>
+                    <span id="total-display" data-ars="${totalARS.toFixed(2)}" data-usd="${totalUSD.toFixed(2)}">
+                        ${formatDisplayPrice(totalARS, totalUSD)}
+                    </span>
                 </div>
             `;
 
@@ -970,9 +1053,46 @@ if (isset($_POST['change_currency'])) {
             showToast('Cupón removido');
         }
 
-        // Change currency
-        function changeCurrency(currency) {
-            window.location.href = '?currency=' + currency;
+        // Update currency button states
+        function updateCurrencyButtons(currency) {
+            document.querySelectorAll('.currency-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const activeBtn = document.querySelector(`.currency-btn[data-currency="${currency}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+        }
+
+        // Switch display currency without reloading page
+        function switchDisplayCurrency(currency) {
+            displayCurrency = currency;
+
+            // Update button states
+            updateCurrencyButtons(currency);
+
+            // Format price function
+            function formatPrice(amount, curr) {
+                if (curr === 'ARS') {
+                    return '$ ' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                } else {
+                    return 'U$D ' + parseFloat(amount).toFixed(2).replace('.', ',');
+                }
+            }
+
+            // Update discount
+            const discountEl = document.getElementById('discount-display');
+            if (discountEl) {
+                const discount = currency === 'ARS' ? discountEl.dataset.ars : discountEl.dataset.usd;
+                discountEl.textContent = '-' + formatPrice(discount, currency);
+            }
+
+            // Update total
+            const totalEl = document.getElementById('total-display');
+            if (totalEl) {
+                const total = currency === 'ARS' ? totalEl.dataset.ars : totalEl.dataset.usd;
+                totalEl.textContent = formatPrice(total, currency);
+            }
         }
 
         // Go to checkout

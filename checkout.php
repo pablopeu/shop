@@ -43,7 +43,30 @@ $coupon_code = $_SESSION['coupon_code'] ?? null;
 // Calculate cart totals
 $cart_items = [];
 $subtotal = 0;
+$exchange_rate = $currency_config['exchange_rate'] ?? 1500;
 
+// First pass: determine if all products are USD-only
+$all_products_usd = true;
+foreach ($_SESSION['cart'] as $product_id => $quantity) {
+    $product = get_product_by_id($product_id);
+    if (!$product || !$product['active']) {
+        continue;
+    }
+
+    $price_ars = floatval($product['price_ars'] ?? 0);
+    $price_usd = floatval($product['price_usd'] ?? 0);
+
+    // If product has ARS price or both prices, not all are USD
+    if ($price_ars > 0) {
+        $all_products_usd = false;
+        break;
+    }
+}
+
+// Set currency based on cart contents
+$checkout_currency = ($all_products_usd) ? 'USD' : 'ARS';
+
+// Second pass: calculate totals
 foreach ($_SESSION['cart'] as $product_id => $quantity) {
     $product = get_product_by_id($product_id);
 
@@ -57,8 +80,23 @@ foreach ($_SESSION['cart'] as $product_id => $quantity) {
         continue;
     }
 
-    $price_field = 'price_' . strtolower($selected_currency);
-    $price = $product[$price_field];
+    $price_ars = floatval($product['price_ars'] ?? 0);
+    $price_usd = floatval($product['price_usd'] ?? 0);
+
+    // Determine price based on checkout currency
+    if ($checkout_currency === 'USD') {
+        // All products are USD, use USD price
+        $price = $price_usd;
+    } else {
+        // Mixed cart or all ARS, convert to ARS
+        if ($price_ars > 0) {
+            $price = $price_ars;
+        } else {
+            // USD product in mixed cart, convert to ARS
+            $price = $price_usd * $exchange_rate;
+        }
+    }
+
     $item_total = $price * $quantity;
 
     $cart_items[] = [
@@ -73,6 +111,9 @@ foreach ($_SESSION['cart'] as $product_id => $quantity) {
     $subtotal += $item_total;
 }
 
+// Update selected currency for display
+$selected_currency = $checkout_currency;
+
 // Apply coupon if exists
 if ($coupon_code) {
     $coupon_result = validate_coupon($coupon_code, $subtotal);
@@ -85,6 +126,34 @@ if ($coupon_code) {
 }
 
 $total = $subtotal - $coupon_discount;
+
+// Calculate totals in both currencies for display toggle
+$subtotal_ars = 0;
+$subtotal_usd = 0;
+$total_ars = 0;
+$total_usd = 0;
+
+if ($checkout_currency === 'USD') {
+    // Cart is in USD, convert to ARS for display
+    $subtotal_usd = $subtotal;
+    $subtotal_ars = $subtotal * $exchange_rate;
+    $total_usd = $total;
+    $total_ars = $total * $exchange_rate;
+} else {
+    // Cart is in ARS, convert to USD for display
+    $subtotal_ars = $subtotal;
+    $subtotal_usd = $subtotal / $exchange_rate;
+    $total_ars = $total;
+    $total_usd = $total / $exchange_rate;
+}
+
+$coupon_discount_ars = $coupon_discount;
+$coupon_discount_usd = $coupon_discount / ($checkout_currency === 'USD' ? 1 : $exchange_rate);
+if ($checkout_currency === 'ARS') {
+    $coupon_discount_usd = $coupon_discount / $exchange_rate;
+} else {
+    $coupon_discount_ars = $coupon_discount * $exchange_rate;
+}
 
 // Process checkout form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
@@ -387,6 +456,37 @@ $csrf_token = generate_csrf_token();
             color: #2c3e50;
         }
 
+        /* Currency Toggle Buttons */
+        .currency-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .currency-btn {
+            flex: 1;
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .currency-btn:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+
+        .currency-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+        }
+
         .summary-item {
             display: flex;
             gap: 15px;
@@ -518,6 +618,11 @@ $csrf_token = generate_csrf_token();
 
             .payment-methods {
                 grid-template-columns: 1fr;
+            }
+
+            .currency-btn {
+                padding: 6px 12px;
+                font-size: 13px;
             }
         }
     </style>
@@ -661,6 +766,16 @@ $csrf_token = generate_csrf_token();
             <div class="order-summary">
                 <h2>📦 Resumen del Pedido</h2>
 
+                <!-- Currency Toggle Buttons -->
+                <div class="currency-toggle">
+                    <button class="currency-btn <?php echo $checkout_currency === 'ARS' ? 'active' : ''; ?>" data-currency="ARS" onclick="switchCurrency('ARS')">
+                        💵 Pesos (ARS)
+                    </button>
+                    <button class="currency-btn <?php echo $checkout_currency === 'USD' ? 'active' : ''; ?>" data-currency="USD" onclick="switchCurrency('USD')">
+                        💵 Dólares (USD)
+                    </button>
+                </div>
+
                 <?php foreach ($cart_items as $item): ?>
                 <div class="summary-item">
                     <img src="<?php echo htmlspecialchars($item['thumbnail']); ?>"
@@ -678,21 +793,24 @@ $csrf_token = generate_csrf_token();
                 <?php endforeach; ?>
 
                 <div class="summary-totals">
-                    <div class="summary-row">
-                        <span>Subtotal:</span>
-                        <span><?php echo format_price($subtotal, $selected_currency); ?></span>
-                    </div>
-
                     <?php if ($coupon_discount > 0): ?>
                     <div class="summary-row discount">
                         <span>Descuento (<?php echo htmlspecialchars($coupon_code); ?>):</span>
-                        <span>-<?php echo format_price($coupon_discount, $selected_currency); ?></span>
+                        <span id="discount-display"
+                              data-ars="<?php echo number_format($coupon_discount_ars, 2, '.', ''); ?>"
+                              data-usd="<?php echo number_format($coupon_discount_usd, 2, '.', ''); ?>">
+                            -<?php echo format_price($coupon_discount, $selected_currency); ?>
+                        </span>
                     </div>
                     <?php endif; ?>
 
                     <div class="summary-row total">
                         <span>Total:</span>
-                        <span><?php echo format_price($total, $selected_currency); ?></span>
+                        <span id="total-display"
+                              data-ars="<?php echo number_format($total_ars, 2, '.', ''); ?>"
+                              data-usd="<?php echo number_format($total_usd, 2, '.', ''); ?>">
+                            <?php echo format_price($total, $selected_currency); ?>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -726,6 +844,38 @@ $csrf_token = generate_csrf_token();
                 el.classList.remove('selected');
             });
             document.getElementById('payment-' + method).classList.add('selected');
+        }
+
+        // Switch currency display
+        function switchCurrency(currency) {
+            // Update button states
+            document.querySelectorAll('.currency-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.currency-btn[data-currency="${currency}"]`).classList.add('active');
+
+            // Format price function
+            function formatPrice(amount, curr) {
+                if (curr === 'ARS') {
+                    return '$ ' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                } else {
+                    return 'U$D ' + parseFloat(amount).toFixed(2).replace('.', ',');
+                }
+            }
+
+            // Update discount
+            const discountEl = document.getElementById('discount-display');
+            if (discountEl) {
+                const discount = currency === 'ARS' ? discountEl.dataset.ars : discountEl.dataset.usd;
+                discountEl.textContent = '-' + formatPrice(discount, currency);
+            }
+
+            // Update total
+            const totalEl = document.getElementById('total-display');
+            if (totalEl) {
+                const total = currency === 'ARS' ? totalEl.dataset.ars : totalEl.dataset.usd;
+                totalEl.textContent = formatPrice(total, currency);
+            }
         }
     </script>
     <!-- Mobile Menu -->

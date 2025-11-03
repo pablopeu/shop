@@ -8,18 +8,26 @@
 
     // Create mobile menu HTML structure
     function initMobileMenu() {
+        console.log('Mobile menu: Initializing...');
+
         // Check if already initialized
         if (document.querySelector('.mobile-menu-drawer')) {
+            console.log('Mobile menu: Already initialized');
             return;
         }
 
         // Get cart count
         const cartCountElement = document.getElementById('cart-count');
         const cartCount = cartCountElement ? cartCountElement.textContent : '0';
+        console.log('Mobile menu: Cart count =', cartCount);
 
         // Create hamburger button
         const header = document.querySelector('.header-content');
-        if (!header) return;
+        if (!header) {
+            console.error('Mobile menu: Header not found!');
+            return;
+        }
+        console.log('Mobile menu: Header found');
 
         const hamburgerBtn = document.createElement('button');
         hamburgerBtn.className = 'mobile-menu-toggle';
@@ -34,6 +42,7 @@
 
         // Add button to header
         header.appendChild(hamburgerBtn);
+        console.log('Mobile menu: Hamburger button added to header');
 
         // Create overlay
         const overlay = document.createElement('div');
@@ -75,11 +84,14 @@
         // Add elements to DOM
         document.body.appendChild(overlay);
         document.body.appendChild(drawer);
+        console.log('Mobile menu: Overlay and drawer added to DOM');
 
         // Setup event listeners
         hamburgerBtn.addEventListener('click', openMenu);
         overlay.addEventListener('click', closeMenu);
         drawer.querySelector('.mobile-menu-close').addEventListener('click', closeMenu);
+        console.log('Mobile menu: Event listeners attached');
+        console.log('Mobile menu: Initialization complete!');
 
         // Close on ESC key
         document.addEventListener('keydown', (e) => {
@@ -114,14 +126,21 @@
     }
 
     function openMenu() {
+        console.log('Mobile menu: Opening menu...');
         const toggle = document.querySelector('.mobile-menu-toggle');
         const overlay = document.querySelector('.mobile-menu-overlay');
         const drawer = document.querySelector('.mobile-menu-drawer');
+
+        if (!toggle || !overlay || !drawer) {
+            console.error('Mobile menu: Cannot open - elements not found', { toggle, overlay, drawer });
+            return;
+        }
 
         toggle.classList.add('active');
         overlay.classList.add('active');
         drawer.classList.add('active');
         document.body.classList.add('mobile-menu-open');
+        console.log('Mobile menu: Menu opened');
 
         // Trap focus in drawer
         const focusableElements = drawer.querySelectorAll('a, button');
@@ -131,14 +150,21 @@
     }
 
     function closeMenu() {
+        console.log('Mobile menu: Closing menu...');
         const toggle = document.querySelector('.mobile-menu-toggle');
         const overlay = document.querySelector('.mobile-menu-overlay');
         const drawer = document.querySelector('.mobile-menu-drawer');
+
+        if (!toggle || !overlay || !drawer) {
+            console.error('Mobile menu: Cannot close - elements not found');
+            return;
+        }
 
         toggle.classList.remove('active');
         overlay.classList.remove('active');
         drawer.classList.remove('active');
         document.body.classList.remove('mobile-menu-open');
+        console.log('Mobile menu: Menu closed');
     }
 
     // Initialize when DOM is ready
