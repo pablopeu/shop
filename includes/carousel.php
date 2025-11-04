@@ -19,12 +19,10 @@ $alignment = $carousel_config['alignment'] ?? 'center';
         <div class="carousel-slides">
             <?php foreach ($carousel_config['slides'] as $index => $slide): ?>
                 <div class="carousel-slide <?php echo $index === 0 ? 'active' : ''; ?>" data-index="<?php echo $index; ?>">
+                    <img src="<?php echo htmlspecialchars($slide['image']); ?>" alt="<?php echo htmlspecialchars($slide['title'] ?? 'Slide ' . ($index + 1)); ?>" class="carousel-slide-image">
+
                     <?php if (!empty($slide['link'])): ?>
-                        <a href="<?php echo htmlspecialchars($slide['link']); ?>" class="carousel-link">
-                            <img src="<?php echo htmlspecialchars($slide['image']); ?>" alt="<?php echo htmlspecialchars($slide['title'] ?? 'Slide ' . ($index + 1)); ?>">
-                        </a>
-                    <?php else: ?>
-                        <img src="<?php echo htmlspecialchars($slide['image']); ?>" alt="<?php echo htmlspecialchars($slide['title'] ?? 'Slide ' . ($index + 1)); ?>">
+                        <a href="<?php echo htmlspecialchars($slide['link']); ?>" class="carousel-link-overlay"></a>
                     <?php endif; ?>
 
                     <?php if (!empty($slide['subtitle'])): ?>

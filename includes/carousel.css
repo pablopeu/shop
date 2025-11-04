@@ -98,34 +98,27 @@
 }
 
 /* Carousel image */
-.carousel-slide img {
+.carousel-slide-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
-}
-
-.carousel-slide .carousel-link {
-    display: block;
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
-    position: relative;
-    z-index: 1;
-}
-
-.carousel-slide .carousel-link:hover {
-    opacity: 0.95;
-}
-
-.carousel-slide .carousel-link img {
-    width: 100%;
-    height: 100%;
     transition: transform 0.3s ease;
-    pointer-events: none;
 }
 
-.carousel-slide .carousel-link:hover img {
+/* Link overlay - covers the entire slide */
+.carousel-link-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    cursor: pointer;
+}
+
+/* Hover effect on the slide when link is hovered */
+.carousel-slide:has(.carousel-link-overlay:hover) .carousel-slide-image {
     transform: scale(1.02);
 }
 
@@ -139,7 +132,7 @@
     padding: 30px 20px 20px;
     color: white;
     pointer-events: none;
-    z-index: 3;
+    z-index: 6;
 }
 
 .carousel-overlay p {
