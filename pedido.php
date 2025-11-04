@@ -228,6 +228,24 @@ $status_config = [
             animation: pulse 2s infinite;
         }
 
+        .timeline-item.pending .timeline-dot {
+            border-color: #e0e0e0;
+            background: #fafafa;
+            opacity: 0.5;
+        }
+
+        .timeline-item.pending .timeline-content {
+            opacity: 0.5;
+        }
+
+        .timeline-item.pending .timeline-title {
+            color: #999;
+        }
+
+        .timeline-item.pending .timeline-description {
+            color: #bbb;
+        }
+
         @keyframes pulse {
             0%, 100% {
                 transform: scale(1);
@@ -477,37 +495,73 @@ $status_config = [
                     <div class="timeline-line"></div>
 
                     <?php
-                    // Define timeline steps
-                    $steps = ['pending', 'confirmed', 'shipped', 'delivered'];
+                    // Build timeline from status_history
+                    $all_steps = ['pending', 'confirmed', 'shipped', 'delivered'];
                     $current_status = $order['status'];
-                    $current_index = array_search($current_status, $steps);
+                    $history = $order['status_history'];
+                    $last_index = count($history) - 1;
 
-                    foreach ($steps as $index => $status):
+                    // Show all history items
+                    $statuses_to_show = [];
+                    foreach ($history as $idx => $item) {
+                        if (isset($status_config[$item['status']])) {
+                            $is_last = ($idx === $last_index);
+                            $statuses_to_show[] = [
+                                'status' => $item['status'],
+                                'date' => $item['date'],
+                                'is_current' => $is_last,
+                                'is_completed' => !$is_last
+                            ];
+                        }
+                    }
+
+                    // Add next step if order is active (not cancelled/delivered)
+                    if ($current_status !== 'cancelled' && $current_status !== 'delivered') {
+                        $current_index = array_search($current_status, $all_steps);
+                        if ($current_index !== false && isset($all_steps[$current_index + 1])) {
+                            $next_status = $all_steps[$current_index + 1];
+                            // Only add if not already in history
+                            $already_shown = false;
+                            foreach ($statuses_to_show as $shown) {
+                                if ($shown['status'] === $next_status) {
+                                    $already_shown = true;
+                                    break;
+                                }
+                            }
+                            if (!$already_shown && isset($status_config[$next_status])) {
+                                $statuses_to_show[] = [
+                                    'status' => $next_status,
+                                    'date' => null,
+                                    'is_current' => false,
+                                    'is_completed' => false,
+                                    'is_future' => true
+                                ];
+                            }
+                        }
+                    }
+
+                    foreach ($statuses_to_show as $item):
+                        $status = $item['status'];
                         if (!isset($status_config[$status])) continue;
 
                         $config = $status_config[$status];
-                        $is_completed = $index < $current_index;
-                        $is_current = $status === $current_status;
-
-                        // Find date from status history
-                        $status_date = null;
-                        foreach ($order['status_history'] as $history) {
-                            if ($history['status'] === $status) {
-                                $status_date = $history['date'];
-                                break;
-                            }
+                        $class = '';
+                        if ($item['is_completed']) {
+                            $class = 'completed';
+                        } elseif ($item['is_current']) {
+                            $class = 'current';
+                        } elseif (isset($item['is_future']) && $item['is_future']) {
+                            $class = 'pending';
                         }
-
-                        $class = $is_completed ? 'completed' : ($is_current ? 'current' : '');
                     ?>
                         <div class="timeline-item <?php echo $class; ?>">
                             <div class="timeline-dot"><?php echo $config['icon']; ?></div>
                             <div class="timeline-content">
                                 <div class="timeline-title"><?php echo $config['label']; ?></div>
                                 <div class="timeline-description"><?php echo $config['description']; ?></div>
-                                <?php if ($status_date): ?>
+                                <?php if ($item['date']): ?>
                                     <div class="timeline-date">
-                                        <?php echo date('d/m/Y H:i', strtotime($status_date)); ?>
+                                        <?php echo date('d/m/Y H:i', strtotime($item['date'])); ?>
                                     </div>
                                 <?php endif; ?>
                             </div>
