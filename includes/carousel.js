@@ -76,6 +76,18 @@
             console.log('[CAROUSEL] Closest link:', closestLink ? closestLink.href : 'NONE');
         }, true); // Use capture phase
 
+        // Add even higher level listener on document
+        document.addEventListener('click', (e) => {
+            // Only log if click is within carousel area
+            if (e.target.closest('.carousel-wrapper, .carousel-container')) {
+                console.log('[CAROUSEL] 🌍 DOCUMENT LEVEL CLICK detected!');
+                console.log('[CAROUSEL] Target:', e.target);
+                console.log('[CAROUSEL] Target className:', e.target.className);
+                console.log('[CAROUSEL] Target tagName:', e.target.tagName);
+                console.log('[CAROUSEL] Path:', e.composedPath().map(el => el.className || el.tagName).join(' → '));
+            }
+        }, true); // Capture phase
+
         // Only handle touch events for mobile swipe gestures
         carouselContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
         carouselContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
