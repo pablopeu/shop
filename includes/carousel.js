@@ -192,7 +192,11 @@
                 return;
             }
 
-            console.log('[CAROUSEL] goToSlide called - from', currentIndex, 'to', index);
+            console.log('[CAROUSEL] ⚡ goToSlide called - from', currentIndex, 'to', index);
+            if (index === 0) {
+                console.log('[CAROUSEL] 🚨 GOING TO FIRST SLIDE (0)!');
+                console.log('[CAROUSEL] Stack trace:', new Error().stack);
+            }
             isAnimating = true;
 
             const currentSlide = slides[currentIndex];
