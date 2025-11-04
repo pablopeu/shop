@@ -31,99 +31,49 @@
         let autoPlayInterval = null;
         const autoPlayDelay = window.carouselAutoAdvanceTime || 5000; // Use configured time or default to 5 seconds
 
-        // Touch/click handling for carousel navigation
+        // Touch handling for swipe navigation only
         let touchStartX = 0;
-        let touchEndX = 0;
-        let clickStartX = 0;
-        let clickStartY = 0;
-        let clickStartTime = 0;
-        let clickStartedOnLink = false;
+        let touchStartY = 0;
+        let touchStartTime = 0;
 
-        // Mouse/touch down
-        carouselContainer.addEventListener('mousedown', handleInteractionStart);
-        carouselContainer.addEventListener('touchstart', handleInteractionStart);
+        // Only handle touch events for mobile swipe gestures
+        carouselContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+        carouselContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
 
-        // Mouse/touch up
-        carouselContainer.addEventListener('mouseup', handleInteractionEnd);
-        carouselContainer.addEventListener('touchend', handleInteractionEnd);
-
-        function handleInteractionStart(e) {
-            clickStartTime = Date.now();
-
-            // Check if click started on a link or image inside a link
-            const target = e.target;
-            const linkElement = target.closest('a');
-            const isImageInLink = target.tagName === 'IMG' && linkElement;
-            clickStartedOnLink = !!linkElement || isImageInLink;
-
-            if (e.type === 'mousedown') {
-                clickStartX = e.clientX;
-                clickStartY = e.clientY;
-            } else if (e.type === 'touchstart') {
-                touchStartX = e.touches[0].clientX;
-                clickStartX = touchStartX;
-                clickStartY = e.touches[0].clientY;
-            }
+        function handleTouchStart(e) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            touchStartTime = Date.now();
         }
 
-        function handleInteractionEnd(e) {
-            const clickEndTime = Date.now();
-            const clickDuration = clickEndTime - clickStartTime;
+        function handleTouchEnd(e) {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const touchDuration = Date.now() - touchStartTime;
 
-            let endX, endY;
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = Math.abs(touchEndY - touchStartY);
 
-            if (e.type === 'mouseup') {
-                endX = e.clientX;
-                endY = e.clientY;
-            } else if (e.type === 'touchend') {
-                touchEndX = e.changedTouches[0].clientX;
-                endX = touchEndX;
-                endY = e.changedTouches[0].clientY;
-            }
+            // Only handle swipes (not taps)
+            // Swipe must be > 50px horizontal and < 100px vertical
+            if (Math.abs(deltaX) > 50 && deltaY < 100 && touchDuration < 500) {
+                // Check if swipe started on a link - if so, don't interfere
+                const target = e.target;
+                const isOnLink = target.closest('a');
 
-            const deltaX = Math.abs(endX - clickStartX);
-            const deltaY = Math.abs(endY - clickStartY);
+                if (!isOnLink) {
+                    e.preventDefault();
 
-            // If the interaction started on a link, don't interfere at all
-            if (clickStartedOnLink) {
-                // Check if it's a click (not a swipe)
-                if (clickDuration < 300 && deltaX < 10 && deltaY < 10) {
-                    // It's a click on a link - let the browser handle it
-                    return;
+                    if (deltaX < 0) {
+                        // Swipe left - next slide
+                        goToNextSlide();
+                    } else {
+                        // Swipe right - previous slide
+                        goToPrevSlide();
+                    }
+
+                    resetAutoPlay();
                 }
-                // If it's a swipe that started on a link, we can allow the swipe navigation
-                // but fall through to handle it below
-            }
-
-            // Check if user clicked on a button (allow button clicks)
-            const clickedElement = e.target;
-            const isButton = clickedElement.tagName === 'BUTTON' || clickedElement.closest('button');
-
-            // Check if it's a click/tap (not a drag/scroll)
-            // Click/tap: short duration, minimal movement
-            if (clickDuration < 300 && deltaX < 10 && deltaY < 10) {
-                // Don't navigate if clicking on navigation buttons
-                if (isButton) {
-                    return;
-                }
-
-                // Navigate to next slide on tap/click anywhere on carousel
-                e.preventDefault();
-                goToNextSlide();
-                resetAutoPlay();
-            } else if (deltaX > 50 && deltaX > deltaY) {
-                // Swipe gesture
-                e.preventDefault();
-
-                if (endX < clickStartX) {
-                    // Swipe left - next slide
-                    goToNextSlide();
-                } else {
-                    // Swipe right - previous slide
-                    goToPrevSlide();
-                }
-
-                resetAutoPlay();
             }
         }
 
