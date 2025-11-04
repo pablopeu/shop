@@ -74,4 +74,5 @@ $alignment = $carousel_config['alignment'] ?? 'center';
 <script>
     // Initialize carousel data
     window.carouselData = <?php echo json_encode($carousel_config['slides']); ?>;
+    window.carouselAutoAdvanceTime = <?php echo intval($carousel_config['auto_advance_time'] ?? 5000); ?>;
 </script>

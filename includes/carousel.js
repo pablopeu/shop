@@ -29,7 +29,7 @@
         let currentIndex = 0;
         let isAnimating = false;
         let autoPlayInterval = null;
-        const autoPlayDelay = 5000; // 5 seconds
+        const autoPlayDelay = window.carouselAutoAdvanceTime || 5000; // Use configured time or default to 5 seconds
 
         // Touch/click handling for carousel navigation
         let touchStartX = 0;
