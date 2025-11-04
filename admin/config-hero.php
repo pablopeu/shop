@@ -41,8 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
             $config['enabled'] = isset($_POST['enabled']);
             $config['title'] = sanitize_input($_POST['title'] ?? '');
             $config['subtitle'] = sanitize_input($_POST['subtitle'] ?? '');
-            $config['button_text'] = sanitize_input($_POST['button_text'] ?? '');
-            $config['button_link'] = sanitize_input($_POST['button_link'] ?? '');
+            $config['background_color'] = sanitize_input($_POST['background_color'] ?? '#667eea');
+
+            // Remove old button fields if they exist
+            unset($config['button_text']);
+            unset($config['button_link']);
 
             if (write_json($config_file, $config)) {
                 $message = 'Configuración del hero guardada exitosamente';
@@ -147,17 +150,17 @@ $user = get_logged_user();
                 </div>
 
                 <div class="form-group">
-                    <label for="button_text">Texto del Botón (opcional)</label>
-                    <input type="text" id="button_text" name="button_text"
-                           value="<?php echo htmlspecialchars($hero_config['button_text'] ?? ''); ?>"
-                           placeholder="Ver Productos">
-                </div>
-
-                <div class="form-group">
-                    <label for="button_link">Enlace del Botón</label>
-                    <input type="text" id="button_link" name="button_link"
-                           value="<?php echo htmlspecialchars($hero_config['button_link'] ?? ''); ?>"
-                           placeholder="/#productos">
+                    <label for="background_color">Color de Fondo</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="color" id="background_color" name="background_color"
+                               value="<?php echo htmlspecialchars($hero_config['background_color'] ?? '#667eea'); ?>"
+                               style="width: 60px; height: 40px; border: none; border-radius: 6px; cursor: pointer;">
+                        <input type="text" id="background_color_text"
+                               value="<?php echo htmlspecialchars($hero_config['background_color'] ?? '#667eea'); ?>"
+                               readonly
+                               style="flex: 1; background: #f5f5f5;">
+                    </div>
+                    <small style="color: #666; margin-top: 5px; display: block;">Color de fondo cuando no hay imagen</small>
                 </div>
 
                 <div class="form-group">
@@ -187,10 +190,17 @@ $user = get_logged_user();
     <script>
         const form = document.getElementById('configForm');
         const saveBtn = document.getElementById('saveBtn');
-        const inputs = form.querySelectorAll('input:not([type="file"]):not([type="hidden"]), textarea');
+        const inputs = form.querySelectorAll('input:not([type="file"]):not([type="hidden"]):not([readonly]), textarea');
         const fileInput = document.getElementById('hero_image');
+        const colorPicker = document.getElementById('background_color');
+        const colorText = document.getElementById('background_color_text');
         let originalValues = {};
         let saveSuccess = <?php echo $message ? 'true' : 'false'; ?>;
+
+        // Sync color picker with text input
+        colorPicker.addEventListener('input', function() {
+            colorText.value = this.value;
+        });
 
         inputs.forEach(input => {
             if (input.type === 'checkbox') {
