@@ -581,7 +581,32 @@ $status_config = [
                 </div>
             </div>
 
-            <!-- Payment Status Box -->
+            <!-- Cancellation Notice (if cancelled) -->
+            <?php if ($order['status'] === 'cancelled'): ?>
+            <div style="background: #ffebee; border-left: 4px solid #f44336; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                <h3 style="color: #c62828; margin-bottom: 10px;">
+                    ❌ Pedido Cancelado
+                </h3>
+                <div style="font-size: 16px; color: #555; margin-bottom: 10px;">
+                    Este pedido fue cancelado y no será procesado.
+                </div>
+                <div style="font-size: 14px; color: #777;">
+                    <?php
+                    // Get cancellation date from history
+                    $cancel_date = null;
+                    foreach ($order['status_history'] as $history_item) {
+                        if ($history_item['status'] === 'cancelled') {
+                            $cancel_date = $history_item['date'];
+                            break;
+                        }
+                    }
+                    if ($cancel_date): ?>
+                        Cancelado el <?php echo date('d/m/Y', strtotime($cancel_date)); ?> a las <?php echo date('H:i', strtotime($cancel_date)); ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php else: ?>
+            <!-- Payment Status Box (only for active orders) -->
             <?php
             $payment_status_config = [
                 'pending' => ['icon' => '⏳', 'label' => 'Pago Pendiente', 'color' => '#FF9800', 'bg' => '#fff3e0'],
@@ -607,9 +632,10 @@ $status_config = [
                     </a>
                 <?php endif; ?>
             </div>
+            <?php endif; ?>
 
-            <!-- Tracking Info (if exists) -->
-            <?php if ($order['tracking_number']): ?>
+            <!-- Tracking Info (if exists and not cancelled) -->
+            <?php if ($order['tracking_number'] && $order['status'] !== 'cancelled'): ?>
             <div class="tracking-box">
                 <h3>🚚 Número de Seguimiento</h3>
                 <div class="tracking-number"><?php echo htmlspecialchars($order['tracking_number']); ?></div>
