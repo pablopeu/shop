@@ -77,11 +77,21 @@
             const deltaX = Math.abs(endX - clickStartX);
             const deltaY = Math.abs(endY - clickStartY);
 
+            // Check if user clicked on a link or button (allow navigation)
+            const clickedElement = e.target;
+            const isLink = clickedElement.tagName === 'A' || clickedElement.closest('a');
+            const isButton = clickedElement.tagName === 'BUTTON' || clickedElement.closest('button');
+
+            // If clicked on a link, don't interfere with navigation
+            if (isLink) {
+                return; // Let the browser handle the link click
+            }
+
             // Check if it's a click/tap (not a drag/scroll)
             // Click/tap: short duration, minimal movement
             if (clickDuration < 300 && deltaX < 10 && deltaY < 10) {
-                // Don't navigate if clicking on a link or button
-                if (e.target.closest('a, button')) {
+                // Don't navigate if clicking on navigation buttons
+                if (isButton) {
                     return;
                 }
 
@@ -90,8 +100,10 @@
                 goToNextSlide();
                 resetAutoPlay();
             } else if (deltaX > 50 && deltaX > deltaY) {
-                // Swipe gesture
-                e.preventDefault();
+                // Swipe gesture - don't prevent default if it was on a link
+                if (!isLink) {
+                    e.preventDefault();
+                }
 
                 if (endX < clickStartX) {
                     // Swipe left - next slide
