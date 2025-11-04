@@ -1096,8 +1096,47 @@ if (isset($_POST['change_currency'])) {
         }
 
         // Go to checkout
-        function goToCheckout() {
-            window.location.href = '/checkout.php';
+        async function goToCheckout() {
+            // Sync cart to PHP session first
+            try {
+                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+                if (cart.length === 0) {
+                    showToast('El carrito está vacío', 'error');
+                    return;
+                }
+
+                // Prepare cart data for API
+                const syncData = {
+                    cart: cart,
+                    coupon_code: cartData.coupon ? cartData.coupon.code : null
+                };
+
+                // Sync to session
+                const response = await fetch('/api/sync_cart.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(syncData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to sync cart');
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Redirect to checkout
+                    window.location.href = '/checkout.php';
+                } else {
+                    showToast('Error al procesar el carrito', 'error');
+                }
+            } catch (error) {
+                console.error('Error syncing cart:', error);
+                showToast('Error al procesar el carrito', 'error');
+            }
         }
 
         // Update cart count

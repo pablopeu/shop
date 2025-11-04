@@ -703,7 +703,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                 <span>Total:</span>
                 <span id="cart-total">$0.00</span>
             </div>
-            <a href="/checkout.php" class="btn" style="width: 100%; text-align: center;">Ir a Pagar</a>
+            <button onclick="goToCheckout()" class="btn" style="width: 100%; text-align: center; border: none; cursor: pointer;">Ir a Pagar</button>
         </div>
     </div>
 
@@ -867,6 +867,43 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
         function closeCartPanel() {
             document.getElementById('cart-panel').classList.remove('open');
             document.getElementById('cart-overlay').classList.remove('open');
+        }
+
+        // Go to checkout - sync cart first
+        async function goToCheckout() {
+            try {
+                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+                if (cart.length === 0) {
+                    alert('El carrito está vacío');
+                    return;
+                }
+
+                // Sync to session
+                const response = await fetch('/api/sync_cart.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ cart: cart })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to sync cart');
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Redirect to checkout
+                    window.location.href = '/checkout.php';
+                } else {
+                    alert('Error al procesar el carrito');
+                }
+            } catch (error) {
+                console.error('Error syncing cart:', error);
+                alert('Error al procesar el carrito');
+            }
         }
 
         // Update badge and render cart on page load
