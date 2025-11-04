@@ -691,53 +691,14 @@ $status_config = [
                 </p>
             </div>
 
-            <!-- Cancel Order (only for pending orders) -->
-            <?php if ($order['status'] === 'pending'): ?>
-            <div style="margin-top: 30px; text-align: center; padding: 20px; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                <p style="color: #666; margin-bottom: 15px;">
-                    ¿Deseas cancelar este pedido?
-                </p>
-                <button onclick="cancelOrder()" class="btn" style="background: #f44336; display: inline-block; width: auto; padding: 12px 30px;">
-                    ❌ Cancelar Pedido
-                </button>
+            <!-- Back to Home -->
+            <div style="margin-top: 30px; text-align: center;">
+                <a href="/" class="btn btn-primary" style="display: inline-block; text-decoration: none;">
+                    🏠 Volver al Inicio
+                </a>
             </div>
-            <?php endif; ?>
         <?php endif; ?>
     </div>
-
-    <script>
-        async function cancelOrder() {
-            if (!confirm('¿Estás seguro de que deseas cancelar este pedido? Esta acción no se puede deshacer.')) {
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/cancel_order.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        order_id: '<?php echo $order['id'] ?? ''; ?>',
-                        token: '<?php echo $token ?? ''; ?>'
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    alert('Tu pedido ha sido cancelado exitosamente');
-                    location.reload();
-                } else {
-                    alert('Error al cancelar el pedido: ' + (result.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error al cancelar el pedido. Por favor intenta de nuevo.');
-            }
-        }
-    </script>
 
     <!-- Mobile Menu -->
     <script src="/includes/mobile-menu.js"></script>

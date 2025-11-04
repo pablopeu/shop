@@ -521,11 +521,10 @@ $status_labels = [
                                                 👁️ Ver
                                             </button>
                                             <?php if ($order['status'] !== 'cancelled'): ?>
-                                                <a href="?action=cancel&id=<?php echo urlencode($order['id']); ?>"
-                                                   class="btn btn-danger btn-sm"
-                                                   onclick="return confirm('¿Cancelar esta orden? Se restaurará el stock.')">
+                                                <button onclick="showCancelModal('<?php echo $order['id']; ?>', '<?php echo $order['order_number']; ?>')"
+                                                        class="btn btn-danger btn-sm">
                                                     ❌ Cancelar
-                                                </a>
+                                                </button>
                                             <?php endif; ?>
                                         </div>
                                     </td>
@@ -547,6 +546,32 @@ $status_labels = [
             </div>
             <div id="modalOrderContent">
                 <!-- Content will be loaded via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Order Modal -->
+    <div id="cancelModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <span class="modal-close" onclick="closeCancelModal()">&times;</span>
+                <h2>⚠️ Cancelar Pedido</h2>
+            </div>
+            <div style="padding: 20px;">
+                <p style="margin-bottom: 20px; font-size: 16px; color: #555;">
+                    ¿Estás seguro de que deseas cancelar la orden <strong id="cancelOrderNumber"></strong>?
+                </p>
+                <p style="margin-bottom: 20px; color: #666; font-size: 14px;">
+                    Esta acción restaurará el stock de los productos.
+                </p>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button onclick="closeCancelModal()" class="btn btn-secondary">
+                        Cancelar
+                    </button>
+                    <a id="confirmCancelBtn" href="#" class="btn btn-danger">
+                        Confirmar Cancelación
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -644,6 +669,16 @@ $status_labels = [
             document.getElementById('orderModal').classList.remove('active');
         }
 
+        function showCancelModal(orderId, orderNumber) {
+            document.getElementById('cancelOrderNumber').textContent = orderNumber;
+            document.getElementById('confirmCancelBtn').href = '?action=cancel&id=' + encodeURIComponent(orderId);
+            document.getElementById('cancelModal').classList.add('active');
+        }
+
+        function closeCancelModal() {
+            document.getElementById('cancelModal').classList.remove('active');
+        }
+
         function formatPrice(price, currency) {
             const symbols = { 'ARS': '$', 'USD': 'U$D' };
             return (symbols[currency] || currency) + ' ' + price.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
@@ -653,6 +688,12 @@ $status_labels = [
         document.getElementById('orderModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeModal();
+            }
+        });
+
+        document.getElementById('cancelModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCancelModal();
             }
         });
     </script>
