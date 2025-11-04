@@ -94,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
 
         // Update config
         $config['enabled'] = isset($_POST['enabled']);
+        $config['auto_advance_time'] = intval($_POST['auto_advance_time'] ?? 5000);
         $config['slides'] = $slides;
 
         if (empty($error)) {
@@ -207,6 +208,15 @@ $visible_products = array_filter($all_products, function($product) {
                                <?php echo ($carousel_config['enabled'] ?? false) ? 'checked' : ''; ?>>
                         <label for="enabled">Mostrar Carrusel en la página principal</label>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="auto_advance_time">Tiempo de Auto-Avance (milisegundos)</label>
+                    <input type="number" id="auto_advance_time" name="auto_advance_time" min="1000" max="30000" step="500"
+                           value="<?php echo intval($carousel_config['auto_advance_time'] ?? 5000); ?>">
+                    <small style="color: #666; margin-top: 5px; display: block;">
+                        Tiempo en milisegundos entre slides. 1000ms = 1 segundo. Recomendado: 3000-7000ms
+                    </small>
                 </div>
 
                 <?php if (!empty($carousel_config['slides'])): ?>

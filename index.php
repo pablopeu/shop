@@ -214,6 +214,8 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             padding: 20px 40px;
             border-radius: 10px;
             max-width: 80%;
+            z-index: 5;
+            pointer-events: none;
         }
 
         .carousel-caption h2 {
@@ -1135,9 +1137,10 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             if (dots[currentSlideIndex]) dots[currentSlideIndex].classList.add('active');
         }
 
-        // Auto-advance carousel every 5 seconds
+        // Auto-advance carousel
         if (document.querySelector('.carousel-container')) {
-            setInterval(() => moveCarousel(1), 5000);
+            const autoAdvanceTime = <?php echo intval($carousel_config['auto_advance_time'] ?? 5000); ?>;
+            setInterval(() => moveCarousel(1), autoAdvanceTime);
         }
     </script>
 

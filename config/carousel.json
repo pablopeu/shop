@@ -1,4 +1,24 @@
 {
-  "enabled": false,
-  "slides": []
+    "enabled": true,
+    "auto_advance_time": 5000,
+    "slides": [
+        {
+            "image": "/images/carousel/690961d08f1c8_1762222544.jpg",
+            "title": "Cuchillo Parrillero",
+            "subtitle": "",
+            "link": "/producto.php?id=prod-6908131358142-3389e5aa"
+        },
+        {
+            "image": "/images/carousel/690961d08fa58_1762222544.jpg",
+            "title": "Cuchillo NeoCriollo",
+            "subtitle": "",
+            "link": "/producto.php?id=prod-6908bd32a5b61-73a08782"
+        },
+        {
+            "image": "/images/carousel/690961d090130_1762222544.jpg",
+            "title": "Cuchillo mamut",
+            "subtitle": "",
+            "link": "/producto.php?id=prod-6908c000e6695-512db4e6"
+        }
+    ]
 }
