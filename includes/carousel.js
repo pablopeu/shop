@@ -54,13 +54,27 @@
         // Add click listener to links for debugging
         allLinks.forEach((link, index) => {
             link.addEventListener('click', (e) => {
-                console.log(`[CAROUSEL] CLICK on link ${index}:`, link.href);
+                console.log(`[CAROUSEL] ✅ CLICK on link ${index}:`, link.href);
                 console.log('[CAROUSEL] Event:', e);
                 console.log('[CAROUSEL] Target:', e.target);
                 console.log('[CAROUSEL] CurrentTarget:', e.currentTarget);
                 // DO NOT prevent default - let it navigate
             });
         });
+
+        // Add global click listener on carousel container to see who captures clicks
+        carouselContainer.addEventListener('click', (e) => {
+            console.log('[CAROUSEL] 🖱️ CLICK detected on container!');
+            console.log('[CAROUSEL] Target:', e.target);
+            console.log('[CAROUSEL] Target className:', e.target.className);
+            console.log('[CAROUSEL] Target tagName:', e.target.tagName);
+            console.log('[CAROUSEL] Computed z-index:', window.getComputedStyle(e.target).zIndex);
+            console.log('[CAROUSEL] Computed pointer-events:', window.getComputedStyle(e.target).pointerEvents);
+
+            // Check if target is or is inside a link
+            const closestLink = e.target.closest('a');
+            console.log('[CAROUSEL] Closest link:', closestLink ? closestLink.href : 'NONE');
+        }, true); // Use capture phase
 
         // Only handle touch events for mobile swipe gestures
         carouselContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
