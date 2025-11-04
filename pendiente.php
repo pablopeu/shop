@@ -298,5 +298,11 @@ $site_config = read_json(__DIR__ . '/config/site.json');
             Contacto: <?php echo htmlspecialchars($site_config['contact_email'] ?? 'contacto@tienda.com'); ?>
         </p>
     </div>
+
+    <script>
+        // Clear cart from localStorage after order is created
+        localStorage.removeItem('cart');
+        console.log('Cart cleared from localStorage');
+    </script>
 </body>
 </html>

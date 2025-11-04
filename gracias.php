@@ -348,5 +348,11 @@ $active_theme = $theme_config['active_theme'] ?? 'minimal';
             También puedes rastrearlo en cualquier momento desde <a href="/track.php" style="color: #667eea;">aquí</a> usando tu email y número de pedido.
         </p>
     </div>
+
+    <script>
+        // Clear cart from localStorage after successful purchase
+        localStorage.removeItem('cart');
+        console.log('Cart cleared from localStorage');
+    </script>
 </body>
 </html>
