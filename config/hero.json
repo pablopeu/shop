@@ -1,8 +1,7 @@
 {
     "enabled": true,
-    "image": "",
+    "image": "/images/hero/69096198b7c66_1762222488.jpg",
     "title": "Bienvenido a nuestra tienda",
     "subtitle": "Encuentra los mejores productos al mejor precio",
-    "button_text": "Ver productos",
-    "button_link": "#productos"
+    "background_color": "#fa0057"
 }

@@ -95,6 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
         // Update config
         $config['enabled'] = isset($_POST['enabled']);
         $config['alignment'] = sanitize_input($_POST['alignment'] ?? 'center');
+        $config['auto_advance_time'] = intval($_POST['auto_advance_time'] ?? 5000);
         $config['slides'] = $slides;
 
         if (empty($error)) {
@@ -118,6 +119,17 @@ if (isset($_GET['msg'])) {
 $carousel_config = read_json(__DIR__ . '/../config/carousel.json');
 $csrf_token = generate_csrf_token();
 $user = get_logged_user();
+
+// Load all visible products for the link selector
+require_once __DIR__ . '/../includes/products.php';
+$all_products = get_all_products();
+$visible_products = array_filter($all_products, function($product) {
+    $hide_when_no_stock = $product['hide_when_out_of_stock'] ?? false;
+    if ($hide_when_no_stock && $product['stock'] <= 0) {
+        return false;
+    }
+    return true;
+});
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -156,7 +168,8 @@ $user = get_logged_user();
         .btn-delete-slide { position: absolute; top: 5px; right: 5px; background: #dc3545; color: white; border: none; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
         .btn-delete-slide:hover { background: #c82333; transform: scale(1.1); }
         .slide-fields { display: flex; flex-direction: column; gap: 10px; }
-        .slide-fields input, .slide-fields textarea { padding: 8px 10px; font-size: 13px; }
+        .slide-fields input, .slide-fields textarea, .slide-fields select { padding: 8px 10px; font-size: 13px; border: 2px solid #e0e0e0; border-radius: 6px; transition: border-color 0.3s; }
+        .slide-fields input:focus, .slide-fields textarea:focus, .slide-fields select:focus { outline: none; border-color: #667eea; }
 
         .file-input-wrapper { position: relative; display: inline-block; width: 100%; }
         .file-input-wrapper input[type="file"] { width: 100%; padding: 12px; border: 2px dashed #e0e0e0; border-radius: 6px; cursor: pointer; transition: all 0.3s; }
@@ -210,6 +223,15 @@ $user = get_logged_user();
                     </small>
                 </div>
 
+                <div class="form-group">
+                    <label for="auto_advance_time">Tiempo de Auto-Avance (milisegundos)</label>
+                    <input type="number" id="auto_advance_time" name="auto_advance_time" min="1000" max="30000" step="500"
+                           value="<?php echo intval($carousel_config['auto_advance_time'] ?? 5000); ?>">
+                    <small style="color: #666; margin-top: 5px; display: block;">
+                        Tiempo en milisegundos entre slides. 1000ms = 1 segundo. Recomendado: 3000-7000ms
+                    </small>
+                </div>
+
                 <?php if (!empty($carousel_config['slides'])): ?>
                     <div class="form-group">
                         <label>Slides Actuales (arrastra para reordenar)</label>
@@ -230,9 +252,19 @@ $user = get_logged_user();
                                                    value="<?php echo htmlspecialchars($slide['title'] ?? ''); ?>">
                                             <textarea name="slide_subtitles[<?php echo $index; ?>]"
                                                       placeholder="Subtítulo (opcional)"><?php echo htmlspecialchars($slide['subtitle'] ?? ''); ?></textarea>
-                                            <input type="text" name="slide_links[<?php echo $index; ?>]"
-                                                   placeholder="Enlace (opcional, ej: /productos)"
-                                                   value="<?php echo htmlspecialchars($slide['link'] ?? ''); ?>">
+                                            <select name="slide_links[<?php echo $index; ?>]">
+                                                <option value="">-- Sin enlace --</option>
+                                                <?php foreach ($visible_products as $product): ?>
+                                                    <?php
+                                                        $product_link = '/producto.php?id=' . $product['id'];
+                                                        $selected = ($slide['link'] ?? '') === $product_link ? 'selected' : '';
+                                                    ?>
+                                                    <option value="<?php echo htmlspecialchars($product_link); ?>" <?php echo $selected; ?>>
+                                                        <?php echo htmlspecialchars($product['name']); ?>
+                                                        (Stock: <?php echo $product['stock']; ?>)
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>

@@ -149,7 +149,6 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
         /* Hero Section */
         .hero {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             text-align: center;
             padding: 80px 20px;
@@ -173,8 +172,136 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
+            background: rgba(0, 0, 0, 0.3);
             z-index: 1;
+        }
+
+        /* Carousel Section */
+        .carousel-section {
+            width: 100%;
+            max-height: 500px;
+            overflow: hidden;
+        }
+
+        .carousel-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            overflow: hidden;
+        }
+
+        .carousel-slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 100%;
+            transition: left 0.6s ease-in-out;
+            display: block;
+        }
+
+        .carousel-slide.active {
+            left: 0;
+        }
+
+        .carousel-slide.prev {
+            left: -100%;
+        }
+
+        .carousel-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .carousel-slide-link {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .carousel-slide-link:hover .carousel-slide img {
+            transform: scale(1.02);
+            transition: transform 0.3s ease;
+        }
+
+        .carousel-caption {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: white;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .carousel-caption h2 {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+        }
+
+        .carousel-caption p {
+            font-size: 16px;
+            margin-top: 5px;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
+        }
+
+        .carousel-control {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 24px;
+            z-index: 10;
+            transition: background 0.3s;
+        }
+
+        .carousel-control:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .carousel-control.prev {
+            left: 20px;
+        }
+
+        .carousel-control.next {
+            right: 20px;
+        }
+
+        .carousel-dots {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .carousel-dots .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .carousel-dots .dot.active {
+            background: white;
+        }
+
+        .carousel-dots .dot:hover {
+            background: rgba(255, 255, 255, 0.8);
         }
 
         .hero h1 {
@@ -609,14 +736,65 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <?php if ($hero_config['enabled']): ?>
+    <!-- Carousel Section (priority over hero) -->
+    <?php
+    $carousel_config = read_json(__DIR__ . '/config/carousel.json');
+    $show_carousel = ($carousel_config['enabled'] ?? false) && !empty($carousel_config['slides']);
+    $show_hero = ($hero_config['enabled'] ?? false) && !$show_carousel; // Hero only if carousel is disabled
+    ?>
+
+    <?php if ($show_carousel): ?>
+    <section class="carousel-section">
+        <div class="carousel-container">
+            <?php foreach ($carousel_config['slides'] as $index => $slide): ?>
+            <div class="carousel-slide <?php echo $index === 0 ? 'active' : ($index === count($carousel_config['slides']) - 1 ? 'prev' : ''); ?>">
+                <?php if (!empty($slide['link'])): ?>
+                <a href="<?php echo htmlspecialchars($slide['link']); ?>" class="carousel-slide-link">
+                    <img src="<?php echo htmlspecialchars($slide['image']); ?>" alt="<?php echo htmlspecialchars($slide['title']); ?>">
+                    <div class="carousel-caption">
+                        <h2><?php echo htmlspecialchars($slide['title']); ?></h2>
+                        <?php if (!empty($slide['subtitle'])): ?>
+                            <p><?php echo htmlspecialchars($slide['subtitle']); ?></p>
+                        <?php endif; ?>
+                    </div>
+                </a>
+                <?php else: ?>
+                <div class="carousel-slide-link" style="cursor: default;">
+                    <img src="<?php echo htmlspecialchars($slide['image']); ?>" alt="<?php echo htmlspecialchars($slide['title']); ?>">
+                    <div class="carousel-caption">
+                        <h2><?php echo htmlspecialchars($slide['title']); ?></h2>
+                        <?php if (!empty($slide['subtitle'])): ?>
+                            <p><?php echo htmlspecialchars($slide['subtitle']); ?></p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+
+            <?php if (count($carousel_config['slides']) > 1): ?>
+            <button class="carousel-control prev" onclick="moveCarousel(-1)">&#10094;</button>
+            <button class="carousel-control next" onclick="moveCarousel(1)">&#10095;</button>
+            <div class="carousel-dots">
+                <?php foreach ($carousel_config['slides'] as $index => $slide): ?>
+                <span class="dot <?php echo $index === 0 ? 'active' : ''; ?>" onclick="currentSlide(<?php echo $index; ?>)"></span>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+        </div>
+    </section>
+    <?php elseif ($show_hero): ?>
+    <!-- Hero Section (only if carousel is disabled) -->
     <section class="hero <?php echo !empty($hero_config['image']) ? 'has-image' : ''; ?>"
-             <?php if (!empty($hero_config['image'])): ?>
-             style="background-image: url('<?php echo htmlspecialchars($hero_config['image']); ?>');"
-             <?php endif; ?>>
+             style="<?php if (!empty($hero_config['image'])): ?>
+                        background-image: url('<?php echo htmlspecialchars($hero_config['image']); ?>');
+                    <?php else: ?>
+                        background: <?php echo htmlspecialchars($hero_config['background_color'] ?? '#667eea'); ?>;
+                    <?php endif; ?>">
         <h1><?php echo htmlspecialchars($hero_config['title']); ?></h1>
-        <p><?php echo htmlspecialchars($hero_config['subtitle']); ?></p>
+        <?php if (!empty($hero_config['subtitle'])): ?>
+            <p><?php echo htmlspecialchars($hero_config['subtitle']); ?></p>
+        <?php endif; ?>
     </section>
     <?php endif; ?>
 
@@ -954,6 +1132,95 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             updateCartBadge();
             renderCartPanel();
         });
+    </script>
+
+    <!-- Carousel Script -->
+    <script>
+        let currentSlideIndex = 0;
+
+        function moveCarousel(direction) {
+            const slides = document.querySelectorAll('.carousel-slide');
+            const dots = document.querySelectorAll('.carousel-dots .dot');
+
+            if (slides.length === 0) return;
+
+            // Calculate new index
+            const prevIndex = currentSlideIndex;
+            currentSlideIndex += direction;
+            if (currentSlideIndex >= slides.length) currentSlideIndex = 0;
+            if (currentSlideIndex < 0) currentSlideIndex = slides.length - 1;
+
+            // Remove all positioning classes
+            slides.forEach(slide => {
+                slide.classList.remove('active', 'prev');
+            });
+
+            // Set new positions
+            if (direction > 0) {
+                // Moving forward
+                slides[prevIndex].classList.add('prev');
+                slides[currentSlideIndex].classList.add('active');
+            } else {
+                // Moving backward - need to position the new slide on the left first
+                slides[currentSlideIndex].style.transition = 'none';
+                slides[currentSlideIndex].style.left = '-100%';
+
+                setTimeout(() => {
+                    slides[currentSlideIndex].style.transition = '';
+                    slides[prevIndex].style.left = '100%';
+                    slides[currentSlideIndex].classList.add('active');
+                }, 10);
+            }
+
+            // Update dots
+            if (dots.length > 0) {
+                dots.forEach(dot => dot.classList.remove('active'));
+                if (dots[currentSlideIndex]) dots[currentSlideIndex].classList.add('active');
+            }
+        }
+
+        function currentSlide(index) {
+            const slides = document.querySelectorAll('.carousel-slide');
+            const dots = document.querySelectorAll('.carousel-dots .dot');
+
+            if (slides.length === 0 || index === currentSlideIndex) return;
+
+            const direction = index > currentSlideIndex ? 1 : -1;
+            const prevIndex = currentSlideIndex;
+            currentSlideIndex = index;
+
+            // Remove all positioning classes
+            slides.forEach(slide => {
+                slide.classList.remove('active', 'prev');
+            });
+
+            // Set new positions
+            if (direction > 0) {
+                slides[prevIndex].classList.add('prev');
+                slides[currentSlideIndex].classList.add('active');
+            } else {
+                slides[currentSlideIndex].style.transition = 'none';
+                slides[currentSlideIndex].style.left = '-100%';
+
+                setTimeout(() => {
+                    slides[currentSlideIndex].style.transition = '';
+                    slides[prevIndex].style.left = '100%';
+                    slides[currentSlideIndex].classList.add('active');
+                }, 10);
+            }
+
+            // Update dots
+            if (dots.length > 0) {
+                dots.forEach(dot => dot.classList.remove('active'));
+                if (dots[currentSlideIndex]) dots[currentSlideIndex].classList.add('active');
+            }
+        }
+
+        // Auto-advance carousel
+        if (document.querySelector('.carousel-container')) {
+            const autoAdvanceTime = <?php echo intval($carousel_config['auto_advance_time'] ?? 5000); ?>;
+            setInterval(() => moveCarousel(1), autoAdvanceTime);
+        }
     </script>
 
     <!-- Cart Validator -->
