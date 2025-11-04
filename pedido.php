@@ -501,18 +501,29 @@ $status_config = [
                     $history = $order['status_history'];
                     $last_index = count($history) - 1;
 
-                    // Show all history items
-                    $statuses_to_show = [];
+                    // Get unique statuses (keep only the LAST occurrence of each)
+                    $unique_statuses = [];
                     foreach ($history as $idx => $item) {
                         if (isset($status_config[$item['status']])) {
-                            $is_last = ($idx === $last_index);
-                            $statuses_to_show[] = [
+                            // Overwrite previous occurrence with the latest one
+                            $unique_statuses[$item['status']] = [
                                 'status' => $item['status'],
                                 'date' => $item['date'],
-                                'is_current' => $is_last,
-                                'is_completed' => !$is_last
+                                'index' => $idx
                             ];
                         }
+                    }
+
+                    // Convert to array and mark current/completed
+                    $statuses_to_show = [];
+                    foreach ($unique_statuses as $status_data) {
+                        $is_last = ($status_data['index'] === $last_index);
+                        $statuses_to_show[] = [
+                            'status' => $status_data['status'],
+                            'date' => $status_data['date'],
+                            'is_current' => $is_last,
+                            'is_completed' => !$is_last
+                        ];
                     }
 
                     // Add next step if order is active (not cancelled/delivered)
