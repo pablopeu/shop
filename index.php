@@ -229,6 +229,26 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
         }
 
+        .carousel-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 30px;
+            background: white;
+            color: #333;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s;
+            pointer-events: auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .carousel-btn:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+
         .carousel-control {
             position: absolute;
             top: 50%;
@@ -731,6 +751,9 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                     <h2><?php echo htmlspecialchars($slide['title']); ?></h2>
                     <?php if (!empty($slide['subtitle'])): ?>
                         <p><?php echo htmlspecialchars($slide['subtitle']); ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($slide['link'])): ?>
+                        <a href="<?php echo htmlspecialchars($slide['link']); ?>" class="carousel-btn">Ver Producto</a>
                     <?php endif; ?>
                 </div>
             </div>
