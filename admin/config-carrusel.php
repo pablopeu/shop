@@ -94,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
 
         // Update config
         $config['enabled'] = isset($_POST['enabled']);
+        $config['alignment'] = sanitize_input($_POST['alignment'] ?? 'center');
         $config['auto_advance_time'] = intval($_POST['auto_advance_time'] ?? 5000);
         $config['slides'] = $slides;
 
@@ -208,6 +209,18 @@ $visible_products = array_filter($all_products, function($product) {
                                <?php echo ($carousel_config['enabled'] ?? false) ? 'checked' : ''; ?>>
                         <label for="enabled">Mostrar Carrusel en la página principal</label>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="alignment">Alineación del Carrusel</label>
+                    <select id="alignment" name="alignment" style="width: 100%; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                        <option value="center" <?php echo ($carousel_config['alignment'] ?? 'center') === 'center' ? 'selected' : ''; ?>>Centrado</option>
+                        <option value="left" <?php echo ($carousel_config['alignment'] ?? 'center') === 'left' ? 'selected' : ''; ?>>Izquierda (con margen)</option>
+                        <option value="right" <?php echo ($carousel_config['alignment'] ?? 'center') === 'right' ? 'selected' : ''; ?>>Derecha (con margen)</option>
+                    </select>
+                    <small style="color: #666; margin-top: 5px; display: block;">
+                        Selecciona cómo se alinea el carrusel en la página.
+                    </small>
                 </div>
 
                 <div class="form-group">

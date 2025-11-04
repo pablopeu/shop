@@ -54,6 +54,9 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
     <!-- Theme CSS -->
     <link rel="stylesheet" href="/themes/<?php echo $active_theme; ?>/theme.css">
 
+    <!-- Carousel CSS -->
+    <link rel="stylesheet" href="/includes/carousel.css">
+
     <style>
         * {
             margin: 0;
@@ -795,6 +798,9 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
     </section>
     <?php endif; ?>
 
+    <!-- Carousel Section -->
+    <?php include __DIR__ . '/includes/carousel.php'; ?>
+
     <!-- Products Section -->
     <div class="container">
         <?php if ($products_heading_config['enabled'] ?? true): ?>
@@ -1219,6 +1225,9 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
     <!-- Cart Validator -->
     <script src="/includes/cart-validator.js"></script>
+
+    <!-- Carousel JS -->
+    <script src="/includes/carousel.js"></script>
 
     <!-- Mobile Menu -->
     <script src="/includes/mobile-menu.js"></script>

@@ -1,5 +1,6 @@
 {
     "enabled": true,
+    "alignment": "center",
     "auto_advance_time": 5000,
     "slides": [
         {
