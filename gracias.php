@@ -344,7 +344,8 @@ $active_theme = $theme_config['active_theme'] ?? 'minimal';
         </div>
 
         <p style="margin-top: 30px; color: #999; font-size: 14px;">
-            Guarda este enlace para hacer seguimiento de tu pedido
+            Guarda este enlace para hacer seguimiento de tu pedido.<br>
+            También puedes rastrearlo en cualquier momento desde <a href="/track.php" style="color: #667eea;">aquí</a> usando tu email y número de pedido.
         </p>
     </div>
 </body>

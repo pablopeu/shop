@@ -794,17 +794,18 @@ if (isset($_POST['change_currency'])) {
             updateCurrencyButtons(effectiveCurrency);
 
             let html = '';
+            let validItems = [];
 
             cartData.items.forEach(item => {
                 const productId = item.product_id || item.id;
-                const product = products.find(p => p.id === productId) || {
-                    name: 'Producto no encontrado',
-                    price_ars: 0,
-                    price_usd: 0,
-                    stock: 0,
-                    images: [],
-                    thumbnail: ''
-                };
+                const product = products.find(p => p.id === productId);
+
+                if (!product) {
+                    console.warn('Product not found:', productId);
+                    return; // Skip invalid products
+                }
+
+                validItems.push(item);
 
                 console.log('Product:', product.name, 'Thumbnail:', product.thumbnail, 'Images:', product.images);
 
@@ -859,6 +860,21 @@ if (isset($_POST['change_currency'])) {
                     </div>
                 `;
             });
+
+            // Clean invalid items from localStorage
+            if (validItems.length !== cartData.items.length) {
+                console.warn('Cleaning invalid items from cart');
+                cartData.items = validItems;
+                saveCart();
+            }
+
+            // Check if we have any valid items to display
+            if (html === '' || validItems.length === 0) {
+                document.getElementById('cartItemsContainer').innerHTML = '<p>Tu carrito está vacío</p>';
+                document.getElementById('cartSummary').style.display = 'none';
+                updateCartCount();
+                return;
+            }
 
             document.getElementById('cartItemsContainer').innerHTML = html;
             document.getElementById('cartSummary').style.display = 'block';
@@ -1118,6 +1134,7 @@ if (isset($_POST['change_currency'])) {
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'same-origin',
                     body: JSON.stringify(syncData)
                 });
 

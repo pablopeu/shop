@@ -516,6 +516,33 @@ $status_config = [
                 </div>
             </div>
 
+            <!-- Payment Status Box -->
+            <?php
+            $payment_status_config = [
+                'pending' => ['icon' => '⏳', 'label' => 'Pago Pendiente', 'color' => '#FF9800', 'bg' => '#fff3e0'],
+                'approved' => ['icon' => '✅', 'label' => 'Pago Aprobado', 'color' => '#4CAF50', 'bg' => '#e8f5e9'],
+                'rejected' => ['icon' => '❌', 'label' => 'Pago Rechazado', 'color' => '#f44336', 'bg' => '#ffebee'],
+                'cancelled' => ['icon' => '🚫', 'label' => 'Pago Cancelado', 'color' => '#9e9e9e', 'bg' => '#f5f5f5']
+            ];
+            $payment_status = $order['payment_status'] ?? 'pending';
+            $payment_info = $payment_status_config[$payment_status] ?? $payment_status_config['pending'];
+            ?>
+            <div style="background: <?php echo $payment_info['bg']; ?>; border-left: 4px solid <?php echo $payment_info['color']; ?>; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                <h3 style="color: <?php echo $payment_info['color']; ?>; margin-bottom: 10px;">
+                    <?php echo $payment_info['icon']; ?> Estado del Pago
+                </h3>
+                <div style="font-size: 18px; font-weight: 600; color: <?php echo $payment_info['color']; ?>; margin-bottom: 10px;">
+                    <?php echo $payment_info['label']; ?>
+                </div>
+                <?php if ($payment_status === 'pending' && $order['payment_link']): ?>
+                    <a href="<?php echo htmlspecialchars($order['payment_link']); ?>"
+                       class="btn btn-primary"
+                       style="display: inline-block; margin-top: 10px;">
+                        💳 Completar Pago
+                    </a>
+                <?php endif; ?>
+            </div>
+
             <!-- Tracking Info (if exists) -->
             <?php if ($order['tracking_number']): ?>
             <div class="tracking-box">
@@ -609,8 +636,55 @@ $status_config = [
                     Teléfono: <?php echo htmlspecialchars($site_config['contact_phone'] ?? '+54 9 11 1234-5678'); ?>
                 </p>
             </div>
+
+            <!-- Cancel Order (only for pending orders) -->
+            <?php if ($order['status'] === 'pending'): ?>
+            <div style="margin-top: 30px; text-align: center; padding: 20px; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                <p style="color: #666; margin-bottom: 15px;">
+                    ¿Deseas cancelar este pedido?
+                </p>
+                <button onclick="cancelOrder()" class="btn" style="background: #f44336; display: inline-block; width: auto; padding: 12px 30px;">
+                    ❌ Cancelar Pedido
+                </button>
+            </div>
+            <?php endif; ?>
         <?php endif; ?>
     </div>
+
+    <script>
+        async function cancelOrder() {
+            if (!confirm('¿Estás seguro de que deseas cancelar este pedido? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/cancel_order.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        order_id: '<?php echo $order['id'] ?? ''; ?>',
+                        token: '<?php echo $token ?? ''; ?>'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Tu pedido ha sido cancelado exitosamente');
+                    location.reload();
+                } else {
+                    alert('Error al cancelar el pedido: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cancelar el pedido. Por favor intenta de nuevo.');
+            }
+        }
+    </script>
+
     <!-- Mobile Menu -->
     <script src="/includes/mobile-menu.js"></script>
 </body>

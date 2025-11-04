@@ -53,6 +53,9 @@ if (isset($data['coupon_code']) && !empty($data['coupon_code'])) {
     $_SESSION['coupon_code'] = sanitize_input($data['coupon_code']);
 }
 
+// Force session write and close to ensure data is saved
+session_write_close();
+
 echo json_encode([
     'success' => true,
     'items' => count($cart),

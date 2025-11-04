@@ -5,7 +5,7 @@
     "description": "sarasa",
     "price_ars": 0,
     "price_usd": 350,
-    "stock": 2,
+    "stock": 1,
     "stock_alert": 0,
     "active": true,
     "seo": {
@@ -22,5 +22,5 @@
     ],
     "thumbnail": "/images/products/prod-6908bb22b6b1c-0f16700a/6908bb22b94f6_1762179874.jpg",
     "created_at": "2025-11-03T14:24:34+00:00",
-    "updated_at": "2025-11-04T01:00:18+00:00"
+    "updated_at": "2025-11-04T01:17:03+00:00"
 }

@@ -587,6 +587,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                 <a href="/">Inicio</a>
                 <a href="/buscar.php">Buscar</a>
                 <a href="/favoritos.php">Favoritos</a>
+                <a href="/track.php">📦 Rastrear</a>
                 <a href="#" class="cart-link" onclick="openCartPanel(); return false;">
                     🛒 Carrito
                     <span class="cart-badge hidden" id="cart-count">0</span>
@@ -760,6 +761,9 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             const footer = document.getElementById('cart-panel-footer');
             const totalEl = document.getElementById('cart-total');
 
+            console.log('Cart from localStorage:', cart);
+            console.log('Products array:', products);
+
             if (cart.length === 0) {
                 body.innerHTML = '<div class="cart-empty">Tu carrito está vacío</div>';
                 footer.style.display = 'none';
@@ -770,10 +774,18 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             let totalUSD = 0;
             let allProductsUSD = true;
             let html = '';
+            let validCart = [];
 
             cart.forEach(item => {
                 const product = products.find(p => p.id === item.product_id);
-                if (!product) return;
+                console.log('Looking for product:', item.product_id, 'Found:', product);
+                if (!product) {
+                    console.warn('Product not found:', item.product_id);
+                    return;
+                }
+
+                // Add to valid cart
+                validCart.push(item);
 
                 const priceARS = parseFloat(product.price_ars) || 0;
                 const priceUSD = parseFloat(product.price_usd) || 0;
@@ -821,6 +833,20 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                     </div>
                 `;
             });
+
+            // Clean invalid items from localStorage
+            if (validCart.length !== cart.length) {
+                console.warn('Cleaning invalid items from cart');
+                localStorage.setItem('cart', JSON.stringify(validCart));
+                updateCartBadge();
+            }
+
+            // Check if we have any valid items to display
+            if (html === '' || validCart.length === 0) {
+                body.innerHTML = '<div class="cart-empty">Tu carrito está vacío</div>';
+                footer.style.display = 'none';
+                return;
+            }
 
             body.innerHTML = html;
 
@@ -885,6 +911,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'same-origin',
                     body: JSON.stringify({ cart: cart })
                 });
 
