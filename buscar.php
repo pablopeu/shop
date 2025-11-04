@@ -46,6 +46,16 @@ if ($in_stock_only) {
 // Perform search
 $results = search_products($query, $filters);
 
+// Filter out products that are out of stock and should be hidden
+$results = array_filter($results, function($product) {
+    // Show product if it has stock OR if hide_when_out_of_stock is not set/false
+    $hide_when_no_stock = $product['hide_when_out_of_stock'] ?? false;
+    if ($hide_when_no_stock && $product['stock'] <= 0) {
+        return false; // Hide this product
+    }
+    return true; // Show this product
+});
+
 // Get site configuration
 $site_config = read_json(__DIR__ . '/config/site.json');
 $currency_config = read_json(__DIR__ . '/config/currency.json');

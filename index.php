@@ -21,6 +21,16 @@ session_start();
 // Get all active products
 $products = get_all_products(true);
 
+// Filter out products that are out of stock and should be hidden
+$products = array_filter($products, function($product) {
+    // Show product if it has stock OR if hide_when_out_of_stock is not set/false
+    $hide_when_no_stock = $product['hide_when_out_of_stock'] ?? false;
+    if ($hide_when_no_stock && $product['stock'] <= 0) {
+        return false; // Hide this product
+    }
+    return true; // Show this product
+});
+
 // Get site configuration
 $site_config = read_json(__DIR__ . '/config/site.json');
 $hero_config = read_json(__DIR__ . '/config/hero.json');

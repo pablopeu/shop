@@ -78,6 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
             'stock' => intval($_POST['stock'] ?? 0),
             'stock_alert' => intval($_POST['stock_alert'] ?? 5),
             'active' => isset($_POST['active']) ? true : false,
+            'hide_when_out_of_stock' => isset($_POST['hide_when_out_of_stock']) ? true : false,
             'thumbnail' => sanitize_input($_POST['thumbnail'] ?? ''),
             'seo' => [
                 'title' => sanitize_input($_POST['seo_title'] ?? ''),
@@ -603,6 +604,14 @@ $csrf_token = generate_csrf_token();
                                 <input type="checkbox" id="active" name="active"
                                        <?php echo (!isset($edit_product) || $edit_product['active']) ? 'checked' : ''; ?>>
                                 <label for="active">Producto Activo (visible en el sitio)</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="hide_when_out_of_stock" name="hide_when_out_of_stock"
+                                       <?php echo ($edit_product['hide_when_out_of_stock'] ?? false) ? 'checked' : ''; ?>>
+                                <label for="hide_when_out_of_stock">Ocultar en galería cuando no hay stock</label>
                             </div>
                         </div>
 

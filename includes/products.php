@@ -141,6 +141,7 @@ function create_product($data) {
         'rating_avg' => 0,
         'rating_count' => 0,
         'active' => isset($data['active']) ? (bool)$data['active'] : true,
+        'hide_when_out_of_stock' => isset($data['hide_when_out_of_stock']) ? (bool)$data['hide_when_out_of_stock'] : false,
         'order' => $max_order + 1,
         'created_at' => get_timestamp()
     ];
@@ -156,6 +157,7 @@ function create_product($data) {
         'stock' => intval($data['stock']),
         'stock_alert' => intval($data['stock_alert'] ?? 5),
         'active' => isset($data['active']) ? (bool)$data['active'] : true,
+        'hide_when_out_of_stock' => isset($data['hide_when_out_of_stock']) ? (bool)$data['hide_when_out_of_stock'] : false,
         'seo' => [
             'title' => sanitize_input($data['seo']['title'] ?? $data['seo_title'] ?? $data['name'] . ' - Mi Tienda'),
             'description' => sanitize_input($data['seo']['description'] ?? $data['seo_description'] ?? ''),
