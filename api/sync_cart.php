@@ -30,23 +30,30 @@ if (!isset($data['cart']) || !is_array($data['cart'])) {
     exit;
 }
 
-// Validate cart items
+// Validate cart items (keep array format for checkout)
 $cart = [];
 foreach ($data['cart'] as $item) {
     if (!isset($item['product_id']) || !isset($item['quantity'])) {
         continue;
     }
 
-    $product_id = sanitize_input($item['product_id']);
     $quantity = intval($item['quantity']);
 
+    // Only add items with quantity > 0
     if ($quantity > 0) {
-        $cart[$product_id] = $quantity;
+        $cart[] = [
+            'product_id' => sanitize_input($item['product_id']),
+            'quantity' => $quantity
+        ];
     }
 }
 
-// Save to session
-$_SESSION['cart'] = $cart;
+// Save to session - if empty, clear the cart
+if (empty($cart)) {
+    unset($_SESSION['cart']);
+} else {
+    $_SESSION['cart'] = $cart;
+}
 
 // Also save coupon if present
 if (isset($data['coupon_code']) && !empty($data['coupon_code'])) {

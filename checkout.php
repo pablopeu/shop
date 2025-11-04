@@ -19,11 +19,35 @@ if (is_maintenance_mode()) {
 // Start session
 session_start();
 
-// Check if cart exists
+// IMPORTANT: Always check cart in session
+// If user deleted items in frontend, session might have old data
+// The sync should happen via goToCheckout() in carrito.php
+// But we need to validate the cart is actually valid
+
+// Check if cart exists in session
 if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
     header('Location: /carrito.php?error=empty');
     exit;
 }
+
+// Re-validate cart items exist and have stock
+$valid_items = [];
+foreach ($_SESSION['cart'] as $item) {
+    $product = get_product_by_id($item['product_id']);
+    if ($product && $product['stock'] > 0) {
+        $valid_items[] = $item;
+    }
+}
+
+// If no valid items remain, redirect back
+if (empty($valid_items)) {
+    unset($_SESSION['cart']);
+    header('Location: /carrito.php?error=empty');
+    exit;
+}
+
+// Update session with only valid items
+$_SESSION['cart'] = $valid_items;
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/config/site.json');
