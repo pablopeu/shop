@@ -35,6 +35,12 @@ if (isset($_POST['change_currency'])) {
     }
 }
 
+// Check for messages
+$cart_message = '';
+if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
+    $cart_message = 'Tu carrito ha expirado por inactividad (4 horas). Por favor, agrega los productos nuevamente.';
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -538,6 +544,12 @@ if (isset($_POST['change_currency'])) {
         </div>
     </header>
 
+    <?php if ($cart_message): ?>
+    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px auto; max-width: 1200px; border-radius: 4px;">
+        <strong>⚠️ Aviso:</strong> <?php echo htmlspecialchars($cart_message); ?>
+    </div>
+    <?php endif; ?>
+
     <!-- Main Content -->
     <div class="container">
         <h1>🛒 Carrito de Compras</h1>
@@ -602,6 +614,30 @@ if (isset($_POST['change_currency'])) {
             coupon: null,
             currency: CURRENCY
         };
+
+        // Check if cart has expired (after 4 hours of inactivity)
+        function checkCartExpiration() {
+            const EXPIRATION_TIME = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+            const timestamp = localStorage.getItem('cart_timestamp');
+
+            if (timestamp) {
+                const elapsed = Date.now() - parseInt(timestamp);
+                if (elapsed > EXPIRATION_TIME) {
+                    // Cart expired, clear it
+                    localStorage.removeItem('cart');
+                    localStorage.removeItem('cart_timestamp');
+                    localStorage.removeItem('applied_coupon');
+                    console.log('Cart expired and cleared after 4 hours of inactivity');
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Check cart expiration on page load
+        if (checkCartExpiration()) {
+            window.location.href = '/carrito.php?msg=expired';
+        }
 
         // Format product price intelligently
         function formatProductPrice(product, currency) {
@@ -913,6 +949,7 @@ if (isset($_POST['change_currency'])) {
         // Save cart to localStorage
         function saveCart() {
             localStorage.setItem('cart', JSON.stringify(cartData.items));
+            localStorage.setItem('cart_timestamp', Date.now().toString());
         }
 
         // Calculate totals

@@ -731,7 +731,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                 <span>Total:</span>
                 <span id="cart-total">$0.00</span>
             </div>
-            <button onclick="goToCheckout()" class="btn" style="width: 100%; text-align: center; border: none; cursor: pointer;">Ir a Pagar</button>
+            <button onclick="goToCheckout()" class="btn" style="width: 100%; text-align: center; border: none; cursor: pointer;">Ver Carrito Completo</button>
         </div>
     </div>
 
@@ -758,8 +758,8 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                 });
             }
 
-            // Save to localStorage
-            localStorage.setItem('cart', JSON.stringify(cart));
+            // Save to localStorage with timestamp
+            saveCart(cart);
 
             // Update UI
             updateCartBadge();
@@ -887,6 +887,30 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             footer.style.display = 'block';
         }
 
+        // Save cart with timestamp
+        function saveCart(cart) {
+            localStorage.setItem('cart', JSON.stringify(cart));
+            localStorage.setItem('cart_timestamp', Date.now().toString());
+        }
+
+        // Check if cart has expired (after 4 hours of inactivity)
+        function checkCartExpiration() {
+            const EXPIRATION_TIME = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+            const timestamp = localStorage.getItem('cart_timestamp');
+
+            if (timestamp) {
+                const elapsed = Date.now() - parseInt(timestamp);
+                if (elapsed > EXPIRATION_TIME) {
+                    // Cart expired, clear it
+                    localStorage.removeItem('cart');
+                    localStorage.removeItem('cart_timestamp');
+                    console.log('Cart expired and cleared after 4 hours of inactivity');
+                    return true;
+                }
+            }
+            return false;
+        }
+
         function updateQuantity(productId, change) {
             let cart = JSON.parse(localStorage.getItem('cart') || '[]');
             const item = cart.find(i => i.product_id === productId);
@@ -898,7 +922,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                 }
             }
 
-            localStorage.setItem('cart', JSON.stringify(cart));
+            saveCart(cart);
             updateCartBadge();
             renderCartPanel();
         }
@@ -906,7 +930,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
         function removeFromCart(productId) {
             let cart = JSON.parse(localStorage.getItem('cart') || '[]');
             cart = cart.filter(i => i.product_id !== productId);
-            localStorage.setItem('cart', JSON.stringify(cart));
+            saveCart(cart);
             updateCartBadge();
             renderCartPanel();
         }
@@ -949,8 +973,8 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                 const result = await response.json();
 
                 if (result.success) {
-                    // Redirect to checkout
-                    window.location.href = '/checkout.php';
+                    // Redirect to cart page (full view)
+                    window.location.href = '/carrito.php';
                 } else {
                     alert('Error al procesar el carrito');
                 }
@@ -962,6 +986,9 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
         // Update badge and render cart on page load
         document.addEventListener('DOMContentLoaded', () => {
+            // Check if cart has expired
+            checkCartExpiration();
+
             updateCartBadge();
             renderCartPanel();
         });

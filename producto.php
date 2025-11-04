@@ -1115,6 +1115,33 @@ write_json($visits_file, $visits_data);
             }
         });
 
+        // Save cart with timestamp
+        function saveCart(cart) {
+            localStorage.setItem('cart', JSON.stringify(cart));
+            localStorage.setItem('cart_timestamp', Date.now().toString());
+        }
+
+        // Check if cart has expired (after 4 hours of inactivity)
+        function checkCartExpiration() {
+            const EXPIRATION_TIME = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+            const timestamp = localStorage.getItem('cart_timestamp');
+
+            if (timestamp) {
+                const elapsed = Date.now() - parseInt(timestamp);
+                if (elapsed > EXPIRATION_TIME) {
+                    // Cart expired, clear it
+                    localStorage.removeItem('cart');
+                    localStorage.removeItem('cart_timestamp');
+                    console.log('Cart expired and cleared after 4 hours of inactivity');
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Check cart expiration on page load
+        checkCartExpiration();
+
         // Add to cart
         function addToCart(productId) {
             let cart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -1132,7 +1159,7 @@ write_json($visits_file, $visits_data);
                 });
             }
 
-            localStorage.setItem('cart', JSON.stringify(cart));
+            saveCart(cart);
             updateCartCount();
             showToast('✅ Producto agregado al carrito');
         }
