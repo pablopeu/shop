@@ -94,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
 
         // Update config
         $config['enabled'] = isset($_POST['enabled']);
+        $config['alignment'] = sanitize_input($_POST['alignment'] ?? 'center');
         $config['slides'] = $slides;
 
         if (empty($error)) {
@@ -197,6 +198,18 @@ $user = get_logged_user();
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label for="alignment">Alineación del Carrusel</label>
+                    <select id="alignment" name="alignment" style="width: 100%; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                        <option value="center" <?php echo ($carousel_config['alignment'] ?? 'center') === 'center' ? 'selected' : ''; ?>>Centrado</option>
+                        <option value="left" <?php echo ($carousel_config['alignment'] ?? 'center') === 'left' ? 'selected' : ''; ?>>Izquierda (con margen)</option>
+                        <option value="right" <?php echo ($carousel_config['alignment'] ?? 'center') === 'right' ? 'selected' : ''; ?>>Derecha (con margen)</option>
+                    </select>
+                    <small style="color: #666; margin-top: 5px; display: block;">
+                        Selecciona cómo se alinea el carrusel en la página.
+                    </small>
+                </div>
+
                 <?php if (!empty($carousel_config['slides'])): ?>
                     <div class="form-group">
                         <label>Slides Actuales (arrastra para reordenar)</label>
@@ -251,7 +264,7 @@ $user = get_logged_user();
         const saveBtn = document.getElementById('saveBtn');
         const gallery = document.getElementById('slides-gallery');
         const fileInput = document.getElementById('carousel_images');
-        const inputs = form.querySelectorAll('input:not([type="file"]):not([type="hidden"]), textarea');
+        const inputs = form.querySelectorAll('input:not([type="file"]):not([type="hidden"]), textarea, select');
 
         let originalValues = {};
         let saveSuccess = <?php echo $message ? 'true' : 'false'; ?>;
