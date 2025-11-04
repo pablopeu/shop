@@ -14,8 +14,13 @@
     }
 
     function initCarousel() {
+        console.log('[CAROUSEL] Initializing carousel...');
+
         const carouselContainer = document.querySelector('.carousel-container');
-        if (!carouselContainer) return;
+        if (!carouselContainer) {
+            console.log('[CAROUSEL] No carousel container found');
+            return;
+        }
 
         const slides = document.querySelectorAll('.carousel-slide');
         const dots = document.querySelectorAll('.carousel-dot');
@@ -24,7 +29,17 @@
         const titleEl = document.getElementById('carousel-title');
         const carouselData = window.carouselData || [];
 
+        console.log('[CAROUSEL] Found', slides.length, 'slides');
+        console.log('[CAROUSEL] Carousel data:', carouselData);
+
         if (slides.length === 0) return;
+
+        // Log all carousel links
+        const allLinks = document.querySelectorAll('.carousel-link-overlay');
+        console.log('[CAROUSEL] Found', allLinks.length, 'link overlays');
+        allLinks.forEach((link, index) => {
+            console.log(`[CAROUSEL] Link ${index}: href="${link.href}", z-index="${window.getComputedStyle(link).zIndex}"`);
+        });
 
         let currentIndex = 0;
         let isAnimating = false;
@@ -36,6 +51,17 @@
         let touchStartY = 0;
         let touchStartTime = 0;
 
+        // Add click listener to links for debugging
+        allLinks.forEach((link, index) => {
+            link.addEventListener('click', (e) => {
+                console.log(`[CAROUSEL] CLICK on link ${index}:`, link.href);
+                console.log('[CAROUSEL] Event:', e);
+                console.log('[CAROUSEL] Target:', e.target);
+                console.log('[CAROUSEL] CurrentTarget:', e.currentTarget);
+                // DO NOT prevent default - let it navigate
+            });
+        });
+
         // Only handle touch events for mobile swipe gestures
         carouselContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
         carouselContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
@@ -44,6 +70,7 @@
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
             touchStartTime = Date.now();
+            console.log('[CAROUSEL] Touch start at', touchStartX, touchStartY);
         }
 
         function handleTouchEnd(e) {
@@ -54,6 +81,8 @@
             const deltaX = touchEndX - touchStartX;
             const deltaY = Math.abs(touchEndY - touchStartY);
 
+            console.log('[CAROUSEL] Touch end - deltaX:', deltaX, 'deltaY:', deltaY, 'duration:', touchDuration);
+
             // Only handle swipes (not taps)
             // Swipe must be > 50px horizontal and < 100px vertical
             if (Math.abs(deltaX) > 50 && deltaY < 100 && touchDuration < 500) {
@@ -61,7 +90,10 @@
                 const target = e.target;
                 const isOnLink = target.closest('a');
 
+                console.log('[CAROUSEL] Swipe detected, target:', target, 'isOnLink:', isOnLink);
+
                 if (!isOnLink) {
+                    console.log('[CAROUSEL] Preventing swipe and navigating slides');
                     e.preventDefault();
 
                     if (deltaX < 0) {
@@ -73,7 +105,11 @@
                     }
 
                     resetAutoPlay();
+                } else {
+                    console.log('[CAROUSEL] Swipe on link, not interfering');
                 }
+            } else {
+                console.log('[CAROUSEL] Not a swipe (too short or vertical)');
             }
         }
 
@@ -125,8 +161,12 @@
         }
 
         function goToSlide(index) {
-            if (isAnimating || index === currentIndex) return;
+            if (isAnimating || index === currentIndex) {
+                console.log('[CAROUSEL] goToSlide blocked - isAnimating:', isAnimating, 'currentIndex:', currentIndex, 'targetIndex:', index);
+                return;
+            }
 
+            console.log('[CAROUSEL] goToSlide called - from', currentIndex, 'to', index);
             isAnimating = true;
 
             const currentSlide = slides[currentIndex];
@@ -175,25 +215,37 @@
 
         function startAutoPlay() {
             if (slides.length > 1) {
-                autoPlayInterval = setInterval(goToNextSlide, autoPlayDelay);
+                console.log('[CAROUSEL] Starting autoplay with delay:', autoPlayDelay);
+                autoPlayInterval = setInterval(() => {
+                    console.log('[CAROUSEL] Autoplay tick - advancing slide');
+                    goToNextSlide();
+                }, autoPlayDelay);
             }
         }
 
         function stopAutoPlay() {
             if (autoPlayInterval) {
+                console.log('[CAROUSEL] Stopping autoplay');
                 clearInterval(autoPlayInterval);
                 autoPlayInterval = null;
             }
         }
 
         function resetAutoPlay() {
+            console.log('[CAROUSEL] Resetting autoplay');
             stopAutoPlay();
             startAutoPlay();
         }
 
         // Pause on hover
-        carouselContainer.addEventListener('mouseenter', stopAutoPlay);
-        carouselContainer.addEventListener('mouseleave', startAutoPlay);
+        carouselContainer.addEventListener('mouseenter', () => {
+            console.log('[CAROUSEL] Mouse enter - pausing autoplay');
+            stopAutoPlay();
+        });
+        carouselContainer.addEventListener('mouseleave', () => {
+            console.log('[CAROUSEL] Mouse leave - resuming autoplay');
+            startAutoPlay();
+        });
 
         // Start autoplay
         startAutoPlay();
