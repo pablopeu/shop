@@ -184,17 +184,25 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             position: relative;
             width: 100%;
             height: 500px;
+            overflow: hidden;
         }
 
         .carousel-slide {
-            display: none;
+            position: absolute;
             width: 100%;
             height: 100%;
-            position: relative;
+            top: 0;
+            left: 100%;
+            transition: left 0.6s ease-in-out;
+            display: block;
         }
 
         .carousel-slide.active {
-            display: block;
+            left: 0;
+        }
+
+        .carousel-slide.prev {
+            left: -100%;
         }
 
         .carousel-slide img {
@@ -203,50 +211,41 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             object-fit: cover;
         }
 
+        .carousel-slide-link {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .carousel-slide-link:hover .carousel-slide img {
+            transform: scale(1.02);
+            transition: transform 0.3s ease;
+        }
+
         .carousel-caption {
             position: absolute;
-            bottom: 50px;
+            bottom: 60px;
             left: 50%;
             transform: translateX(-50%);
             text-align: center;
             color: white;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 20px 40px;
-            border-radius: 10px;
-            max-width: 80%;
             z-index: 5;
             pointer-events: none;
         }
 
         .carousel-caption h2 {
-            font-size: 36px;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
         }
 
         .carousel-caption p {
-            font-size: 18px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-        }
-
-        .carousel-btn {
-            display: inline-block;
-            margin-top: 15px;
-            padding: 12px 30px;
-            background: white;
-            color: #333;
-            text-decoration: none;
-            border-radius: 25px;
-            font-weight: 600;
-            transition: all 0.3s;
-            pointer-events: auto;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-
-        .carousel-btn:hover {
-            background: #f0f0f0;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            font-size: 16px;
+            margin-top: 5px;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
         }
 
         .carousel-control {
@@ -745,17 +744,28 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
     <section class="carousel-section">
         <div class="carousel-container">
             <?php foreach ($carousel_config['slides'] as $index => $slide): ?>
-            <div class="carousel-slide <?php echo $index === 0 ? 'active' : ''; ?>">
-                <img src="<?php echo htmlspecialchars($slide['image']); ?>" alt="<?php echo htmlspecialchars($slide['title']); ?>">
-                <div class="carousel-caption">
-                    <h2><?php echo htmlspecialchars($slide['title']); ?></h2>
-                    <?php if (!empty($slide['subtitle'])): ?>
-                        <p><?php echo htmlspecialchars($slide['subtitle']); ?></p>
-                    <?php endif; ?>
-                    <?php if (!empty($slide['link'])): ?>
-                        <a href="<?php echo htmlspecialchars($slide['link']); ?>" class="carousel-btn">Ver Producto</a>
-                    <?php endif; ?>
+            <div class="carousel-slide <?php echo $index === 0 ? 'active' : ($index === count($carousel_config['slides']) - 1 ? 'prev' : ''); ?>">
+                <?php if (!empty($slide['link'])): ?>
+                <a href="<?php echo htmlspecialchars($slide['link']); ?>" class="carousel-slide-link">
+                    <img src="<?php echo htmlspecialchars($slide['image']); ?>" alt="<?php echo htmlspecialchars($slide['title']); ?>">
+                    <div class="carousel-caption">
+                        <h2><?php echo htmlspecialchars($slide['title']); ?></h2>
+                        <?php if (!empty($slide['subtitle'])): ?>
+                            <p><?php echo htmlspecialchars($slide['subtitle']); ?></p>
+                        <?php endif; ?>
+                    </div>
+                </a>
+                <?php else: ?>
+                <div class="carousel-slide-link" style="cursor: default;">
+                    <img src="<?php echo htmlspecialchars($slide['image']); ?>" alt="<?php echo htmlspecialchars($slide['title']); ?>">
+                    <div class="carousel-caption">
+                        <h2><?php echo htmlspecialchars($slide['title']); ?></h2>
+                        <?php if (!empty($slide['subtitle'])): ?>
+                            <p><?php echo htmlspecialchars($slide['subtitle']); ?></p>
+                        <?php endif; ?>
+                    </div>
                 </div>
+                <?php endif; ?>
             </div>
             <?php endforeach; ?>
 
@@ -1128,36 +1138,76 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
             if (slides.length === 0) return;
 
-            // Remove active class
-            slides[currentSlideIndex].classList.remove('active');
-            if (dots[currentSlideIndex]) dots[currentSlideIndex].classList.remove('active');
-
             // Calculate new index
+            const prevIndex = currentSlideIndex;
             currentSlideIndex += direction;
             if (currentSlideIndex >= slides.length) currentSlideIndex = 0;
             if (currentSlideIndex < 0) currentSlideIndex = slides.length - 1;
 
-            // Add active class
-            slides[currentSlideIndex].classList.add('active');
-            if (dots[currentSlideIndex]) dots[currentSlideIndex].classList.add('active');
+            // Remove all positioning classes
+            slides.forEach(slide => {
+                slide.classList.remove('active', 'prev');
+            });
+
+            // Set new positions
+            if (direction > 0) {
+                // Moving forward
+                slides[prevIndex].classList.add('prev');
+                slides[currentSlideIndex].classList.add('active');
+            } else {
+                // Moving backward - need to position the new slide on the left first
+                slides[currentSlideIndex].style.transition = 'none';
+                slides[currentSlideIndex].style.left = '-100%';
+
+                setTimeout(() => {
+                    slides[currentSlideIndex].style.transition = '';
+                    slides[prevIndex].style.left = '100%';
+                    slides[currentSlideIndex].classList.add('active');
+                }, 10);
+            }
+
+            // Update dots
+            if (dots.length > 0) {
+                dots.forEach(dot => dot.classList.remove('active'));
+                if (dots[currentSlideIndex]) dots[currentSlideIndex].classList.add('active');
+            }
         }
 
         function currentSlide(index) {
             const slides = document.querySelectorAll('.carousel-slide');
             const dots = document.querySelectorAll('.carousel-dots .dot');
 
-            if (slides.length === 0) return;
+            if (slides.length === 0 || index === currentSlideIndex) return;
 
-            // Remove active class
-            slides[currentSlideIndex].classList.remove('active');
-            if (dots[currentSlideIndex]) dots[currentSlideIndex].classList.remove('active');
-
-            // Set new index
+            const direction = index > currentSlideIndex ? 1 : -1;
+            const prevIndex = currentSlideIndex;
             currentSlideIndex = index;
 
-            // Add active class
-            slides[currentSlideIndex].classList.add('active');
-            if (dots[currentSlideIndex]) dots[currentSlideIndex].classList.add('active');
+            // Remove all positioning classes
+            slides.forEach(slide => {
+                slide.classList.remove('active', 'prev');
+            });
+
+            // Set new positions
+            if (direction > 0) {
+                slides[prevIndex].classList.add('prev');
+                slides[currentSlideIndex].classList.add('active');
+            } else {
+                slides[currentSlideIndex].style.transition = 'none';
+                slides[currentSlideIndex].style.left = '-100%';
+
+                setTimeout(() => {
+                    slides[currentSlideIndex].style.transition = '';
+                    slides[prevIndex].style.left = '100%';
+                    slides[currentSlideIndex].classList.add('active');
+                }, 10);
+            }
+
+            // Update dots
+            if (dots.length > 0) {
+                dots.forEach(dot => dot.classList.remove('active'));
+                if (dots[currentSlideIndex]) dots[currentSlideIndex].classList.add('active');
+            }
         }
 
         // Auto-advance carousel
