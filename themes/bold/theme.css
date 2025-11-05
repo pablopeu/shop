@@ -1,37 +1,78 @@
 /**
- * Bold Theme - Main Styles
+ * Bold Theme - Personalizaciones
  * Diseño atrevido e impactante
+ *
+ * La mayoría de los estilos están en /themes/_base/pages.css
+ * Este archivo solo contiene personalizaciones específicas del theme bold (rojo/negro)
  */
+
+/* ========================================
+   GLOBAL
+   ======================================== */
 
 body {
     font-family: var(--font-family);
     line-height: var(--line-height-normal);
     color: var(--color-text);
     background-color: var(--color-bg);
-    font-weight: var(--font-weight-normal);
 }
+
+/* ========================================
+   HEADINGS
+   ======================================== */
 
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-family-heading);
-    font-weight: var(--font-weight-bold);
+    font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-tight);
     color: var(--color-text-dark);
     margin-bottom: var(--spacing-md);
-    text-transform: uppercase;
-    letter-spacing: -1px;
 }
+
+h1 { font-size: var(--font-size-4xl); }
+h2 { font-size: var(--font-size-3xl); }
+h3 { font-size: var(--font-size-2xl); }
+h4 { font-size: var(--font-size-xl); }
+h5 { font-size: var(--font-size-lg); }
+h6 { font-size: var(--font-size-base); }
+
+/* ========================================
+   LINKS
+   ======================================== */
 
 a {
     color: var(--color-primary);
     text-decoration: none;
     transition: var(--transition-fast);
-    font-weight: var(--font-weight-bold);
 }
 
 a:hover {
-    color: var(--color-secondary);
+    color: var(--color-primary-dark);
     text-decoration: underline;
-    text-decoration-thickness: 2px;
 }
 
-/* Theme-specific styles will be added here */
+/* ========================================
+   PERSONALIZACIONES ESPECÍFICAS
+   ======================================== */
+
+/* Gradientes específicos del theme bold (rojo/negro) */
+.btn-primary,
+.checkout-btn,
+.place-order-btn {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+}
+
+.currency-btn.active {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+}
+
+/* Sombras personalizadas para hover en botones */
+.btn-primary:hover,
+.checkout-btn:hover,
+.place-order-btn:hover {
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-add-cart:hover {
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}

@@ -33,6 +33,7 @@ function render_theme_css($active_theme = 'minimal') {
         "{$base_path}/_base/layout.css",
         "{$base_path}/_base/components.css",
         "{$base_path}/_base/utilities.css",
+        "{$base_path}/_base/pages.css",
 
         // 2. Theme-specific CSS
         "{$base_path}/{$active_theme}/variables.css",
