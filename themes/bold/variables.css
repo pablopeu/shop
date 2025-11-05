@@ -1,0 +1,116 @@
+/**
+ * Bold Theme - Variables
+ * Un diseño atrevido e impactante con alto contraste
+ */
+
+:root {
+    /* Colores Principales */
+    --color-primary: #e74c3c;  /* Rojo */
+    --color-primary-dark: #c0392b;
+    --color-primary-light: #ec7063;
+    --color-primary-rgb: 231, 76, 60;
+
+    --color-secondary: #000000;  /* Negro */
+    --color-secondary-dark: #000000;
+    --color-secondary-light: #2c3e50;
+    --color-secondary-rgb: 0, 0, 0;
+
+    /* Colores de Estado */
+    --color-success: #27ae60;
+    --color-warning: #f39c12;
+    --color-error: #e74c3c;
+    --color-info: #3498db;
+
+    /* Colores Neutros */
+    --color-text: #000000;
+    --color-text-light: #34495e;
+    --color-text-lighter: #7f8c8d;
+    --color-text-dark: #000000;
+
+    --color-bg: #ffffff;
+    --color-bg-light: #ecf0f1;
+    --color-bg-dark: #bdc3c7;
+    --color-bg-darker: #95a5a6;
+
+    --color-border: #000000;
+    --color-border-light: #bdc3c7;
+    --color-border-dark: #7f8c8d;
+
+    --color-shadow: rgba(231, 76, 60, 0.2);
+    --color-shadow-dark: rgba(0, 0, 0, 0.3);
+
+    /* Tipografía */
+    --font-family: 'Arial Black', 'Arial Bold', Gadget, sans-serif;
+    --font-family-heading: 'Impact', Haettenschweiler, 'Franklin Gothic Bold', sans-serif;
+    --font-family-mono: 'Courier New', Courier, monospace;
+
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-base: 16px;
+    --font-size-lg: 20px;
+    --font-size-xl: 24px;
+    --font-size-2xl: 32px;
+    --font-size-3xl: 44px;
+    --font-size-4xl: 64px;
+
+    --font-weight-normal: 700;
+    --font-weight-medium: 700;
+    --font-weight-semibold: 800;
+    --font-weight-bold: 900;
+
+    --line-height-tight: 1.1;
+    --line-height-normal: 1.4;
+    --line-height-relaxed: 1.6;
+
+    /* Espaciado */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+    --spacing-3xl: 64px;
+
+    /* Bordes - Angulares */
+    --border-radius-none: 0;
+    --border-radius-sm: 0;
+    --border-radius-md: 2px;
+    --border-radius-lg: 4px;
+    --border-radius-xl: 6px;
+    --border-radius-full: 9999px;
+
+    --border-width: 2px;
+    --border-width-thick: 4px;
+
+    /* Sombras - Fuertemente definidas */
+    --shadow-sm: 2px 2px 0 rgba(0, 0, 0, 0.2);
+    --shadow-md: 4px 4px 0 rgba(0, 0, 0, 0.3);
+    --shadow-lg: 6px 6px 0 rgba(0, 0, 0, 0.4);
+    --shadow-xl: 8px 8px 0 rgba(0, 0, 0, 0.5);
+    --shadow-2xl: 12px 12px 0 rgba(0, 0, 0, 0.6);
+
+    /* Transiciones - Instantáneas y firmes */
+    --transition-fast: 0.1s ease-out;
+    --transition-base: 0.2s ease-out;
+    --transition-slow: 0.3s ease-out;
+
+    /* Breakpoints */
+    --breakpoint-mobile: 480px;
+    --breakpoint-tablet: 768px;
+    --breakpoint-desktop: 1024px;
+    --breakpoint-wide: 1200px;
+
+    /* Layout */
+    --container-width: 1200px;
+    --header-height: 85px;
+    --footer-height: 200px;
+
+    /* Z-Index */
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-fixed: 300;
+    --z-modal-backdrop: 400;
+    --z-modal: 500;
+    --z-popover: 600;
+    --z-tooltip: 700;
+}

@@ -1,0 +1,33 @@
+/**
+ * Fresh Theme - Main Styles
+ * Diseño vibrante y energético
+ */
+
+body {
+    font-family: var(--font-family);
+    line-height: var(--line-height-normal);
+    color: var(--color-text);
+    background-color: var(--color-bg);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-family-heading);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+    color: var(--color-text-dark);
+    margin-bottom: var(--spacing-md);
+}
+
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: var(--transition-fast);
+    font-weight: var(--font-weight-medium);
+}
+
+a:hover {
+    color: var(--color-secondary);
+    transform: translateY(-1px);
+}
+
+/* Theme-specific styles will be added here */
