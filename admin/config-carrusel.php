@@ -256,7 +256,7 @@ $visible_products = array_filter($all_products, function($product) {
                                                 <option value="">-- Sin enlace --</option>
                                                 <?php foreach ($visible_products as $product): ?>
                                                     <?php
-                                                        $product_link = '/producto.php?id=' . $product['id'];
+                                                        $product_link = '/producto.php?slug=' . $product['slug'];
                                                         $selected = ($slide['link'] ?? '') === $product_link ? 'selected' : '';
                                                     ?>
                                                     <option value="<?php echo htmlspecialchars($product_link); ?>" <?php echo $selected; ?>>

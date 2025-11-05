@@ -7,19 +7,19 @@
             "image": "/images/carousel/690961d08f1c8_1762222544.jpg",
             "title": "Cuchillo Parrillero",
             "subtitle": "",
-            "link": "/producto.php?id=prod-6908131358142-3389e5aa"
+            "link": "/producto.php?slug=cuchillo-manteca"
         },
         {
             "image": "/images/carousel/690961d08fa58_1762222544.jpg",
             "title": "Cuchillo NeoCriollo",
             "subtitle": "",
-            "link": "/producto.php?id=prod-6908bb22b6b1c-0f16700a"
+            "link": "/producto.php?slug=cuchillo-de-oficio-japones"
         },
         {
             "image": "/images/carousel/690961d090130_1762222544.jpg",
             "title": "Cuchillo mamut",
             "subtitle": "",
-            "link": "/producto.php?id=prod-6908c000e6695-512db4e6"
+            "link": "/producto.php?slug=cuchillo-damasco-mosaico-y-mamut"
         }
     ]
 }

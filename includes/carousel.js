@@ -1,6 +1,6 @@
 /**
- * Carousel JavaScript
- * Handles carousel navigation and animations
+ * Carousel V2 JavaScript
+ * Auto-rotación hacia la izquierda con puntos indicadores
  */
 
 (function() {
@@ -8,285 +8,163 @@
 
     // Wait for DOM to be ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initCarousel);
+        document.addEventListener('DOMContentLoaded', initCarouselV2);
     } else {
-        initCarousel();
+        initCarouselV2();
     }
 
-    function initCarousel() {
-        console.log('[CAROUSEL] Initializing carousel...');
+    function initCarouselV2() {
+        console.log('[CAROUSEL V2] Initializing...');
 
-        const carouselContainer = document.querySelector('.carousel-container');
-        if (!carouselContainer) {
-            console.log('[CAROUSEL] No carousel container found');
+        const wrapper = document.querySelector('.carousel-v2-wrapper');
+        if (!wrapper) {
+            console.log('[CAROUSEL V2] No carousel wrapper found');
             return;
         }
 
-        const slides = document.querySelectorAll('.carousel-slide');
-        const dots = document.querySelectorAll('.carousel-dot');
-        const prevBtn = document.querySelector('.carousel-prev');
-        const nextBtn = document.querySelector('.carousel-next');
-        const titleEl = document.getElementById('carousel-title');
-        const carouselData = window.carouselData || [];
+        const slides = document.querySelectorAll('.carousel-v2-slide');
+        const dots = document.querySelectorAll('.carousel-v2-dot');
+        const carouselData = window.carouselV2Data || {};
 
-        console.log('[CAROUSEL] Found', slides.length, 'slides');
-        console.log('[CAROUSEL] Carousel data:', carouselData);
+        console.log('[CAROUSEL V2] Found', slides.length, 'slides');
 
-        if (slides.length === 0) return;
-
-        // Log all carousel links
-        const allLinks = document.querySelectorAll('.carousel-link-overlay');
-        console.log('[CAROUSEL] Found', allLinks.length, 'link overlays');
-        allLinks.forEach((link, index) => {
-            console.log(`[CAROUSEL] Link ${index}: href="${link.href}", z-index="${window.getComputedStyle(link).zIndex}"`);
-        });
+        if (slides.length === 0) {
+            console.log('[CAROUSEL V2] No slides found');
+            return;
+        }
 
         let currentIndex = 0;
         let isAnimating = false;
         let autoPlayInterval = null;
-        const autoPlayDelay = window.carouselAutoAdvanceTime || 5000; // Use configured time or default to 5 seconds
+        const autoAdvanceTime = carouselData.autoAdvanceTime || 5000;
 
-        // Touch handling for swipe navigation only
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let touchStartTime = 0;
+        console.log('[CAROUSEL V2] Auto-advance time:', autoAdvanceTime, 'ms');
 
-        // Add click listener to links for debugging
-        allLinks.forEach((link, index) => {
-            link.addEventListener('click', (e) => {
-                console.log(`[CAROUSEL] ✅ CLICK on link ${index}:`, link.href);
-                console.log('[CAROUSEL] Event:', e);
-                console.log('[CAROUSEL] Target:', e.target);
-                console.log('[CAROUSEL] CurrentTarget:', e.currentTarget);
-                // DO NOT prevent default - let it navigate
-            });
-        });
-
-        // Add global click listener on carousel container to see who captures clicks
-        carouselContainer.addEventListener('click', (e) => {
-            console.log('[CAROUSEL] 🖱️ CLICK detected on container!');
-            console.log('[CAROUSEL] Target:', e.target);
-            console.log('[CAROUSEL] Target className:', e.target.className);
-            console.log('[CAROUSEL] Target tagName:', e.target.tagName);
-            console.log('[CAROUSEL] Computed z-index:', window.getComputedStyle(e.target).zIndex);
-            console.log('[CAROUSEL] Computed pointer-events:', window.getComputedStyle(e.target).pointerEvents);
-
-            // Check if target is or is inside a link
-            const closestLink = e.target.closest('a');
-            console.log('[CAROUSEL] Closest link:', closestLink ? closestLink.href : 'NONE');
-        }, true); // Use capture phase
-
-        // Add even higher level listener on document
-        document.addEventListener('click', (e) => {
-            // Only log if click is within carousel area
-            if (e.target.closest('.carousel-wrapper, .carousel-container')) {
-                console.log('[CAROUSEL] 🌍 DOCUMENT LEVEL CLICK detected!');
-                console.log('[CAROUSEL] Target:', e.target);
-                console.log('[CAROUSEL] Target className:', e.target.className);
-                console.log('[CAROUSEL] Target tagName:', e.target.tagName);
-                console.log('[CAROUSEL] Path:', e.composedPath().map(el => el.className || el.tagName).join(' → '));
-            }
-        }, true); // Capture phase
-
-        // Only handle touch events for mobile swipe gestures
-        carouselContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
-        carouselContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
-
-        function handleTouchStart(e) {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            touchStartTime = Date.now();
-            console.log('[CAROUSEL] Touch start at', touchStartX, touchStartY);
-        }
-
-        function handleTouchEnd(e) {
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-            const touchDuration = Date.now() - touchStartTime;
-
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = Math.abs(touchEndY - touchStartY);
-
-            console.log('[CAROUSEL] Touch end - deltaX:', deltaX, 'deltaY:', deltaY, 'duration:', touchDuration);
-
-            // Only handle swipes (not taps)
-            // Swipe must be > 50px horizontal and < 100px vertical
-            if (Math.abs(deltaX) > 50 && deltaY < 100 && touchDuration < 500) {
-                // Check if swipe started on a link - if so, don't interfere
-                const target = e.target;
-                const isOnLink = target.closest('a');
-
-                console.log('[CAROUSEL] Swipe detected, target:', target, 'isOnLink:', isOnLink);
-
-                if (!isOnLink) {
-                    console.log('[CAROUSEL] Preventing swipe and navigating slides');
-                    e.preventDefault();
-
-                    if (deltaX < 0) {
-                        // Swipe left - next slide
-                        goToNextSlide();
-                    } else {
-                        // Swipe right - previous slide
-                        goToPrevSlide();
-                    }
-
-                    resetAutoPlay();
-                } else {
-                    console.log('[CAROUSEL] Swipe on link, not interfering');
-                }
-            } else {
-                console.log('[CAROUSEL] Not a swipe (too short or vertical)');
-            }
-        }
-
-        // Arrow button navigation
-        if (prevBtn) {
-            prevBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                goToPrevSlide();
-                resetAutoPlay();
-            });
-        }
-
-        if (nextBtn) {
-            nextBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                goToNextSlide();
-                resetAutoPlay();
-            });
-        }
-
-        // Dot navigation
-        dots.forEach((dot, index) => {
-            dot.addEventListener('click', (e) => {
-                e.stopPropagation();
-                goToSlide(index);
-                resetAutoPlay();
-            });
-        });
-
-        // Keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') {
-                goToPrevSlide();
-                resetAutoPlay();
-            } else if (e.key === 'ArrowRight') {
-                goToNextSlide();
-                resetAutoPlay();
-            }
-        });
-
+        /**
+         * Go to next slide (always advances to the right in the array)
+         */
         function goToNextSlide() {
             const nextIndex = (currentIndex + 1) % slides.length;
             goToSlide(nextIndex);
         }
 
-        function goToPrevSlide() {
-            const prevIndex = (currentIndex - 1 + slides.length) % slides.length;
-            goToSlide(prevIndex);
-        }
-
-        function goToSlide(index) {
-            if (isAnimating || index === currentIndex) {
-                console.log('[CAROUSEL] goToSlide blocked - isAnimating:', isAnimating, 'currentIndex:', currentIndex, 'targetIndex:', index);
+        /**
+         * Go to a specific slide with animation
+         */
+        function goToSlide(targetIndex) {
+            if (isAnimating || targetIndex === currentIndex) {
                 return;
             }
 
-            console.log('[CAROUSEL] ⚡ goToSlide called - from', currentIndex, 'to', index);
-            if (index === 0) {
-                console.log('[CAROUSEL] 🚨 GOING TO FIRST SLIDE (0)!');
-                console.log('[CAROUSEL] Stack trace:', new Error().stack);
-            }
+            console.log('[CAROUSEL V2] Transitioning from slide', currentIndex, 'to', targetIndex);
+
             isAnimating = true;
 
             const currentSlide = slides[currentIndex];
-            const nextSlide = slides[index];
+            const nextSlide = slides[targetIndex];
 
-            // Remove any existing animation classes
+            // Remove all animation classes from all slides
             slides.forEach(slide => {
-                slide.classList.remove('active', 'sliding-out', 'sliding-in');
+                slide.classList.remove('active', 'slide-out', 'slide-in');
             });
 
-            // Set up animation: current slides out to left, next slides in from right
-            currentSlide.classList.add('active', 'sliding-out');
-            nextSlide.classList.add('active', 'sliding-in');
+            // Animate: current slide out to left, next slide in from right
+            currentSlide.classList.add('active', 'slide-out');
+            nextSlide.classList.add('active', 'slide-in');
 
             // Update dots
             dots.forEach((dot, i) => {
-                dot.classList.toggle('active', i === index);
+                dot.classList.toggle('active', i === targetIndex);
             });
 
-            // Update title
-            if (titleEl && carouselData[index]) {
-                const newTitle = carouselData[index].title || '';
-                if (newTitle) {
-                    // Fade out
-                    titleEl.style.opacity = '0';
-
-                    setTimeout(() => {
-                        titleEl.textContent = newTitle;
-                        // Fade in
-                        titleEl.style.opacity = '1';
-                    }, 250);
-                } else {
-                    titleEl.style.opacity = '0';
-                }
-            }
-
-            // Clean up after animation
+            // Clean up after animation completes
             setTimeout(() => {
-                currentSlide.classList.remove('active', 'sliding-out');
-                nextSlide.classList.remove('sliding-in');
+                currentSlide.classList.remove('active', 'slide-out');
+                nextSlide.classList.remove('slide-in');
 
-                currentIndex = index;
+                currentIndex = targetIndex;
                 isAnimating = false;
-            }, 500); // Match animation duration
+
+                console.log('[CAROUSEL V2] Transition complete. Current slide:', currentIndex);
+            }, 600); // Match animation duration in CSS
         }
 
+        /**
+         * Start auto-rotation
+         */
         function startAutoPlay() {
             if (slides.length > 1) {
-                console.log('[CAROUSEL] Starting autoplay with delay:', autoPlayDelay);
+                console.log('[CAROUSEL V2] Starting auto-play');
                 autoPlayInterval = setInterval(() => {
-                    console.log('[CAROUSEL] Autoplay tick - advancing slide');
                     goToNextSlide();
-                }, autoPlayDelay);
+                }, autoAdvanceTime);
             }
         }
 
+        /**
+         * Stop auto-rotation
+         */
         function stopAutoPlay() {
             if (autoPlayInterval) {
-                console.log('[CAROUSEL] Stopping autoplay');
+                console.log('[CAROUSEL V2] Stopping auto-play');
                 clearInterval(autoPlayInterval);
                 autoPlayInterval = null;
             }
         }
 
+        /**
+         * Reset auto-rotation (stop and start again)
+         */
         function resetAutoPlay() {
-            console.log('[CAROUSEL] Resetting autoplay');
             stopAutoPlay();
             startAutoPlay();
         }
 
-        // Pause on hover
-        carouselContainer.addEventListener('mouseenter', () => {
-            console.log('[CAROUSEL] Mouse enter - pausing autoplay');
-            stopAutoPlay();
-        });
-        carouselContainer.addEventListener('mouseleave', () => {
-            console.log('[CAROUSEL] Mouse leave - resuming autoplay');
-            startAutoPlay();
+        // Dot navigation - click on a dot to go to that slide
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                goToSlide(index);
+                resetAutoPlay(); // Reset timer when user manually navigates
+            });
         });
 
-        // Start autoplay
-        startAutoPlay();
+        // Pause on hover
+        wrapper.addEventListener('mouseenter', () => {
+            console.log('[CAROUSEL V2] Mouse enter - pausing auto-play');
+            stopAutoPlay();
+        });
+
+        wrapper.addEventListener('mouseleave', () => {
+            console.log('[CAROUSEL V2] Mouse leave - resuming auto-play');
+            startAutoPlay();
+        });
 
         // Pause when tab is not visible
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
+                console.log('[CAROUSEL V2] Tab hidden - pausing auto-play');
                 stopAutoPlay();
             } else {
+                console.log('[CAROUSEL V2] Tab visible - resuming auto-play');
                 startAutoPlay();
             }
         });
+
+        // Keyboard navigation (optional)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') {
+                goToNextSlide();
+                resetAutoPlay();
+            } else if (e.key === 'ArrowLeft') {
+                const prevIndex = (currentIndex - 1 + slides.length) % slides.length;
+                goToSlide(prevIndex);
+                resetAutoPlay();
+            }
+        });
+
+        // Start auto-play
+        startAutoPlay();
+
+        console.log('[CAROUSEL V2] Initialization complete');
     }
 })();

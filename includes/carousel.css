@@ -1,5 +1,10 @@
-/* Carousel Wrapper */
-.carousel-wrapper {
+/**
+ * Carousel V2 Styles
+ * Nueva versión con animación hacia la izquierda y título en esquina inferior derecha
+ */
+
+/* Wrapper */
+.carousel-v2-wrapper {
     width: 100%;
     margin: 0 auto;
     padding: 0;
@@ -8,44 +13,43 @@
 }
 
 /* Alignment options */
-.carousel-wrapper[data-alignment="center"] {
+.carousel-v2-wrapper[data-alignment="center"] {
     max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
 }
 
-.carousel-wrapper[data-alignment="left"] {
+.carousel-v2-wrapper[data-alignment="left"] {
     max-width: calc(100% - 40px);
     margin-left: 20px;
     margin-right: auto;
 }
 
-.carousel-wrapper[data-alignment="right"] {
+.carousel-v2-wrapper[data-alignment="right"] {
     max-width: calc(100% - 40px);
     margin-left: auto;
     margin-right: 20px;
 }
 
-/* Carousel Container */
-.carousel-container {
+/* Container */
+.carousel-v2-container {
     position: relative;
     width: 100%;
     height: 400px;
     overflow: hidden;
     border-radius: 12px;
     background: #f5f5f5;
-    user-select: none;
 }
 
-/* Slides container */
-.carousel-slides {
+/* Track that holds all slides */
+.carousel-v2-track {
     position: relative;
     width: 100%;
     height: 100%;
 }
 
 /* Individual slide */
-.carousel-slide {
+.carousel-v2-slide {
     position: absolute;
     top: 0;
     left: 0;
@@ -57,36 +61,37 @@
     pointer-events: none;
 }
 
-.carousel-slide.active {
+.carousel-v2-slide.active {
     opacity: 1;
     transform: translateX(0);
     pointer-events: auto;
     z-index: 2;
 }
 
-/* Sliding animation - items always slide to the left */
-.carousel-slide.sliding-out {
-    animation: slideOutLeft 0.5s ease-in-out forwards;
+/* Slide out to the left animation */
+.carousel-v2-slide.slide-out {
+    animation: slideOutToLeft 0.6s ease-in-out forwards;
     z-index: 1;
 }
 
-.carousel-slide.sliding-in {
-    animation: slideInLeft 0.5s ease-in-out forwards;
+/* Slide in from the right animation */
+.carousel-v2-slide.slide-in {
+    animation: slideInFromRight 0.6s ease-in-out forwards;
     z-index: 2;
 }
 
-@keyframes slideOutLeft {
+@keyframes slideOutToLeft {
     from {
         opacity: 1;
         transform: translateX(0);
     }
     to {
-        opacity: 0;
+        opacity: 0.5;
         transform: translateX(-100%);
     }
 }
 
-@keyframes slideInLeft {
+@keyframes slideInFromRight {
     from {
         opacity: 0;
         transform: translateX(100%);
@@ -97,114 +102,60 @@
     }
 }
 
-/* Carousel image */
-.carousel-slide-image {
+/* Image */
+.carousel-v2-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+/* Link wrapper - covers entire slide */
+.carousel-v2-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+
+.carousel-v2-link:hover .carousel-v2-image {
+    transform: scale(1.03);
     transition: transform 0.3s ease;
 }
 
-/* Link overlay - covers the entire slide */
-.carousel-link-overlay {
+/* Title - positioned at bottom right */
+.carousel-v2-title {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 5;
-    cursor: pointer;
-}
-
-/* Hover effect on the slide when link is hovered */
-.carousel-slide:has(.carousel-link-overlay:hover) .carousel-slide-image {
-    transform: scale(1.02);
-}
-
-/* Carousel overlay for subtitle */
-.carousel-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
-    padding: 30px 20px 20px;
-    color: white;
-    pointer-events: none;
-    z-index: 6;
-}
-
-.carousel-overlay p {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 500;
-    text-align: center;
-}
-
-/* Navigation arrows */
-.carousel-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    border: none;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    z-index: 10;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.carousel-container:hover .carousel-arrow {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.carousel-arrow:hover {
-    background: rgba(0, 0, 0, 0.8);
-    transform: translateY(-50%) scale(1.1);
-}
-
-.carousel-prev {
-    left: 20px;
-}
-
-.carousel-next {
+    bottom: 20px;
     right: 20px;
-}
-
-/* Carousel title - simple and non-intrusive */
-.carousel-title {
-    font-size: 24px;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 18px;
     font-weight: 600;
-    color: #333;
-    text-align: center;
-    margin: 20px 0 10px;
-    padding: 0;
-    background: none;
-    border: none;
-    transition: opacity 0.3s ease;
+    max-width: 300px;
+    text-align: right;
+    backdrop-filter: blur(8px);
+    z-index: 3;
+    pointer-events: none;
 }
 
 /* Dots navigation */
-.carousel-dots {
+.carousel-v2-dots {
     display: flex;
     justify-content: center;
-    gap: 10px;
-    margin-top: 15px;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
 }
 
-.carousel-dot {
-    width: 12px;
-    height: 12px;
+.carousel-v2-dot {
+    height: 10px;
+    width: 10px;
     border-radius: 50%;
     background: #ccc;
     border: none;
@@ -213,83 +164,77 @@
     padding: 0;
 }
 
-.carousel-dot:hover {
+.carousel-v2-dot:hover {
     background: #999;
     transform: scale(1.2);
 }
 
-.carousel-dot.active {
+/* Active dot is wider (pill shape) */
+.carousel-v2-dot.active {
     background: #667eea;
-    width: 30px;
-    border-radius: 6px;
+    width: 32px;
+    border-radius: 5px;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .carousel-container {
+    .carousel-v2-container {
         height: 300px;
         border-radius: 8px;
     }
 
-    .carousel-wrapper[data-alignment="left"],
-    .carousel-wrapper[data-alignment="right"] {
+    .carousel-v2-wrapper[data-alignment="left"],
+    .carousel-v2-wrapper[data-alignment="right"] {
         max-width: calc(100% - 20px);
         margin-left: 10px;
         margin-right: 10px;
     }
 
-    .carousel-wrapper[data-alignment="left"] {
+    .carousel-v2-wrapper[data-alignment="left"] {
         margin-right: auto;
     }
 
-    .carousel-wrapper[data-alignment="right"] {
+    .carousel-v2-wrapper[data-alignment="right"] {
         margin-left: auto;
     }
 
-    .carousel-title {
-        font-size: 20px;
-        margin: 15px 10px 10px;
-    }
-
-    .carousel-overlay p {
+    .carousel-v2-title {
+        bottom: 15px;
+        right: 15px;
         font-size: 16px;
+        padding: 8px 15px;
+        max-width: 200px;
     }
 
-    .carousel-arrow {
-        width: 40px;
-        height: 40px;
-        opacity: 1;
+    .carousel-v2-dot {
+        width: 8px;
+        height: 8px;
     }
 
-    .carousel-prev {
-        left: 10px;
-    }
-
-    .carousel-next {
-        right: 10px;
-    }
-
-    .carousel-dot {
-        width: 10px;
-        height: 10px;
-    }
-
-    .carousel-dot.active {
+    .carousel-v2-dot.active {
         width: 24px;
     }
 }
 
 @media (max-width: 480px) {
-    .carousel-container {
+    .carousel-v2-container {
         height: 250px;
     }
 
-    .carousel-title {
-        font-size: 18px;
+    .carousel-v2-title {
+        bottom: 12px;
+        right: 12px;
+        font-size: 14px;
+        padding: 6px 12px;
+        max-width: 150px;
     }
 
-    .carousel-overlay p {
-        font-size: 14px;
-        padding: 20px 15px 15px;
+    .carousel-v2-dot {
+        width: 7px;
+        height: 7px;
+    }
+
+    .carousel-v2-dot.active {
+        width: 20px;
     }
 }
