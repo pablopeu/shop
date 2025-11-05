@@ -32,22 +32,32 @@ if (!$preview_theme) {
 $site_config = read_json(__DIR__ . '/config/site.json');
 $currency_config = read_json(__DIR__ . '/config/currency.json');
 $hero_config = read_json(__DIR__ . '/config/hero.json');
-$products_heading_config = read_json(__DIR__ . '/config/productos-heading.json');
+$products_heading_config = read_json(__DIR__ . '/config/products-heading.json');
 
-// Cargar productos y promociones
+// Cargar productos
 $productos = read_json(__DIR__ . '/data/productos.json');
-$promociones = read_json(__DIR__ . '/data/promociones.json');
 
-// Aplicar promociones a productos
-$productos = apply_promotions_to_products($productos, $promociones);
-
-// Obtener productos destacados
+// Obtener productos destacados (o los primeros 8 si no hay destacados)
 $productos_destacados = array_filter($productos, function($p) {
     return isset($p['destacado']) && $p['destacado'];
 });
 
+// Si no hay productos destacados, tomar los primeros
+if (empty($productos_destacados)) {
+    $productos_destacados = $productos;
+}
+
 // Limitar a 8 productos
 $productos_destacados = array_slice($productos_destacados, 0, 8);
+
+// Calcular precio final si hay descuento (simplificado para preview)
+foreach ($productos_destacados as &$producto) {
+    if (isset($producto['descuento']) && $producto['descuento'] > 0) {
+        $producto['precio_final'] = $producto['precio'] * (1 - $producto['descuento'] / 100);
+    } else {
+        $producto['precio_final'] = $producto['precio'];
+    }
+}
 
 // Estado de preview
 $is_preview = !empty($preview_theme);

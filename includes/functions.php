@@ -405,3 +405,51 @@ function get_logged_user() {
         'role' => $_SESSION['role'] ?? 'user'
     ];
 }
+
+/**
+ * Validate if a theme exists and has required files
+ * @param string $theme_slug Theme slug to validate
+ * @return array ['valid' => bool, 'message' => string]
+ */
+function validate_theme($theme_slug) {
+    // Sanitize theme slug
+    $theme_slug = preg_replace('/[^a-z0-9_-]/i', '', $theme_slug);
+
+    if (empty($theme_slug)) {
+        return [
+            'valid' => false,
+            'message' => 'Theme slug is empty'
+        ];
+    }
+
+    $theme_path = __DIR__ . '/../themes/' . $theme_slug;
+
+    // Check if theme directory exists
+    if (!is_dir($theme_path)) {
+        return [
+            'valid' => false,
+            'message' => "Theme directory does not exist: {$theme_slug}"
+        ];
+    }
+
+    // Check required files
+    $required_files = [
+        'variables.css',
+        'theme.css',
+        'theme.json'
+    ];
+
+    foreach ($required_files as $file) {
+        if (!file_exists($theme_path . '/' . $file)) {
+            return [
+                'valid' => false,
+                'message' => "Missing required file: {$file}"
+            ];
+        }
+    }
+
+    return [
+        'valid' => true,
+        'message' => 'Theme is valid'
+    ];
+}
