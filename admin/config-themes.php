@@ -271,6 +271,25 @@ $user = get_logged_user();
             cursor: not-allowed;
         }
 
+        .preview-button {
+            width: 100%;
+            padding: 12px;
+            background: #f0f0f0;
+            color: #333;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .preview-button:hover {
+            background: #e0e0e0;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
         /* Theme-specific preview colors */
         .theme-card[data-theme="minimal"] .theme-preview {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -369,6 +388,12 @@ $user = get_logged_user();
                                     Autor: <?php echo htmlspecialchars($theme_info['author'] ?? 'Claude Code'); ?><br>
                                     Versión: <?php echo htmlspecialchars($theme_info['version'] ?? '1.0.0'); ?>
                                 </div>
+
+                                <!-- Preview Button -->
+                                <button type="button" class="preview-button"
+                                        onclick="window.open('/preview.php?theme=<?php echo htmlspecialchars($theme_slug); ?>', '_blank')">
+                                    👁️ Vista Previa
+                                </button>
 
                                 <?php if ($active_theme === $theme_slug): ?>
                                     <button type="button" class="select-button active" disabled>
