@@ -391,7 +391,7 @@ $user = get_logged_user();
 
                                 <!-- Preview Button -->
                                 <button type="button" class="preview-button"
-                                        onclick="window.open('/preview.php?theme=<?php echo htmlspecialchars($theme_slug); ?>', '_blank')">
+                                        onclick="window.open('/preview.php?theme=<?php echo htmlspecialchars($theme_slug); ?>', 'theme_preview')">
                                     👁️ Vista Previa
                                 </button>
 

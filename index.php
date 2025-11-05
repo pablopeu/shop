@@ -38,6 +38,7 @@ $hero_config = read_json(__DIR__ . '/config/hero.json');
 $theme_config = read_json(__DIR__ . '/config/theme.json');
 $currency_config = read_json(__DIR__ . '/config/currency.json');
 $products_heading_config = read_json(__DIR__ . '/config/products-heading.json');
+$footer_config = read_json(__DIR__ . '/config/footer.json');
 
 $active_theme = $theme_config['active_theme'] ?? 'minimal';
 $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
@@ -65,7 +66,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php echo htmlspecialchars($site_config['site_name']); ?></a>
+            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
             <nav class="nav">
                 <a href="/">Inicio</a>
                 <a href="/buscar.php">Buscar</a>
@@ -169,7 +170,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
     <!-- Footer -->
     <footer class="footer">
-        <p><?php echo htmlspecialchars($site_config['footer_text']); ?></p>
+        <?php render_footer($site_config, $footer_config); ?>
     </footer>
 
     <!-- WhatsApp Button -->

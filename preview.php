@@ -33,6 +33,7 @@ $site_config = read_json(__DIR__ . '/config/site.json');
 $currency_config = read_json(__DIR__ . '/config/currency.json');
 $hero_config = read_json(__DIR__ . '/config/hero.json');
 $products_heading_config = read_json(__DIR__ . '/config/products-heading.json');
+$footer_config = read_json(__DIR__ . '/config/footer.json');
 
 // Cargar productos
 $productos = read_json(__DIR__ . '/data/productos.json');
@@ -93,7 +94,7 @@ $preview_theme_name = $is_preview ? ucfirst($preview_theme) : '';
             <div class="header-content">
                 <div class="logo">
                     <a href="/">
-                        <h1><?php echo htmlspecialchars($site_config['site_name']); ?></h1>
+                        <?php render_site_logo($site_config); ?>
                     </a>
                 </div>
                 <nav class="nav">
@@ -186,28 +187,7 @@ $preview_theme_name = $is_preview ? ucfirst($preview_theme) : '';
 
     <!-- Footer -->
     <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3><?php echo htmlspecialchars($site_config['site_name']); ?></h3>
-                    <p><?php echo htmlspecialchars($site_config['site_description']); ?></p>
-                </div>
-                <div class="footer-section">
-                    <h4>Contacto</h4>
-                    <p>Email: <?php echo htmlspecialchars($site_config['contact_email']); ?></p>
-                    <p>Teléfono: <?php echo htmlspecialchars($site_config['contact_phone']); ?></p>
-                </div>
-                <div class="footer-section">
-                    <h4>Enlaces</h4>
-                    <a href="/">Inicio</a>
-                    <a href="/buscar.php">Buscar</a>
-                    <a href="/favoritos.php">Favoritos</a>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; <?php echo date('Y'); ?> <?php echo htmlspecialchars($site_config['site_name']); ?>. Todos los derechos reservados.</p>
-            </div>
-        </div>
+        <?php render_footer($site_config, $footer_config); ?>
     </footer>
 
     <!-- Cart Panel (simplified for preview) -->

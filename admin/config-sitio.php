@@ -28,11 +28,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
         $config['whatsapp_number'] = sanitize_input($_POST['whatsapp_number'] ?? '');
         $config['footer_text'] = sanitize_input($_POST['footer_text'] ?? '');
 
+        // Handle logo upload
+        if (isset($_FILES['logo_file']) && $_FILES['logo_file']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = __DIR__ . '/../assets/logos/';
+            $file_ext = strtolower(pathinfo($_FILES['logo_file']['name'], PATHINFO_EXTENSION));
+            $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'];
+
+            if (in_array($file_ext, $allowed_exts)) {
+                $new_filename = 'logo_' . time() . '.' . $file_ext;
+                $upload_path = $upload_dir . $new_filename;
+
+                if (move_uploaded_file($_FILES['logo_file']['tmp_name'], $upload_path)) {
+                    // Delete old logo if exists
+                    if (!empty($config['logo']['path']) && file_exists(__DIR__ . '/..' . $config['logo']['path'])) {
+                        unlink(__DIR__ . '/..' . $config['logo']['path']);
+                    }
+
+                    $config['logo']['path'] = '/assets/logos/' . $new_filename;
+                    $config['logo']['enabled'] = true;
+                    $message = 'Logo subido exitosamente';
+                } else {
+                    $error = 'Error al subir el logo';
+                }
+            } else {
+                $error = 'Formato de archivo no permitido. Use JPG, PNG, GIF, SVG o WebP';
+            }
+        }
+
+        // Update logo settings
+        $config['logo']['enabled'] = isset($_POST['logo_enabled']);
+        $config['logo']['alt'] = sanitize_input($_POST['logo_alt'] ?? 'Logo');
+
         if (write_json($config_file, $config)) {
-            $message = 'Configuración guardada exitosamente';
+            if (empty($message)) {
+                $message = 'Configuración guardada exitosamente';
+            }
             log_admin_action('site_config_updated', $_SESSION['username'], $config);
         } else {
             $error = 'Error al guardar la configuración';
+        }
+    }
+}
+
+// Delete logo
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_logo'])) {
+    if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        $error = 'Token de seguridad inválido';
+    } else {
+        $config_file = __DIR__ . '/../config/site.json';
+        $config = read_json($config_file);
+
+        if (!empty($config['logo']['path']) && file_exists(__DIR__ . '/..' . $config['logo']['path'])) {
+            unlink(__DIR__ . '/..' . $config['logo']['path']);
+        }
+
+        $config['logo']['path'] = '';
+        $config['logo']['enabled'] = false;
+
+        if (write_json($config_file, $config)) {
+            $message = 'Logo eliminado exitosamente';
+            log_admin_action('logo_deleted', $_SESSION['username'], []);
+        } else {
+            $error = 'Error al eliminar el logo';
         }
     }
 }
@@ -86,7 +143,7 @@ $user = get_logged_user();
         <?php endif; ?>
 
         <div class="card">
-            <form method="POST" action="" id="configForm">
+            <form method="POST" action="" id="configForm" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
 
                 <div class="form-group">
@@ -98,6 +155,50 @@ $user = get_logged_user();
                 <div class="form-group">
                     <label for="site_description">Descripción del Sitio (SEO)</label>
                     <textarea id="site_description" name="site_description"><?php echo htmlspecialchars($site_config['site_description'] ?? ''); ?></textarea>
+                </div>
+
+                <!-- Logo Section -->
+                <div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 20px; margin-top: 20px;">
+                    <label style="font-size: 16px; margin-bottom: 10px;">🖼️ Logo del Sitio</label>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 15px;">Imagen recomendada: 170x85px (ratio 2:1). Formatos: JPG, PNG, GIF, SVG, WebP</p>
+
+                    <?php if (!empty($site_config['logo']['path'])): ?>
+                        <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <img src="<?php echo htmlspecialchars($site_config['logo']['path']); ?>"
+                                     alt="Logo actual"
+                                     style="max-width: 170px; max-height: 85px; border: 1px solid #ddd; border-radius: 4px;">
+                                <div>
+                                    <strong>Logo Actual</strong><br>
+                                    <small style="color: #666;"><?php echo htmlspecialchars(basename($site_config['logo']['path'])); ?></small>
+                                </div>
+                            </div>
+                            <button type="submit" name="delete_logo"
+                                    onclick="return confirm('¿Está seguro de eliminar el logo?')"
+                                    style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                                🗑️ Eliminar
+                            </button>
+                        </div>
+                    <?php endif; ?>
+
+                    <div style="display: flex; gap: 15px; align-items: start;">
+                        <div style="flex: 1;">
+                            <label for="logo_file" style="display: block; margin-bottom: 5px; font-weight: normal;">Subir Nuevo Logo</label>
+                            <input type="file" id="logo_file" name="logo_file" accept="image/*">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="logo_alt" style="display: block; margin-bottom: 5px; font-weight: normal;">Texto Alternativo</label>
+                            <input type="text" id="logo_alt" name="logo_alt"
+                                   value="<?php echo htmlspecialchars($site_config['logo']['alt'] ?? 'Logo'); ?>"
+                                   placeholder="Logo de Mi Tienda"
+                                   style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <label style="display: flex; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer;">
+                        <input type="checkbox" name="logo_enabled" <?php echo ($site_config['logo']['enabled'] ?? false) ? 'checked' : ''; ?>>
+                        <span style="font-weight: normal;">Mostrar logo en el sitio</span>
+                    </label>
                 </div>
 
                 <div class="form-group">

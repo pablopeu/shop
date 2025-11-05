@@ -453,3 +453,70 @@ function validate_theme($theme_slug) {
         'message' => 'Theme is valid'
     ];
 }
+
+/**
+ * Render site logo or site name
+ * Muestra el logo si está configurado, sino muestra el nombre del sitio
+ * @param array $site_config Site configuration
+ * @return void Echoes HTML
+ */
+function render_site_logo($site_config) {
+    if (!empty($site_config['logo']['enabled']) && !empty($site_config['logo']['path'])) {
+        // Render logo image
+        $logo_path = htmlspecialchars($site_config['logo']['path']);
+        $logo_alt = htmlspecialchars($site_config['logo']['alt'] ?? $site_config['site_name']);
+        $logo_width = (int)($site_config['logo']['width'] ?? 170);
+        $logo_height = (int)($site_config['logo']['height'] ?? 85);
+
+        echo '<img src="' . $logo_path . '"
+                   alt="' . $logo_alt . '"
+                   width="' . $logo_width . '"
+                   height="' . $logo_height . '"
+                   style="max-width: 100%; height: auto;">';
+    } else {
+        // Render site name as text
+        echo '<h1>' . htmlspecialchars($site_config['site_name']) . '</h1>';
+    }
+}
+
+/**
+ * Render custom footer HTML
+ * Muestra el footer personalizado si está configurado, sino muestra el footer por defecto
+ * @param array $site_config Site configuration
+ * @param array $footer_config Footer configuration
+ * @return void Echoes HTML
+ */
+function render_footer($site_config, $footer_config) {
+    if (!empty($footer_config['enabled']) && !empty($footer_config['html'])) {
+        // Render custom HTML footer
+        echo $footer_config['html'];
+    } else if (!empty($footer_config['use_default']) || empty($footer_config['html'])) {
+        // Render default footer
+        echo '<div class="container">';
+        echo '    <div class="footer-content">';
+        echo '        <div class="footer-section">';
+        echo '            <h3>' . htmlspecialchars($site_config['site_name']) . '</h3>';
+        echo '            <p>' . htmlspecialchars($site_config['site_description']) . '</p>';
+        echo '        </div>';
+        echo '        <div class="footer-section">';
+        echo '            <h4>Contacto</h4>';
+        if (!empty($site_config['contact_email'])) {
+            echo '            <p>Email: ' . htmlspecialchars($site_config['contact_email']) . '</p>';
+        }
+        if (!empty($site_config['contact_phone'])) {
+            echo '            <p>Teléfono: ' . htmlspecialchars($site_config['contact_phone']) . '</p>';
+        }
+        echo '        </div>';
+        echo '        <div class="footer-section">';
+        echo '            <h4>Enlaces</h4>';
+        echo '            <a href="/">Inicio</a><br>';
+        echo '            <a href="/buscar.php">Buscar</a><br>';
+        echo '            <a href="/favoritos.php">Favoritos</a>';
+        echo '        </div>';
+        echo '    </div>';
+        echo '    <div class="footer-bottom">';
+        echo '        <p>' . htmlspecialchars($site_config['footer_text'] ?? '© ' . date('Y') . ' ' . $site_config['site_name'] . '. Todos los derechos reservados.') . '</p>';
+        echo '    </div>';
+        echo '</div>';
+    }
+}
