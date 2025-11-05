@@ -98,35 +98,6 @@ function get_available_themes() {
 }
 
 /**
- * Validate theme structure
- * Verifica que un theme tenga todos los archivos requeridos
- *
- * @param string $theme_slug Slug del theme a validar
- * @return array Array con 'valid' (bool) y 'missing_files' (array)
- */
-function validate_theme($theme_slug) {
-    $theme_dir = __DIR__ . "/../themes/{$theme_slug}";
-    $required_files = [
-        'theme.json',
-        'variables.css',
-        'theme.css'
-    ];
-
-    $missing_files = [];
-
-    foreach ($required_files as $file) {
-        if (!file_exists($theme_dir . '/' . $file)) {
-            $missing_files[] = $file;
-        }
-    }
-
-    return [
-        'valid' => empty($missing_files),
-        'missing_files' => $missing_files
-    ];
-}
-
-/**
  * Cache theme configuration
  * Implementación simple de cache para configuración de theme
  * (Para futuras optimizaciones)
@@ -136,3 +107,5 @@ function cache_theme_config($theme_slug, $ttl = 3600) {
     // Por ahora retorna la config sin cache
     return get_theme_config($theme_slug);
 }
+
+// NOTE: validate_theme() moved to includes/functions.php to avoid duplication
