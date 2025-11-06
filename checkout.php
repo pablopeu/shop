@@ -310,18 +310,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                     } else {
                         $mp = new MercadoPago($access_token, $sandbox_mode);
 
-                        // Prepare items for Mercadopago
+                        // Mercadopago only accepts ARS in Argentina
+                        // Convert to ARS if order is in USD
+                        $mp_currency = 'ARS';
                         $mp_items = [];
+
                         foreach ($order['items'] as $item) {
+                            $item_price = floatval($item['price']);
+
+                            // Convert to ARS if order currency is USD
+                            if ($order['currency'] === 'USD') {
+                                $item_price = $item_price * $exchange_rate;
+                            }
+
                             $mp_items[] = [
                                 'title' => $item['name'],
-                                'quantity' => $item['quantity'],
-                                'unit_price' => floatval($item['price_' . strtolower($selected_currency)]),
-                                'currency_id' => $selected_currency
+                                'quantity' => intval($item['quantity']),
+                                'unit_price' => round($item_price, 2),
+                                'currency_id' => $mp_currency
                             ];
                         }
 
-                        // URLs for redirects
+                        // URLs for redirects (must be absolute URLs)
                         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
                         $base_url = $protocol . $_SERVER['HTTP_HOST'];
 
@@ -331,10 +341,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                             'external_reference' => $order['id'],
                             'back_urls' => [
                                 'success' => $base_url . '/gracias.php?order=' . $order['id'] . '&token=' . $order['tracking_token'],
-                                'failure' => $base_url . '/error.php?order=' . $order['id'] . '&token=' . $order['tracking_token'],
-                                'pending' => $base_url . '/pendiente.php?order=' . $order['id'] . '&token=' . $order['tracking_token']
+                                'failure' => $base_url . '/gracias.php?order=' . $order['id'] . '&token=' . $order['tracking_token'],
+                                'pending' => $base_url . '/gracias.php?order=' . $order['id'] . '&token=' . $order['tracking_token']
                             ],
-                            'auto_return' => 'approved',
                             'notification_url' => $base_url . '/webhook.php',
                             'statement_descriptor' => substr($site_config['site_name'], 0, 22),
                             'payer' => [
@@ -349,7 +358,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                         $preference = $mp->createPreference($preference_data);
                         $init_point = $mp->getInitPoint($preference);
 
-                        // Update order with payment link
+                        // Update order with payment link and MP currency
                         $orders_file = __DIR__ . '/data/orders.json';
                         $orders_data = read_json($orders_file);
 
@@ -357,6 +366,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                             if ($o['id'] === $order['id']) {
                                 $o['payment_link'] = $init_point;
                                 $o['payment_id'] = $preference['id'];
+                                $o['payment_currency'] = $mp_currency;
                                 break;
                             }
                         }
