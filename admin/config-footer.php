@@ -235,7 +235,7 @@ $user = get_logged_user();
                     <div class="form-group">
                         <label class="checkbox-label">
                             <input type="checkbox" name="footer_enabled" <?php echo ($footer_config['enabled'] ?? false) ? 'checked' : ''; ?>>
-                            <span>✅ Activar footer personalizado</span>
+                            <span>Activar footer personalizado</span>
                         </label>
                     </div>
                     <div class="form-group">

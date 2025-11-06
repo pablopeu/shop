@@ -32,7 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
         $config['whatsapp'] = [
             'enabled' => isset($_POST['whatsapp_enabled']),
             'number' => sanitize_input($_POST['whatsapp_number'] ?? ''),
-            'message' => sanitize_input($_POST['whatsapp_message'] ?? 'Hola! Me interesa un producto de su tienda')
+            'message' => sanitize_input($_POST['whatsapp_message'] ?? 'Hola! Me interesa un producto de su tienda'),
+            'custom_link' => sanitize_input($_POST['whatsapp_custom_link'] ?? '')
         ];
 
         // Keep old whatsapp_number for backward compatibility
@@ -245,12 +246,12 @@ $user = get_logged_user();
                     <label style="font-size: 16px; margin-bottom: 10px;">💬 Configuración de WhatsApp</label>
                     <p style="color: #666; font-size: 13px; margin-bottom: 15px;">Configura el botón flotante de WhatsApp que aparecerá en tu sitio</p>
 
-                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; cursor: pointer;">
+                    <label style="margin-bottom: 15px; cursor: pointer; display: block;">
                         <input type="checkbox" name="whatsapp_enabled" <?php echo ($site_config['whatsapp']['enabled'] ?? false) ? 'checked' : ''; ?>>
                         <span style="font-weight: normal;">Mostrar botón de WhatsApp en el sitio</span>
                     </label>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                         <div>
                             <label for="whatsapp_number" style="display: block; margin-bottom: 5px; font-weight: normal;">Número de WhatsApp</label>
                             <input type="text" id="whatsapp_number" name="whatsapp_number"
@@ -265,6 +266,17 @@ $user = get_logged_user();
                                    placeholder="Hola! Me interesa un producto de su tienda"
                                    style="width: 100%;">
                         </div>
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <label for="whatsapp_custom_link" style="display: block; margin-bottom: 5px; font-weight: normal;">Link personalizado de WhatsApp (opcional)</label>
+                        <input type="text" id="whatsapp_custom_link" name="whatsapp_custom_link"
+                               value="<?php echo htmlspecialchars($site_config['whatsapp']['custom_link'] ?? ''); ?>"
+                               placeholder="https://api.whatsapp.com/message/XXXXX"
+                               style="width: 100%;">
+                        <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                            Si usas un link personalizado, este tendrá prioridad sobre el número de WhatsApp
+                        </small>
                     </div>
                 </div>
 

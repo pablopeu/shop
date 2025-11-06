@@ -175,7 +175,17 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
     <!-- WhatsApp Button -->
     <?php if ($site_config['whatsapp']['enabled']): ?>
-    <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $site_config['whatsapp']['number']); ?>?text=<?php echo urlencode($site_config['whatsapp']['message']); ?>"
+    <?php
+    // Priorizar custom_link si está configurado, sino usar number
+    if (!empty($site_config['whatsapp']['custom_link'])) {
+        $whatsapp_url = $site_config['whatsapp']['custom_link'];
+    } else {
+        $whatsapp_number = preg_replace('/[^0-9]/', '', $site_config['whatsapp']['number']);
+        $whatsapp_message = urlencode($site_config['whatsapp']['message']);
+        $whatsapp_url = 'https://wa.me/' . $whatsapp_number . '?text=' . $whatsapp_message;
+    }
+    ?>
+    <a href="<?php echo htmlspecialchars($whatsapp_url); ?>"
        class="whatsapp-button"
        target="_blank"
        title="Contáctanos por WhatsApp">
