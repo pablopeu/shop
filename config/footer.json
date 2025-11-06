@@ -25,7 +25,12 @@
             "enabled": true,
             "address": "",
             "subject": "Consulta desde el sitio web",
-            "icon_color": "#4f4f4f"
+            "body": ""
+        },
+        "whatsapp": {
+            "enabled": false,
+            "number": "",
+            "message": "Hola, consulta desde el sitio web"
         }
     },
     "center_column": {
@@ -34,8 +39,7 @@
             "street": "",
             "city": "",
             "country": "",
-            "map_url": "",
-            "icon_color": "#4f4f4f"
+            "map_url": ""
         },
         "phones": [
             {
@@ -46,8 +50,7 @@
         "schedule": {
             "enabled": true,
             "days": "Lunes a Viernes",
-            "hours": "de 9 a 18hs",
-            "icon_color": "#4f4f4f"
+            "hours": "de 9 a 18hs"
         }
     },
     "right_column": {
@@ -61,8 +64,7 @@
             "facebook": "",
             "twitter": "",
             "instagram": "",
-            "telegram": "",
-            "icon_bg_color": "#4f4f4f"
+            "telegram": ""
         }
     }
 }

@@ -520,10 +520,24 @@ function render_footer($site_config, $footer_config) {
         if (!empty($footer_config['left_column']['email']['enabled']) && !empty($footer_config['left_column']['email']['address'])) {
             $email = $footer_config['left_column']['email'];
             $subject = urlencode($email['subject'] ?? 'Consulta desde el sitio web');
+            $body = !empty($email['body']) ? '&Body=' . urlencode($email['body']) : '';
             echo '<div>';
             echo '<i class="fa fa-envelope"></i> ';
-            echo '<a href="mailto:' . htmlspecialchars($email['address']) . '?Subject=' . $subject . '" style="color: #007eff;">';
+            echo '<a href="mailto:' . htmlspecialchars($email['address']) . '?Subject=' . $subject . $body . '" style="color: #007eff;">';
             echo htmlspecialchars($email['address']);
+            echo '</a>';
+            echo '</div>';
+        }
+
+        // WhatsApp
+        if (!empty($footer_config['left_column']['whatsapp']['enabled']) && !empty($footer_config['left_column']['whatsapp']['number'])) {
+            $whatsapp = $footer_config['left_column']['whatsapp'];
+            $number = preg_replace('/[^0-9]/', '', $whatsapp['number']); // Remove all non-numeric characters
+            $message = urlencode($whatsapp['message'] ?? 'Hola, consulta desde el sitio web');
+            echo '<div>';
+            echo '<i class="fa fa-whatsapp"></i> ';
+            echo '<a href="https://wa.me/' . $number . '?text=' . $message . '" target="_blank" style="color: #25D366;">';
+            echo htmlspecialchars($whatsapp['number']);
             echo '</a>';
             echo '</div>';
         }

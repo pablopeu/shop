@@ -13,12 +13,41 @@ require_admin();
 $message = '';
 $error = '';
 
+// Handle logo upload
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['logo_upload']) && $_FILES['logo_upload']['error'] === UPLOAD_ERR_OK) {
+    $upload_dir = __DIR__ . '/../uploads/footer/';
+    if (!is_dir($upload_dir)) {
+        mkdir($upload_dir, 0755, true);
+    }
+
+    $file_tmp = $_FILES['logo_upload']['tmp_name'];
+    $file_name = $_FILES['logo_upload']['name'];
+    $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+
+    // Validar extensión
+    $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    if (in_array($file_ext, $allowed_ext)) {
+        $new_filename = 'logo-' . time() . '.' . $file_ext;
+        $upload_path = $upload_dir . $new_filename;
+
+        if (move_uploaded_file($file_tmp, $upload_path)) {
+            $_POST['logo_path'] = '/uploads/footer/' . $new_filename;
+            $message = 'Logo subido exitosamente';
+        } else {
+            $error = 'Error al subir el logo';
+        }
+    } else {
+        $error = 'Solo se permiten imágenes (JPG, PNG, GIF, WEBP)';
+    }
+}
+
 // Update footer config
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
     if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
         $error = 'Token de seguridad inválido';
     } else {
         $config_file = __DIR__ . '/../config/footer.json';
+        $current_config = read_json($config_file);
 
         // Build links array
         $links = [];
@@ -46,6 +75,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
             }
         }
 
+        // Keep existing logo path if not uploaded new one
+        $logo_path = $_POST['logo_path'] ?? $current_config['left_column']['logo']['path'] ?? '';
+
         $config = [
             'enabled' => isset($_POST['footer_enabled']),
             'type' => 'advanced',
@@ -54,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
             'left_column' => [
                 'logo' => [
                     'enabled' => isset($_POST['logo_enabled']),
-                    'path' => $_POST['logo_path'] ?? '',
+                    'path' => $logo_path,
                     'alt' => $_POST['logo_alt'] ?? 'Logo',
                     'width' => (int)($_POST['logo_width'] ?? 169),
                     'height' => (int)($_POST['logo_height'] ?? 83)
@@ -64,7 +96,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
                     'enabled' => isset($_POST['email_enabled']),
                     'address' => $_POST['email_address'] ?? '',
                     'subject' => $_POST['email_subject'] ?? 'Consulta desde el sitio web',
-                    'icon_color' => $_POST['email_icon_color'] ?? '#4f4f4f'
+                    'body' => $_POST['email_body'] ?? ''
+                ],
+                'whatsapp' => [
+                    'enabled' => isset($_POST['whatsapp_enabled']),
+                    'number' => $_POST['whatsapp_number'] ?? '',
+                    'message' => $_POST['whatsapp_message'] ?? 'Hola, consulta desde el sitio web'
                 ]
             ],
             'center_column' => [
@@ -73,15 +110,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
                     'street' => $_POST['address_street'] ?? '',
                     'city' => $_POST['address_city'] ?? '',
                     'country' => $_POST['address_country'] ?? '',
-                    'map_url' => $_POST['address_map_url'] ?? '',
-                    'icon_color' => $_POST['address_icon_color'] ?? '#4f4f4f'
+                    'map_url' => $_POST['address_map_url'] ?? ''
                 ],
                 'phones' => $phones,
                 'schedule' => [
                     'enabled' => isset($_POST['schedule_enabled']),
                     'days' => $_POST['schedule_days'] ?? 'Lunes a Viernes',
-                    'hours' => $_POST['schedule_hours'] ?? 'de 9 a 18hs',
-                    'icon_color' => $_POST['schedule_icon_color'] ?? '#4f4f4f'
+                    'hours' => $_POST['schedule_hours'] ?? 'de 9 a 18hs'
                 ]
             ],
             'right_column' => [
@@ -95,8 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
                     'facebook' => $_POST['social_facebook'] ?? '',
                     'twitter' => $_POST['social_twitter'] ?? '',
                     'instagram' => $_POST['social_instagram'] ?? '',
-                    'telegram' => $_POST['social_telegram'] ?? '',
-                    'icon_bg_color' => $_POST['social_icon_bg_color'] ?? '#4f4f4f'
+                    'telegram' => $_POST['social_telegram'] ?? ''
                 ]
             ]
         ];
@@ -122,7 +156,7 @@ $user = get_logged_user();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuración del Footer - Admin</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
@@ -141,6 +175,7 @@ $user = get_logged_user();
         .form-group input[type="url"],
         .form-group input[type="email"],
         .form-group input[type="number"],
+        .form-group input[type="file"],
         .form-group textarea,
         .form-group input[type="color"] { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; transition: border-color 0.3s; }
         .form-group input:focus,
@@ -158,6 +193,8 @@ $user = get_logged_user();
         .color-input-wrapper input[type="color"] { width: 60px; height: 40px; cursor: pointer; }
         .color-input-wrapper input[type="text"] { flex: 1; }
         .help-text { font-size: 12px; color: #666; margin-top: 4px; }
+        .logo-preview { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px; text-align: center; }
+        .logo-preview img { max-width: 200px; max-height: 100px; }
         @media (max-width: 1024px) { .main-content { margin-left: 0; } }
     </style>
 </head>
@@ -176,8 +213,9 @@ $user = get_logged_user();
             <div class="message error"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
 
-        <form method="POST" action="" id="footerForm">
+        <form method="POST" action="" id="footerForm" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+            <input type="hidden" name="logo_path" id="logo_path_hidden" value="<?php echo htmlspecialchars($footer_config['left_column']['logo']['path'] ?? ''); ?>">
 
             <!-- General Settings -->
             <div class="card">
@@ -191,17 +229,11 @@ $user = get_logged_user();
                     </div>
                     <div class="form-group">
                         <label>Color de fondo</label>
-                        <div class="color-input-wrapper">
-                            <input type="color" name="background_color" value="<?php echo htmlspecialchars($footer_config['background_color'] ?? '#292c2f'); ?>">
-                            <input type="text" name="background_color_text" value="<?php echo htmlspecialchars($footer_config['background_color'] ?? '#292c2f'); ?>" readonly>
-                        </div>
+                        <input type="color" name="background_color" value="<?php echo htmlspecialchars($footer_config['background_color'] ?? '#292c2f'); ?>">
                     </div>
                     <div class="form-group">
                         <label>Color de texto</label>
-                        <div class="color-input-wrapper">
-                            <input type="color" name="text_color" value="<?php echo htmlspecialchars($footer_config['text_color'] ?? '#ffffff'); ?>">
-                            <input type="text" name="text_color_text" value="<?php echo htmlspecialchars($footer_config['text_color'] ?? '#ffffff'); ?>" readonly>
-                        </div>
+                        <input type="color" name="text_color" value="<?php echo htmlspecialchars($footer_config['text_color'] ?? '#ffffff'); ?>">
                     </div>
                 </div>
             </div>
@@ -210,19 +242,28 @@ $user = get_logged_user();
             <div class="card">
                 <h2>📌 Columna Izquierda</h2>
 
-                <!-- Logo -->
+                <!-- Logo Upload -->
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" name="logo_enabled" <?php echo ($footer_config['left_column']['logo']['enabled'] ?? false) ? 'checked' : ''; ?>>
                         <span>Mostrar logo</span>
                     </label>
                 </div>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Ruta del logo</label>
-                        <input type="text" name="logo_path" value="<?php echo htmlspecialchars($footer_config['left_column']['logo']['path'] ?? ''); ?>" placeholder="/uploads/logo.png">
-                        <div class="help-text">Ruta relativa o absoluta de la imagen</div>
+
+                <div class="form-group">
+                    <label>Subir logo</label>
+                    <input type="file" name="logo_upload" id="logo_upload" accept="image/*" onchange="previewLogo(this)">
+                    <div class="help-text">Formatos: JPG, PNG, GIF, WEBP</div>
+
+                    <?php if (!empty($footer_config['left_column']['logo']['path'])): ?>
+                    <div class="logo-preview" id="logo_preview">
+                        <img src="<?php echo htmlspecialchars($footer_config['left_column']['logo']['path']); ?>" alt="Logo actual">
+                        <div class="help-text">Logo actual</div>
                     </div>
+                    <?php endif; ?>
+                </div>
+
+                <div class="form-grid">
                     <div class="form-group">
                         <label>Texto alternativo</label>
                         <input type="text" name="logo_alt" value="<?php echo htmlspecialchars($footer_config['left_column']['logo']['alt'] ?? 'Logo'); ?>">
@@ -262,7 +303,7 @@ $user = get_logged_user();
                 <button type="button" class="btn-add" onclick="addLink()">➕ Agregar enlace</button>
 
                 <!-- Email -->
-                <h3 style="margin: 20px 0 10px; font-size: 16px;">Email</h3>
+                <h3 style="margin: 20px 0 10px; font-size: 16px;">Email de Contacto</h3>
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" name="email_enabled" <?php echo ($footer_config['left_column']['email']['enabled'] ?? false) ? 'checked' : ''; ?>>
@@ -277,6 +318,31 @@ $user = get_logged_user();
                     <div class="form-group">
                         <label>Asunto predeterminado</label>
                         <input type="text" name="email_subject" value="<?php echo htmlspecialchars($footer_config['left_column']['email']['subject'] ?? 'Consulta desde el sitio web'); ?>">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Cuerpo del mensaje (opcional)</label>
+                    <textarea name="email_body" rows="3"><?php echo htmlspecialchars($footer_config['left_column']['email']['body'] ?? ''); ?></textarea>
+                    <div class="help-text">Texto que aparecerá pre-escrito en el email</div>
+                </div>
+
+                <!-- WhatsApp -->
+                <h3 style="margin: 20px 0 10px; font-size: 16px;">WhatsApp</h3>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="whatsapp_enabled" <?php echo ($footer_config['left_column']['whatsapp']['enabled'] ?? false) ? 'checked' : ''; ?>>
+                        <span>Mostrar WhatsApp</span>
+                    </label>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Número de WhatsApp</label>
+                        <input type="text" name="whatsapp_number" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['number'] ?? ''); ?>" placeholder="+54 9 11 1234-5678">
+                        <div class="help-text">Formato internacional con código de país</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Mensaje predeterminado</label>
+                        <input type="text" name="whatsapp_message" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['message'] ?? 'Hola, consulta desde el sitio web'); ?>">
                     </div>
                 </div>
             </div>
@@ -308,7 +374,7 @@ $user = get_logged_user();
                     <div class="form-group">
                         <label>URL de Google Maps</label>
                         <input type="url" name="address_map_url" value="<?php echo htmlspecialchars($footer_config['center_column']['address']['map_url'] ?? ''); ?>" placeholder="https://maps.google.com/...">
-                        <div class="help-text">URL completa de Google Maps</div>
+                        <div class="help-text">URL completa de Google Maps para el icono de ubicación</div>
                     </div>
                 </div>
 
@@ -386,19 +452,19 @@ $user = get_logged_user();
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Facebook</label>
+                        <label><i class="fa fa-facebook"></i> Facebook</label>
                         <input type="url" name="social_facebook" value="<?php echo htmlspecialchars($footer_config['right_column']['social']['facebook'] ?? ''); ?>" placeholder="https://facebook.com/...">
                     </div>
                     <div class="form-group">
-                        <label>Twitter</label>
+                        <label><i class="fa fa-twitter"></i> Twitter</label>
                         <input type="url" name="social_twitter" value="<?php echo htmlspecialchars($footer_config['right_column']['social']['twitter'] ?? ''); ?>" placeholder="https://twitter.com/...">
                     </div>
                     <div class="form-group">
-                        <label>Instagram</label>
+                        <label><i class="fa fa-instagram"></i> Instagram</label>
                         <input type="url" name="social_instagram" value="<?php echo htmlspecialchars($footer_config['right_column']['social']['instagram'] ?? ''); ?>" placeholder="https://instagram.com/...">
                     </div>
                     <div class="form-group">
-                        <label>Telegram</label>
+                        <label><i class="fa fa-telegram"></i> Telegram</label>
                         <input type="url" name="social_telegram" value="<?php echo htmlspecialchars($footer_config['right_column']['social']['telegram'] ?? ''); ?>" placeholder="https://t.me/...">
                     </div>
                 </div>
@@ -409,13 +475,23 @@ $user = get_logged_user();
     </div>
 
     <script>
-        // Sync color inputs
-        document.querySelectorAll('input[type="color"]').forEach(colorInput => {
-            const textInput = colorInput.nextElementSibling;
-            colorInput.addEventListener('input', () => {
-                textInput.value = colorInput.value;
-            });
-        });
+        // Preview logo before upload
+        function previewLogo(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    let preview = document.getElementById('logo_preview');
+                    if (!preview) {
+                        preview = document.createElement('div');
+                        preview.id = 'logo_preview';
+                        preview.className = 'logo-preview';
+                        input.parentElement.appendChild(preview);
+                    }
+                    preview.innerHTML = '<img src="' + e.target.result + '" alt="Vista previa"><div class="help-text">Vista previa del logo</div>';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
 
         // Add link
         function addLink() {
@@ -458,6 +534,15 @@ $user = get_logged_user();
             `;
             container.appendChild(item);
         }
+
+        // Form submit handler
+        document.getElementById('footerForm').addEventListener('submit', function(e) {
+            const fileInput = document.getElementById('logo_upload');
+            if (fileInput.files.length > 0) {
+                // There's a file to upload, submit with file
+                return true;
+            }
+        });
     </script>
 </body>
 </html>
