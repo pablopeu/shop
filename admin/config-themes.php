@@ -68,44 +68,21 @@ $user = get_logged_user();
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f5f7fa;
-            padding: 20px;
         }
 
-        .container {
+        .main-content {
+            margin-left: 260px;
+            padding: 30px;
             max-width: 1200px;
-            margin: 0 auto;
         }
 
-        .header {
-            background: white;
-            padding: 20px 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        .content-header {
             margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
 
-        .header h1 {
-            font-size: 24px;
+        .content-header h1 {
+            font-size: 28px;
             color: #2c3e50;
-        }
-
-        .user-info {
-            color: #666;
-        }
-
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .back-link:hover {
-            text-decoration: underline;
         }
 
         .message {
@@ -325,17 +302,21 @@ $user = get_logged_user();
             color: #555;
             line-height: 1.6;
         }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <a href="index.php" class="back-link">← Volver al Dashboard</a>
+    <?php include __DIR__ . '/includes/sidebar.php'; ?>
 
-        <div class="header">
+    <div class="main-content">
+        <div class="content-header">
             <h1>⚡ Configuración de Themes</h1>
-            <div class="user-info">
-                👤 <?php echo htmlspecialchars($user['username']); ?>
-            </div>
         </div>
 
         <?php if ($message): ?>
