@@ -336,18 +336,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
 
                         // URLs for redirects (must be absolute URLs)
                         // Detect protocol - ngrok forwards HTTPS but PHP sees HTTP
-                        $protocol = 'https://'; // Default to HTTPS
+                        $protocol = 'https://'; // Default to HTTPS for safety
+
+                        // Check various ways HTTPS can be detected
                         if (isset($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+                            // ngrok, Cloudflare, or other reverse proxy
                             $protocol = $_SERVER['HTTP_X_FORWARDED_PROTO'] . '://';
+                        } elseif (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') {
+                            $protocol = 'https://';
                         } elseif (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
                             $protocol = 'https://';
-                        } elseif ($_SERVER['SERVER_PORT'] == 443) {
+                        } elseif (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) {
                             $protocol = 'https://';
-                        } else {
-                            $protocol = 'http://';
                         }
 
-                        $base_url = $protocol . $_SERVER['HTTP_HOST'];
+                        $host = $_SERVER['HTTP_HOST'];
+                        $base_url = $protocol . $host;
+
+                        // Log the URL being used for debugging
+                        error_log("Mercadopago checkout - Base URL: $base_url");
 
                         // Create preference
                         $preference_data = [
@@ -369,9 +376,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                         ];
 
                         // Only add notification_url if not localhost (MP can't reach localhost)
-                        $host = $_SERVER['HTTP_HOST'];
                         if (!preg_match('/^(localhost|127\.0\.0\.1|::1)(:\d+)?$/', $host)) {
-                            $preference_data['notification_url'] = $base_url . '/webhook.php';
+                            $webhook_url = $base_url . '/webhook.php';
+                            $preference_data['notification_url'] = $webhook_url;
+                            error_log("Mercadopago checkout - Webhook URL: $webhook_url");
+                        } else {
+                            error_log("Mercadopago checkout - Skipping webhook URL (localhost detected)");
                         }
 
                         $preference = $mp->createPreference($preference_data);

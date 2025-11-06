@@ -48,7 +48,30 @@ class MercadoPago {
         $result = json_decode($response, true);
 
         if ($http_code !== 201 && $http_code !== 200) {
-            throw new Exception('Mercadopago API error: ' . ($result['message'] ?? 'Unknown error'));
+            // Extract detailed error information
+            $error_msg = 'Mercadopago API error (HTTP ' . $http_code . '): ';
+
+            if (isset($result['message'])) {
+                $error_msg .= $result['message'];
+            } elseif (isset($result['error'])) {
+                $error_msg .= $result['error'];
+            } else {
+                $error_msg .= 'Unknown error';
+            }
+
+            // Add cause details if available
+            if (isset($result['cause']) && is_array($result['cause'])) {
+                foreach ($result['cause'] as $cause) {
+                    if (isset($cause['code']) && isset($cause['description'])) {
+                        $error_msg .= ' [' . $cause['code'] . ': ' . $cause['description'] . ']';
+                    }
+                }
+            }
+
+            // Log full response for debugging
+            error_log("Mercadopago createPreference error: " . json_encode($result));
+
+            throw new Exception($error_msg);
         }
 
         return $result;

@@ -85,7 +85,18 @@ if ($data['type'] === 'payment') {
 
         // Get payment details from Mercadopago
         $mp = new MercadoPago($access_token, $sandbox_mode);
-        $payment = $mp->getPayment($payment_id);
+
+        try {
+            $payment = $mp->getPayment($payment_id);
+        } catch (Exception $e) {
+            log_webhook('Error getting payment from MP API', [
+                'payment_id' => $payment_id,
+                'error' => $e->getMessage()
+            ]);
+            // If it's a test payment that doesn't exist, return 200 to avoid retries
+            http_response_code(200);
+            exit('Payment not found in MP');
+        }
 
         log_webhook('Payment details retrieved', ['payment' => $payment]);
 
@@ -100,7 +111,20 @@ if ($data['type'] === 'payment') {
 
         // Load orders
         $orders_file = __DIR__ . '/data/orders.json';
+
+        if (!file_exists($orders_file)) {
+            log_webhook('Orders file does not exist');
+            http_response_code(200);
+            exit('Orders file not found');
+        }
+
         $orders_data = read_json($orders_file);
+
+        if (!isset($orders_data['orders']) || !is_array($orders_data['orders'])) {
+            log_webhook('Invalid orders data structure');
+            http_response_code(200);
+            exit('Invalid orders data');
+        }
 
         $order_index = null;
         foreach ($orders_data['orders'] as $index => $order) {
