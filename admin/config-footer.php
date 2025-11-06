@@ -78,8 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
         // Keep existing logo path if not uploaded new one
         $logo_path = $_POST['logo_path'] ?? $current_config['left_column']['logo']['path'] ?? '';
 
-        // Merge with existing config to preserve data not in the form
-        $config = array_replace_recursive($current_config, [
+        // Build new config (not merging arrays to avoid preserving deleted items)
+        $config = [
             'enabled' => isset($_POST['footer_enabled']),
             'type' => 'advanced',
             'background_color' => $_POST['background_color'] ?? $current_config['background_color'] ?? '#292c2f',
@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
                     'width' => (int)($_POST['logo_width'] ?? $current_config['left_column']['logo']['width'] ?? 169),
                     'height' => (int)($_POST['logo_height'] ?? $current_config['left_column']['logo']['height'] ?? 83)
                 ],
-                'links' => $links,
+                'links' => $links, // Replace completely, not merge
                 'email' => [
                     'enabled' => isset($_POST['email_enabled']),
                     'address' => $_POST['email_address'] ?? $current_config['left_column']['email']['address'] ?? '',
@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
                     'country' => $_POST['address_country'] ?? $current_config['center_column']['address']['country'] ?? '',
                     'map_url' => $_POST['address_map_url'] ?? $current_config['center_column']['address']['map_url'] ?? ''
                 ],
-                'phones' => $phones,
+                'phones' => $phones, // Replace completely, not merge
                 'whatsapp' => [
                     'enabled' => isset($_POST['whatsapp_center_enabled']),
                     'number' => $_POST['whatsapp_center_number'] ?? $current_config['center_column']['whatsapp']['number'] ?? '',
@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
                     'telegram' => $_POST['social_telegram'] ?? $current_config['right_column']['social']['telegram'] ?? ''
                 ]
             ]
-        ]);
+        ];
 
         if (write_json($config_file, $config)) {
             $message = 'Configuración del footer guardada exitosamente';
@@ -194,8 +194,11 @@ $user = get_logged_user();
         .form-group textarea { resize: vertical; min-height: 80px; font-family: inherit; }
         .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; }
         .checkbox-label input[type="checkbox"] { cursor: pointer; width: 18px; height: 18px; }
-        .btn-save { padding: 12px 30px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-save { padding: 12px 30px; background: #6c757d; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-save.changed { background: #dc3545; animation: pulse 1.5s infinite; }
+        .btn-save.saved { background: #28a745; }
         .btn-save:hover { background: #5568d3; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
         .btn-add { padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 10px; }
         .btn-remove { padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
         .repeater-item { background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 10px; position: relative; }
@@ -528,7 +531,7 @@ $user = get_logged_user();
                 </div>
             </div>
 
-            <button type="submit" name="save_footer" class="btn-save">💾 Guardar Configuración</button>
+            <button type="submit" name="save_footer" class="btn-save" id="saveBtn">💾 Guardar Configuración</button>
         </form>
     </div>
 
@@ -600,6 +603,86 @@ $user = get_logged_user();
                 // There's a file to upload, submit with file
                 return true;
             }
+        });
+
+        // Change detection for save button
+        const form = document.getElementById('footerForm');
+        const saveBtn = document.getElementById('saveBtn');
+        const inputs = form.querySelectorAll('input:not([type="file"]):not([type="hidden"]), textarea, select');
+        let originalValues = {};
+        let saveSuccess = <?php echo $message ? 'true' : 'false'; ?>;
+
+        // Store original values (excluding file inputs and buttons)
+        inputs.forEach(input => {
+            if (input.type === 'checkbox') {
+                originalValues[input.name] = input.checked;
+            } else {
+                originalValues[input.name] = input.value;
+            }
+        });
+
+        // Detect changes
+        inputs.forEach(input => {
+            input.addEventListener('input', () => {
+                checkForChanges();
+            });
+            input.addEventListener('change', () => {
+                checkForChanges();
+            });
+        });
+
+        function checkForChanges() {
+            let hasChanges = false;
+            inputs.forEach(input => {
+                const currentValue = input.type === 'checkbox' ? input.checked : input.value;
+                if (currentValue !== originalValues[input.name]) {
+                    hasChanges = true;
+                }
+            });
+
+            if (hasChanges) {
+                saveBtn.classList.add('changed');
+                saveBtn.classList.remove('saved');
+            } else {
+                saveBtn.classList.remove('changed');
+                if (saveSuccess) {
+                    saveBtn.classList.add('saved');
+                }
+            }
+        }
+
+        // Show saved state
+        if (saveSuccess) {
+            saveBtn.classList.add('saved');
+            setTimeout(() => {
+                saveBtn.classList.remove('saved');
+            }, 3000);
+        }
+
+        // Also detect when items are removed
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('btn-remove')) {
+                setTimeout(checkForChanges, 100);
+            }
+        });
+
+        // Detect when items are added
+        const addButtons = document.querySelectorAll('.btn-add');
+        addButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                setTimeout(() => {
+                    // Re-attach listeners to new inputs
+                    const newInputs = form.querySelectorAll('input:not([type="file"]):not([type="hidden"]), textarea, select');
+                    newInputs.forEach(input => {
+                        if (!originalValues.hasOwnProperty(input.name)) {
+                            originalValues[input.name] = input.type === 'checkbox' ? input.checked : input.value;
+                            input.addEventListener('input', checkForChanges);
+                            input.addEventListener('change', checkForChanges);
+                        }
+                    });
+                    checkForChanges();
+                }, 100);
+            });
         });
     </script>
 </body>
