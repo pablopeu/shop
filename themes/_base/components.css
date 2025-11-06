@@ -330,6 +330,11 @@
     width: 40%;
 }
 
+/* Espaciado para email y WhatsApp en columna izquierda */
+.footer-distributed .footer-left > div {
+    margin-top: 15px;
+}
+
 .footer-distributed .footer-left i {
     background-color: #4f4f4f;
     color: #ffffff;

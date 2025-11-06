@@ -529,13 +529,23 @@ function render_footer($site_config, $footer_config) {
         }
 
         // WhatsApp (sin icono, solo texto configurable y link)
-        if (!empty($footer_config['left_column']['whatsapp']['enabled']) && !empty($footer_config['left_column']['whatsapp']['number'])) {
+        if (!empty($footer_config['left_column']['whatsapp']['enabled'])) {
             $whatsapp = $footer_config['left_column']['whatsapp'];
-            $number = preg_replace('/[^0-9]/', '', $whatsapp['number']); // Remove all non-numeric characters
-            $message = urlencode($whatsapp['message'] ?? 'Hola, consulta desde el sitio web');
-            $display_text = $whatsapp['display_text'] ?? $whatsapp['number'];
+
+            // Usar custom_link si está configurado, sino generar link con número
+            if (!empty($whatsapp['custom_link'])) {
+                $wa_link = $whatsapp['custom_link'];
+            } else if (!empty($whatsapp['number'])) {
+                $number = preg_replace('/[^0-9]/', '', $whatsapp['number']);
+                $message = urlencode($whatsapp['message'] ?? 'Hola, consulta desde el sitio web');
+                $wa_link = 'https://wa.me/' . $number . '?text=' . $message;
+            } else {
+                $wa_link = '#';
+            }
+
+            $display_text = $whatsapp['display_text'] ?? $whatsapp['number'] ?? 'WhatsApp';
             echo '<div>';
-            echo '<a href="https://wa.me/' . $number . '?text=' . $message . '" target="_blank" style="color: #25D366;">';
+            echo '<a href="' . htmlspecialchars($wa_link) . '" target="_blank" style="color: #25D366;">';
             echo htmlspecialchars($display_text);
             echo '</a>';
             echo '</div>';
@@ -590,15 +600,25 @@ function render_footer($site_config, $footer_config) {
         }
 
         // WhatsApp en sección central (con icono)
-        if (!empty($footer_config['center_column']['whatsapp']['enabled']) && !empty($footer_config['center_column']['whatsapp']['number'])) {
+        if (!empty($footer_config['center_column']['whatsapp']['enabled'])) {
             $whatsapp = $footer_config['center_column']['whatsapp'];
-            $number = preg_replace('/[^0-9]/', '', $whatsapp['number']);
-            $message = urlencode($whatsapp['message'] ?? 'Hola, consulta desde el sitio web');
-            $display_text = $whatsapp['display_text'] ?? $whatsapp['number'];
+
+            // Usar custom_link si está configurado, sino generar link con número
+            if (!empty($whatsapp['custom_link'])) {
+                $wa_link = $whatsapp['custom_link'];
+            } else if (!empty($whatsapp['number'])) {
+                $number = preg_replace('/[^0-9]/', '', $whatsapp['number']);
+                $message = urlencode($whatsapp['message'] ?? 'Hola, consulta desde el sitio web');
+                $wa_link = 'https://wa.me/' . $number . '?text=' . $message;
+            } else {
+                $wa_link = '#';
+            }
+
+            $display_text = $whatsapp['display_text'] ?? $whatsapp['number'] ?? 'WhatsApp';
             echo '<div>';
             echo '<i class="fa fa-whatsapp"></i>';
             echo '<p>';
-            echo '<span><a href="https://wa.me/' . $number . '?text=' . $message . '" target="_blank" style="color: #25D366; text-decoration: none;">';
+            echo '<span><a href="' . htmlspecialchars($wa_link) . '" target="_blank" style="color: #25D366; text-decoration: none;">';
             echo htmlspecialchars($display_text);
             echo '</a></span>';
             echo '</p>';

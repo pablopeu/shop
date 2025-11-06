@@ -78,70 +78,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
         // Keep existing logo path if not uploaded new one
         $logo_path = $_POST['logo_path'] ?? $current_config['left_column']['logo']['path'] ?? '';
 
-        $config = [
+        // Merge with existing config to preserve data not in the form
+        $config = array_replace_recursive($current_config, [
             'enabled' => isset($_POST['footer_enabled']),
             'type' => 'advanced',
-            'background_color' => $_POST['background_color'] ?? '#292c2f',
-            'text_color' => $_POST['text_color'] ?? '#ffffff',
+            'background_color' => $_POST['background_color'] ?? $current_config['background_color'] ?? '#292c2f',
+            'text_color' => $_POST['text_color'] ?? $current_config['text_color'] ?? '#ffffff',
             'left_column' => [
                 'logo' => [
                     'enabled' => isset($_POST['logo_enabled']),
                     'path' => $logo_path,
-                    'alt' => $_POST['logo_alt'] ?? 'Logo',
-                    'width' => (int)($_POST['logo_width'] ?? 169),
-                    'height' => (int)($_POST['logo_height'] ?? 83)
+                    'alt' => $_POST['logo_alt'] ?? $current_config['left_column']['logo']['alt'] ?? 'Logo',
+                    'width' => (int)($_POST['logo_width'] ?? $current_config['left_column']['logo']['width'] ?? 169),
+                    'height' => (int)($_POST['logo_height'] ?? $current_config['left_column']['logo']['height'] ?? 83)
                 ],
                 'links' => $links,
                 'email' => [
                     'enabled' => isset($_POST['email_enabled']),
-                    'address' => $_POST['email_address'] ?? '',
-                    'subject' => $_POST['email_subject'] ?? 'Consulta desde el sitio web',
-                    'body' => $_POST['email_body'] ?? ''
+                    'address' => $_POST['email_address'] ?? $current_config['left_column']['email']['address'] ?? '',
+                    'subject' => $_POST['email_subject'] ?? $current_config['left_column']['email']['subject'] ?? 'Consulta desde el sitio web',
+                    'body' => $_POST['email_body'] ?? $current_config['left_column']['email']['body'] ?? ''
                 ],
                 'whatsapp' => [
                     'enabled' => isset($_POST['whatsapp_left_enabled']),
-                    'number' => $_POST['whatsapp_left_number'] ?? '',
-                    'message' => $_POST['whatsapp_left_message'] ?? 'Hola, consulta desde el sitio web',
-                    'display_text' => $_POST['whatsapp_left_display_text'] ?? ''
+                    'number' => $_POST['whatsapp_left_number'] ?? $current_config['left_column']['whatsapp']['number'] ?? '',
+                    'message' => $_POST['whatsapp_left_message'] ?? $current_config['left_column']['whatsapp']['message'] ?? 'Hola, consulta desde el sitio web',
+                    'display_text' => $_POST['whatsapp_left_display_text'] ?? $current_config['left_column']['whatsapp']['display_text'] ?? '',
+                    'custom_link' => $_POST['whatsapp_left_custom_link'] ?? $current_config['left_column']['whatsapp']['custom_link'] ?? ''
                 ]
             ],
             'center_column' => [
                 'address' => [
                     'enabled' => isset($_POST['address_enabled']),
-                    'street' => $_POST['address_street'] ?? '',
-                    'city' => $_POST['address_city'] ?? '',
-                    'country' => $_POST['address_country'] ?? '',
-                    'map_url' => $_POST['address_map_url'] ?? ''
+                    'street' => $_POST['address_street'] ?? $current_config['center_column']['address']['street'] ?? '',
+                    'city' => $_POST['address_city'] ?? $current_config['center_column']['address']['city'] ?? '',
+                    'country' => $_POST['address_country'] ?? $current_config['center_column']['address']['country'] ?? '',
+                    'map_url' => $_POST['address_map_url'] ?? $current_config['center_column']['address']['map_url'] ?? ''
                 ],
                 'phones' => $phones,
                 'whatsapp' => [
                     'enabled' => isset($_POST['whatsapp_center_enabled']),
-                    'number' => $_POST['whatsapp_center_number'] ?? '',
-                    'message' => $_POST['whatsapp_center_message'] ?? 'Hola, consulta desde el sitio web',
-                    'display_text' => $_POST['whatsapp_center_display_text'] ?? ''
+                    'number' => $_POST['whatsapp_center_number'] ?? $current_config['center_column']['whatsapp']['number'] ?? '',
+                    'message' => $_POST['whatsapp_center_message'] ?? $current_config['center_column']['whatsapp']['message'] ?? 'Hola, consulta desde el sitio web',
+                    'display_text' => $_POST['whatsapp_center_display_text'] ?? $current_config['center_column']['whatsapp']['display_text'] ?? '',
+                    'custom_link' => $_POST['whatsapp_center_custom_link'] ?? $current_config['center_column']['whatsapp']['custom_link'] ?? ''
                 ],
                 'schedule' => [
                     'enabled' => isset($_POST['schedule_enabled']),
-                    'days' => $_POST['schedule_days'] ?? 'Lunes a Viernes',
-                    'hours' => $_POST['schedule_hours'] ?? 'de 9 a 18hs'
+                    'days' => $_POST['schedule_days'] ?? $current_config['center_column']['schedule']['days'] ?? 'Lunes a Viernes',
+                    'hours' => $_POST['schedule_hours'] ?? $current_config['center_column']['schedule']['hours'] ?? 'de 9 a 18hs'
                 ]
             ],
             'right_column' => [
                 'about' => [
                     'enabled' => isset($_POST['about_enabled']),
-                    'title' => $_POST['about_title'] ?? 'Acerca de nosotros',
-                    'text' => $_POST['about_text'] ?? ''
+                    'title' => $_POST['about_title'] ?? $current_config['right_column']['about']['title'] ?? 'Acerca de nosotros',
+                    'text' => $_POST['about_text'] ?? $current_config['right_column']['about']['text'] ?? ''
                 ],
                 'social' => [
                     'enabled' => isset($_POST['social_enabled']),
-                    'facebook' => $_POST['social_facebook'] ?? '',
-                    'twitter' => $_POST['social_twitter'] ?? '',
-                    'instagram' => $_POST['social_instagram'] ?? '',
-                    'whatsapp' => $_POST['social_whatsapp'] ?? '',
-                    'telegram' => $_POST['social_telegram'] ?? ''
+                    'facebook' => $_POST['social_facebook'] ?? $current_config['right_column']['social']['facebook'] ?? '',
+                    'twitter' => $_POST['social_twitter'] ?? $current_config['right_column']['social']['twitter'] ?? '',
+                    'instagram' => $_POST['social_instagram'] ?? $current_config['right_column']['social']['instagram'] ?? '',
+                    'whatsapp' => $_POST['social_whatsapp'] ?? $current_config['right_column']['social']['whatsapp'] ?? '',
+                    'telegram' => $_POST['social_telegram'] ?? $current_config['right_column']['social']['telegram'] ?? ''
                 ]
             ]
-        ];
+        ]);
 
         if (write_json($config_file, $config)) {
             $message = 'Configuración del footer guardada exitosamente';
@@ -342,11 +345,16 @@ $user = get_logged_user();
                         <span>Mostrar WhatsApp</span>
                     </label>
                 </div>
+                <div class="form-group">
+                    <label>Link personalizado de WhatsApp (opcional)</label>
+                    <input type="url" name="whatsapp_left_custom_link" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['custom_link'] ?? ''); ?>" placeholder="https://api.whatsapp.com/message/XXXXX">
+                    <div class="help-text">Si usas este campo, ignora el número y mensaje. Útil para links sin teléfono.</div>
+                </div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Número de WhatsApp</label>
                         <input type="text" name="whatsapp_left_number" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['number'] ?? ''); ?>" placeholder="+54 9 11 1234-5678">
-                        <div class="help-text">Formato internacional con código de país</div>
+                        <div class="help-text">Formato internacional (solo si no usas link personalizado)</div>
                     </div>
                     <div class="form-group">
                         <label>Texto a mostrar</label>
@@ -356,6 +364,7 @@ $user = get_logged_user();
                     <div class="form-group">
                         <label>Mensaje predeterminado</label>
                         <input type="text" name="whatsapp_left_message" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['message'] ?? 'Hola, consulta desde el sitio web'); ?>">
+                        <div class="help-text">Solo si usas número (no link personalizado)</div>
                     </div>
                 </div>
             </div>
@@ -423,11 +432,16 @@ $user = get_logged_user();
                         <span>Mostrar WhatsApp</span>
                     </label>
                 </div>
+                <div class="form-group">
+                    <label>Link personalizado de WhatsApp (opcional)</label>
+                    <input type="url" name="whatsapp_center_custom_link" value="<?php echo htmlspecialchars($footer_config['center_column']['whatsapp']['custom_link'] ?? ''); ?>" placeholder="https://api.whatsapp.com/message/XXXXX">
+                    <div class="help-text">Si usas este campo, ignora el número y mensaje. Útil para links sin teléfono.</div>
+                </div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Número de WhatsApp</label>
                         <input type="text" name="whatsapp_center_number" value="<?php echo htmlspecialchars($footer_config['center_column']['whatsapp']['number'] ?? ''); ?>" placeholder="+54 9 11 1234-5678">
-                        <div class="help-text">Formato internacional con código de país</div>
+                        <div class="help-text">Formato internacional (solo si no usas link personalizado)</div>
                     </div>
                     <div class="form-group">
                         <label>Texto a mostrar</label>
@@ -437,6 +451,7 @@ $user = get_logged_user();
                     <div class="form-group">
                         <label>Mensaje predeterminado</label>
                         <input type="text" name="whatsapp_center_message" value="<?php echo htmlspecialchars($footer_config['center_column']['whatsapp']['message'] ?? 'Hola, consulta desde el sitio web'); ?>">
+                        <div class="help-text">Solo si usas número (no link personalizado)</div>
                     </div>
                 </div>
 
