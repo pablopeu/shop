@@ -375,9 +375,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                             ]
                         ];
 
-                        // Only add notification_url if not localhost (MP can't reach localhost)
-                        // TEMPORARY: Comment out to test without webhook
-                        /*
+                        // Add notification_url for webhook
                         if (!preg_match('/^(localhost|127\.0\.0\.1|::1)(:\d+)?$/', $host)) {
                             $webhook_url = $base_url . '/webhook.php';
                             $preference_data['notification_url'] = $webhook_url;
@@ -385,8 +383,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                         } else {
                             error_log("Mercadopago checkout - Skipping webhook URL (localhost detected)");
                         }
-                        */
-                        error_log("Mercadopago checkout - Webhook URL: DISABLED FOR TESTING");
 
                         $preference = $mp->createPreference($preference_data);
                         $init_point = $mp->getInitPoint($preference);
