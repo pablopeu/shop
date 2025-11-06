@@ -11,6 +11,13 @@ require_once __DIR__ . '/includes/orders.php';
 // Log webhook for debugging
 function log_webhook($message, $data = []) {
     $log_file = __DIR__ . '/data/webhook_log.json';
+
+    // Ensure data directory exists
+    $data_dir = __DIR__ . '/data';
+    if (!is_dir($data_dir)) {
+        mkdir($data_dir, 0755, true);
+    }
+
     $logs = file_exists($log_file) ? json_decode(file_get_contents($log_file), true) : [];
 
     $logs[] = [
@@ -27,15 +34,27 @@ function log_webhook($message, $data = []) {
     file_put_contents($log_file, json_encode($logs, JSON_PRETTY_PRINT));
 }
 
-// Get webhook data
+// Handle GET requests (Mercadopago validation)
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    log_webhook('GET request received - Mercadopago validation', ['query' => $_GET]);
+    http_response_code(200);
+    exit('OK');
+}
+
+// Get webhook data from POST
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-log_webhook('Webhook received', ['input' => $input, 'headers' => getallheaders()]);
+log_webhook('Webhook received', [
+    'method' => $_SERVER['REQUEST_METHOD'],
+    'input' => $input,
+    'parsed_data' => $data,
+    'query' => $_GET
+]);
 
 // Validate webhook
 if (!$data || !isset($data['type'])) {
-    log_webhook('Invalid webhook data', ['data' => $data]);
+    log_webhook('Invalid webhook data', ['data' => $data, 'raw_input' => $input]);
     http_response_code(400);
     exit('Invalid data');
 }
