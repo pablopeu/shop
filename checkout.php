@@ -73,7 +73,8 @@ $exchange_rate = $currency_config['exchange_rate'] ?? 1500;
 
 // First pass: determine if all products are USD-only
 $all_products_usd = true;
-foreach ($_SESSION['cart'] as $product_id => $quantity) {
+foreach ($_SESSION['cart'] as $cart_item) {
+    $product_id = $cart_item['product_id'];
     $product = get_product_by_id($product_id);
     if (!$product || !$product['active']) {
         continue;
@@ -93,7 +94,9 @@ foreach ($_SESSION['cart'] as $product_id => $quantity) {
 $checkout_currency = ($all_products_usd) ? 'USD' : 'ARS';
 
 // Second pass: calculate totals
-foreach ($_SESSION['cart'] as $product_id => $quantity) {
+foreach ($_SESSION['cart'] as $cart_item) {
+    $product_id = $cart_item['product_id'];
+    $quantity = $cart_item['quantity'];
     $product = get_product_by_id($product_id);
 
     if (!$product || !$product['active']) {
@@ -344,7 +347,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                                 'failure' => $base_url . '/gracias.php?order=' . $order['id'] . '&token=' . $order['tracking_token'],
                                 'pending' => $base_url . '/gracias.php?order=' . $order['id'] . '&token=' . $order['tracking_token']
                             ],
-                            'notification_url' => $base_url . '/webhook.php',
                             'statement_descriptor' => substr($site_config['site_name'], 0, 22),
                             'payer' => [
                                 'name' => $customer_name,
@@ -354,6 +356,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                                 ]
                             ]
                         ];
+
+                        // Only add notification_url if not localhost (MP can't reach localhost)
+                        $host = $_SERVER['HTTP_HOST'];
+                        if (!preg_match('/^(localhost|127\.0\.0\.1|::1)(:\d+)?$/', $host)) {
+                            $preference_data['notification_url'] = $base_url . '/webhook.php';
+                        }
 
                         $preference = $mp->createPreference($preference_data);
                         $init_point = $mp->getInitPoint($preference);
