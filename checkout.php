@@ -295,11 +295,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                 // Redirect to thank you page
                 header("Location: /gracias.php?order={$order['id']}&token={$order['tracking_token']}");
                 exit;
-            } else {
-                // TODO: Integrate with Mercadopago and redirect to payment
-                // For now, redirect to pending page
-                header("Location: /pendiente.php?order={$order['id']}&token={$order['tracking_token']}");
-                exit;
+            } elseif ($payment_method === 'mercadopago') {
+                // Create Mercadopago payment preference
+                try {
+                    require_once __DIR__ . '/includes/mercadopago.php';
+
+                    $sandbox_mode = $payment_config['mercadopago']['sandbox_mode'] ?? true;
+                    $access_token = $sandbox_mode ?
+                        $payment_config['mercadopago']['access_token_sandbox'] :
+                        $payment_config['mercadopago']['access_token_prod'];
+
+                    if (empty($access_token)) {
+                        $errors[] = 'Mercadopago no configurado. Contacte al administrador.';
+                    } else {
+                        $mp = new MercadoPago($access_token, $sandbox_mode);
+
+                        // Prepare items for Mercadopago
+                        $mp_items = [];
+                        foreach ($order['items'] as $item) {
+                            $mp_items[] = [
+                                'title' => $item['name'],
+                                'quantity' => $item['quantity'],
+                                'unit_price' => floatval($item['price_' . strtolower($selected_currency)]),
+                                'currency_id' => $selected_currency
+                            ];
+                        }
+
+                        // URLs for redirects
+                        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+                        $base_url = $protocol . $_SERVER['HTTP_HOST'];
+
+                        // Create preference
+                        $preference_data = [
+                            'items' => $mp_items,
+                            'external_reference' => $order['id'],
+                            'back_urls' => [
+                                'success' => $base_url . '/gracias.php?order=' . $order['id'] . '&token=' . $order['tracking_token'],
+                                'failure' => $base_url . '/error.php?order=' . $order['id'] . '&token=' . $order['tracking_token'],
+                                'pending' => $base_url . '/pendiente.php?order=' . $order['id'] . '&token=' . $order['tracking_token']
+                            ],
+                            'auto_return' => 'approved',
+                            'notification_url' => $base_url . '/webhook.php',
+                            'statement_descriptor' => substr($site_config['site_name'], 0, 22),
+                            'payer' => [
+                                'name' => $customer_name,
+                                'email' => $customer_email,
+                                'phone' => [
+                                    'number' => $customer_phone
+                                ]
+                            ]
+                        ];
+
+                        $preference = $mp->createPreference($preference_data);
+                        $init_point = $mp->getInitPoint($preference);
+
+                        // Update order with payment link
+                        $orders_file = __DIR__ . '/data/orders.json';
+                        $orders_data = read_json($orders_file);
+
+                        foreach ($orders_data['orders'] as &$o) {
+                            if ($o['id'] === $order['id']) {
+                                $o['payment_link'] = $init_point;
+                                $o['payment_id'] = $preference['id'];
+                                break;
+                            }
+                        }
+
+                        write_json($orders_file, $orders_data);
+
+                        // Redirect to Mercadopago
+                        header("Location: $init_point");
+                        exit;
+                    }
+                } catch (Exception $e) {
+                    $errors[] = 'Error al procesar el pago: ' . $e->getMessage();
+                }
             }
         } else {
             $errors[] = $result['error'] ?? 'Error al procesar la orden';
