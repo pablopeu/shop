@@ -11,6 +11,7 @@ require_admin();
 
 $message = '';
 $error = '';
+$logo_uploaded = false; // Track if logo was just uploaded
 
 // Update site config
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
@@ -25,14 +26,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
         $config['site_keywords'] = sanitize_input($_POST['site_keywords'] ?? '');
         $config['contact_email'] = sanitize_input($_POST['contact_email'] ?? '');
         $config['contact_phone'] = sanitize_input($_POST['contact_phone'] ?? '');
-        $config['whatsapp_number'] = sanitize_input($_POST['whatsapp_number'] ?? '');
         $config['footer_text'] = sanitize_input($_POST['footer_text'] ?? '');
 
+        // WhatsApp configuration (new structure)
+        $config['whatsapp'] = [
+            'enabled' => isset($_POST['whatsapp_enabled']),
+            'number' => sanitize_input($_POST['whatsapp_number'] ?? ''),
+            'message' => sanitize_input($_POST['whatsapp_message'] ?? 'Hola! Me interesa un producto de su tienda'),
+            'custom_link' => sanitize_input($_POST['whatsapp_custom_link'] ?? '')
+        ];
+
+        // Keep old whatsapp_number for backward compatibility
+        $config['whatsapp_number'] = $config['whatsapp']['number'];
+
+        // Handle logo upload
+        if (isset($_FILES['logo_file']) && $_FILES['logo_file']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = __DIR__ . '/../assets/logos/';
+
+            // Create directory if it doesn't exist
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+
+            $file_ext = strtolower(pathinfo($_FILES['logo_file']['name'], PATHINFO_EXTENSION));
+            $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'];
+
+            if (in_array($file_ext, $allowed_exts)) {
+                $new_filename = 'logo_' . time() . '.' . $file_ext;
+                $upload_path = $upload_dir . $new_filename;
+
+                if (move_uploaded_file($_FILES['logo_file']['tmp_name'], $upload_path)) {
+                    // Delete old logo if exists
+                    if (!empty($config['logo']['path']) && file_exists(__DIR__ . '/..' . $config['logo']['path'])) {
+                        unlink(__DIR__ . '/..' . $config['logo']['path']);
+                    }
+
+                    $config['logo']['path'] = '/assets/logos/' . $new_filename;
+                    $config['logo']['enabled'] = true;
+                    $logo_uploaded = true;
+                    $message = 'Logo subido exitosamente';
+                } else {
+                    $error = 'Error al subir el logo. Verifique los permisos del directorio.';
+                }
+            } else {
+                $error = 'Formato de archivo no permitido. Use JPG, PNG, GIF, SVG o WebP';
+            }
+        }
+
+        // Update logo settings (but keep enabled=true if just uploaded)
+        if (!$logo_uploaded) {
+            $config['logo']['enabled'] = isset($_POST['logo_enabled']);
+        }
+        $config['logo']['alt'] = sanitize_input($_POST['logo_alt'] ?? 'Logo');
+
         if (write_json($config_file, $config)) {
-            $message = 'Configuración guardada exitosamente';
+            if (empty($message)) {
+                $message = 'Configuración guardada exitosamente';
+            }
             log_admin_action('site_config_updated', $_SESSION['username'], $config);
         } else {
             $error = 'Error al guardar la configuración';
+        }
+    }
+}
+
+// Delete logo
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_logo'])) {
+    if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        $error = 'Token de seguridad inválido';
+    } else {
+        $config_file = __DIR__ . '/../config/site.json';
+        $config = read_json($config_file);
+
+        if (!empty($config['logo']['path']) && file_exists(__DIR__ . '/..' . $config['logo']['path'])) {
+            unlink(__DIR__ . '/..' . $config['logo']['path']);
+        }
+
+        $config['logo']['path'] = '';
+        $config['logo']['enabled'] = false;
+
+        if (write_json($config_file, $config)) {
+            $message = 'Logo eliminado exitosamente';
+            log_admin_action('logo_deleted', $_SESSION['username'], []);
+        } else {
+            $error = 'Error al eliminar el logo';
         }
     }
 }
@@ -86,7 +163,7 @@ $user = get_logged_user();
         <?php endif; ?>
 
         <div class="card">
-            <form method="POST" action="" id="configForm">
+            <form method="POST" action="" id="configForm" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
 
                 <div class="form-group">
@@ -98,6 +175,50 @@ $user = get_logged_user();
                 <div class="form-group">
                     <label for="site_description">Descripción del Sitio (SEO)</label>
                     <textarea id="site_description" name="site_description"><?php echo htmlspecialchars($site_config['site_description'] ?? ''); ?></textarea>
+                </div>
+
+                <!-- Logo Section -->
+                <div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 20px; margin-top: 20px;">
+                    <label style="font-size: 16px; margin-bottom: 10px;">🖼️ Logo del Sitio</label>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 15px;">Imagen recomendada: 170x85px (ratio 2:1). Formatos: JPG, PNG, GIF, SVG, WebP</p>
+
+                    <?php if (!empty($site_config['logo']['path'])): ?>
+                        <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <img src="<?php echo htmlspecialchars($site_config['logo']['path']); ?>"
+                                     alt="Logo actual"
+                                     style="max-width: 170px; max-height: 85px; border: 1px solid #ddd; border-radius: 4px;">
+                                <div>
+                                    <strong>Logo Actual</strong><br>
+                                    <small style="color: #666;"><?php echo htmlspecialchars(basename($site_config['logo']['path'])); ?></small>
+                                </div>
+                            </div>
+                            <button type="submit" name="delete_logo"
+                                    onclick="return confirm('¿Está seguro de eliminar el logo?')"
+                                    style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                                🗑️ Eliminar
+                            </button>
+                        </div>
+                    <?php endif; ?>
+
+                    <div style="display: flex; gap: 15px; align-items: start;">
+                        <div style="flex: 1;">
+                            <label for="logo_file" style="display: block; margin-bottom: 5px; font-weight: normal;">Subir Nuevo Logo</label>
+                            <input type="file" id="logo_file" name="logo_file" accept="image/*">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="logo_alt" style="display: block; margin-bottom: 5px; font-weight: normal;">Texto Alternativo</label>
+                            <input type="text" id="logo_alt" name="logo_alt"
+                                   value="<?php echo htmlspecialchars($site_config['logo']['alt'] ?? 'Logo'); ?>"
+                                   placeholder="Logo de Mi Tienda"
+                                   style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <label style="display: flex; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer;">
+                        <input type="checkbox" name="logo_enabled" <?php echo ($site_config['logo']['enabled'] ?? false) ? 'checked' : ''; ?>>
+                        <span style="font-weight: normal;">Mostrar logo en el sitio</span>
+                    </label>
                 </div>
 
                 <div class="form-group">
@@ -120,11 +241,43 @@ $user = get_logged_user();
                            placeholder="+54 9 11 1234-5678">
                 </div>
 
-                <div class="form-group">
-                    <label for="whatsapp_number">Número de WhatsApp</label>
-                    <input type="text" id="whatsapp_number" name="whatsapp_number"
-                           value="<?php echo htmlspecialchars($site_config['whatsapp_number'] ?? ''); ?>"
-                           placeholder="5491112345678">
+                <!-- WhatsApp Configuration Section -->
+                <div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 20px; margin-top: 20px;">
+                    <label style="font-size: 16px; margin-bottom: 10px;">💬 Configuración de WhatsApp</label>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 15px;">Configura el botón flotante de WhatsApp que aparecerá en tu sitio</p>
+
+                    <label style="margin-bottom: 15px; cursor: pointer; display: block;">
+                        <input type="checkbox" name="whatsapp_enabled" <?php echo ($site_config['whatsapp']['enabled'] ?? false) ? 'checked' : ''; ?>>
+                        <span style="font-weight: normal;">Mostrar botón de WhatsApp en el sitio</span>
+                    </label>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label for="whatsapp_number" style="display: block; margin-bottom: 5px; font-weight: normal;">Número de WhatsApp</label>
+                            <input type="text" id="whatsapp_number" name="whatsapp_number"
+                                   value="<?php echo htmlspecialchars($site_config['whatsapp']['number'] ?? $site_config['whatsapp_number'] ?? ''); ?>"
+                                   placeholder="5491112345678"
+                                   style="width: 100%;">
+                        </div>
+                        <div>
+                            <label for="whatsapp_message" style="display: block; margin-bottom: 5px; font-weight: normal;">Mensaje predeterminado</label>
+                            <input type="text" id="whatsapp_message" name="whatsapp_message"
+                                   value="<?php echo htmlspecialchars($site_config['whatsapp']['message'] ?? 'Hola! Me interesa un producto de su tienda'); ?>"
+                                   placeholder="Hola! Me interesa un producto de su tienda"
+                                   style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <label for="whatsapp_custom_link" style="display: block; margin-bottom: 5px; font-weight: normal;">Link personalizado de WhatsApp (opcional)</label>
+                        <input type="text" id="whatsapp_custom_link" name="whatsapp_custom_link"
+                               value="<?php echo htmlspecialchars($site_config['whatsapp']['custom_link'] ?? ''); ?>"
+                               placeholder="https://api.whatsapp.com/message/XXXXX"
+                               style="width: 100%;">
+                        <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                            Si usas un link personalizado, este tendrá prioridad sobre el número de WhatsApp
+                        </small>
+                    </div>
                 </div>
 
                 <div class="form-group">

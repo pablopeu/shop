@@ -2,6 +2,13 @@
     "site_name": "Mi Tienda",
     "site_description": "Tu tienda online de confianza",
     "site_keywords": "tienda, online, ecommerce",
+    "logo": {
+        "enabled": false,
+        "path": "",
+        "alt": "Logo de Mi Tienda",
+        "width": 170,
+        "height": 85
+    },
     "contact_email": "contacto@mitienda.com",
     "whatsapp": {
         "enabled": true,

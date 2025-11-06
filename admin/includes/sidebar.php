@@ -242,10 +242,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <span>⚙️ Configuración</span>
                 <span class="menu-arrow" id="arrow-configuracion">▶</span>
             </div>
-            <ul class="submenu <?php echo in_array($current_page, ['config-sitio.php', 'config-moneda.php', 'config-hero.php', 'config-carrusel.php', 'config-productos-heading.php', 'config-dashboard.php', 'config-mantenimiento.php']) ? 'open' : ''; ?>"
+            <ul class="submenu <?php echo in_array($current_page, ['config-sitio.php', 'config-moneda.php', 'config-hero.php', 'config-carrusel.php', 'config-productos-heading.php', 'config-dashboard.php', 'config-mantenimiento.php', 'config-themes.php', 'config-footer.php']) ? 'open' : ''; ?>"
                 id="submenu-configuracion">
                 <li><a href="/admin/config-sitio.php" <?php echo $current_page === 'config-sitio.php' ? 'class="active"' : ''; ?>>📄 Información del Sitio</a></li>
                 <li><a href="/admin/config-moneda.php" <?php echo $current_page === 'config-moneda.php' ? 'class="active"' : ''; ?>>💱 Moneda y Cambio</a></li>
+                <li><a href="/admin/config-themes.php" <?php echo $current_page === 'config-themes.php' ? 'class="active"' : ''; ?>>🎨 Themes Visuales</a></li>
+                <li><a href="/admin/config-footer.php" <?php echo $current_page === 'config-footer.php' ? 'class="active"' : ''; ?>>🦶 Footer Personalizado</a></li>
                 <li><a href="/admin/config-hero.php" <?php echo $current_page === 'config-hero.php' ? 'class="active"' : ''; ?>>🖼️ Hero Principal</a></li>
                 <li><a href="/admin/config-carrusel.php" <?php echo $current_page === 'config-carrusel.php' ? 'class="active"' : ''; ?>>🎠 Carrusel</a></li>
                 <li><a href="/admin/config-productos-heading.php" <?php echo $current_page === 'config-productos-heading.php' ? 'class="active"' : ''; ?>>📝 Encabezado de Productos</a></li>
