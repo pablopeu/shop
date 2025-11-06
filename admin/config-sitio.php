@@ -31,6 +31,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
         // Handle logo upload
         if (isset($_FILES['logo_file']) && $_FILES['logo_file']['error'] === UPLOAD_ERR_OK) {
             $upload_dir = __DIR__ . '/../assets/logos/';
+
+            // Create directory if it doesn't exist
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+
             $file_ext = strtolower(pathinfo($_FILES['logo_file']['name'], PATHINFO_EXTENSION));
             $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'];
 
@@ -48,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
                     $config['logo']['enabled'] = true;
                     $message = 'Logo subido exitosamente';
                 } else {
-                    $error = 'Error al subir el logo';
+                    $error = 'Error al subir el logo. Verifique los permisos del directorio.';
                 }
             } else {
                 $error = 'Formato de archivo no permitido. Use JPG, PNG, GIF, SVG o WebP';
