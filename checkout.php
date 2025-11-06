@@ -335,7 +335,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                         }
 
                         // URLs for redirects (must be absolute URLs)
-                        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+                        // Detect protocol - ngrok forwards HTTPS but PHP sees HTTP
+                        $protocol = 'https://'; // Default to HTTPS
+                        if (isset($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+                            $protocol = $_SERVER['HTTP_X_FORWARDED_PROTO'] . '://';
+                        } elseif (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+                            $protocol = 'https://';
+                        } elseif ($_SERVER['SERVER_PORT'] == 443) {
+                            $protocol = 'https://';
+                        } else {
+                            $protocol = 'http://';
+                        }
+
                         $base_url = $protocol . $_SERVER['HTTP_HOST'];
 
                         // Create preference
