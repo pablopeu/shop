@@ -487,11 +487,11 @@ function render_site_logo($site_config) {
  * @return void Echoes HTML
  */
 function render_footer($site_config, $footer_config) {
+    // If custom footer is enabled and has HTML content, use it
     if (!empty($footer_config['enabled']) && !empty($footer_config['html'])) {
-        // Render custom HTML footer
         echo $footer_config['html'];
-    } else if (!empty($footer_config['use_default']) || empty($footer_config['html'])) {
-        // Render default footer
+    } else {
+        // Otherwise, render default footer
         echo '<div class="container">';
         echo '    <div class="footer-content">';
         echo '        <div class="footer-section">';

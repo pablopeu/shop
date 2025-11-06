@@ -550,18 +550,10 @@ write_json($visits_file, $visits_data);
         // Touch swipe support for mobile
         let touchStartX = 0;
         let touchEndX = 0;
+        let touchStartTime = 0;
+        let touchMoveDistance = 0;
 
         const mainImageContainer = document.getElementById('mainImageContainer');
-        if (mainImageContainer) {
-            mainImageContainer.addEventListener('touchstart', e => {
-                touchStartX = e.changedTouches[0].screenX;
-            });
-
-            mainImageContainer.addEventListener('touchend', e => {
-                touchEndX = e.changedTouches[0].screenX;
-                handleSwipe();
-            });
-        }
 
         function handleSwipe() {
             const swipeThreshold = 50;
@@ -572,51 +564,6 @@ write_json($visits_file, $visits_data);
                 changeImage(-1); // Swipe right
             }
         }
-        // ===== MOBILE STICKY BUTTON =====
-        const stickyButton = document.createElement('div');
-        stickyButton.className = 'sticky-add-to-cart';
-        stickyButton.innerHTML = `
-            <div class="sticky-price">
-                <span><?php echo htmlspecialchars($product['name']); ?></span>
-                <span class="sticky-price-amount"><?php echo format_product_price($product, $selected_currency); ?></span>
-            </div>
-            <button class="sticky-btn" onclick="addToCart('<?php echo $product['id']; ?>')"
-                    <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>
-                <?php echo $product['stock'] === 0 ? '🚫 Agotado' : '🛒 Agregar al Carrito'; ?>
-            </button>
-        `;
-        document.body.appendChild(stickyButton);
-
-        // Show/hide sticky button on scroll (mobile)
-        let lastScrollTop = 0;
-        const actionsSection = document.querySelector('.actions');
-
-        function handleStickyButton() {
-            if (window.innerWidth <= 768 && actionsSection) {
-                const rect = actionsSection.getBoundingClientRect();
-                const isActionsSectionVisible = rect.top < window.innerHeight && rect.bottom >= 0;
-
-                // Show sticky button when actions section is out of view
-                if (!isActionsSectionVisible && rect.top < 0) {
-                    stickyButton.classList.add('visible');
-                } else {
-                    stickyButton.classList.remove('visible');
-                }
-            } else {
-                stickyButton.classList.remove('visible');
-            }
-        }
-
-        // Check on scroll and resize
-        window.addEventListener('scroll', handleStickyButton, { passive: true });
-        window.addEventListener('resize', handleStickyButton, { passive: true });
-
-        // Initial check
-        handleStickyButton();
-
-        // ===== IMPROVED TOUCH GESTURES =====
-        let touchStartTime = 0;
-        let touchMoveDistance = 0;
 
         if (mainImageContainer) {
             mainImageContainer.addEventListener('touchstart', e => {
