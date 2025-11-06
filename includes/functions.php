@@ -516,28 +516,27 @@ function render_footer($site_config, $footer_config) {
             echo '</p>';
         }
 
-        // Email
+        // Email (sin icono, solo texto y link)
         if (!empty($footer_config['left_column']['email']['enabled']) && !empty($footer_config['left_column']['email']['address'])) {
             $email = $footer_config['left_column']['email'];
             $subject = urlencode($email['subject'] ?? 'Consulta desde el sitio web');
             $body = !empty($email['body']) ? '&Body=' . urlencode($email['body']) : '';
             echo '<div>';
-            echo '<i class="fa fa-envelope"></i> ';
             echo '<a href="mailto:' . htmlspecialchars($email['address']) . '?Subject=' . $subject . $body . '" style="color: #007eff;">';
             echo htmlspecialchars($email['address']);
             echo '</a>';
             echo '</div>';
         }
 
-        // WhatsApp
+        // WhatsApp (sin icono, solo texto configurable y link)
         if (!empty($footer_config['left_column']['whatsapp']['enabled']) && !empty($footer_config['left_column']['whatsapp']['number'])) {
             $whatsapp = $footer_config['left_column']['whatsapp'];
             $number = preg_replace('/[^0-9]/', '', $whatsapp['number']); // Remove all non-numeric characters
             $message = urlencode($whatsapp['message'] ?? 'Hola, consulta desde el sitio web');
+            $display_text = $whatsapp['display_text'] ?? $whatsapp['number'];
             echo '<div>';
-            echo '<i class="fa fa-whatsapp"></i> ';
             echo '<a href="https://wa.me/' . $number . '?text=' . $message . '" target="_blank" style="color: #25D366;">';
-            echo htmlspecialchars($whatsapp['number']);
+            echo htmlspecialchars($display_text);
             echo '</a>';
             echo '</div>';
         }
@@ -590,6 +589,22 @@ function render_footer($site_config, $footer_config) {
             echo '</div>';
         }
 
+        // WhatsApp en sección central (con icono)
+        if (!empty($footer_config['center_column']['whatsapp']['enabled']) && !empty($footer_config['center_column']['whatsapp']['number'])) {
+            $whatsapp = $footer_config['center_column']['whatsapp'];
+            $number = preg_replace('/[^0-9]/', '', $whatsapp['number']);
+            $message = urlencode($whatsapp['message'] ?? 'Hola, consulta desde el sitio web');
+            $display_text = $whatsapp['display_text'] ?? $whatsapp['number'];
+            echo '<div>';
+            echo '<i class="fa fa-whatsapp"></i>';
+            echo '<p>';
+            echo '<span><a href="https://wa.me/' . $number . '?text=' . $message . '" target="_blank" style="color: #25D366; text-decoration: none;">';
+            echo htmlspecialchars($display_text);
+            echo '</a></span>';
+            echo '</p>';
+            echo '</div>';
+        }
+
         // Schedule
         if (!empty($footer_config['center_column']['schedule']['enabled'])) {
             $schedule = $footer_config['center_column']['schedule'];
@@ -626,24 +641,33 @@ function render_footer($site_config, $footer_config) {
             echo '</p>';
         }
 
-        // Social Media
+        // Social Media - Orden: Facebook / X / Instagram / WhatsApp / Telegram
         if (!empty($footer_config['right_column']['social']['enabled'])) {
             $social = $footer_config['right_column']['social'];
             $has_social = !empty($social['facebook']) || !empty($social['twitter']) ||
-                         !empty($social['instagram']) || !empty($social['telegram']);
+                         !empty($social['instagram']) || !empty($social['whatsapp']) || !empty($social['telegram']);
 
             if ($has_social) {
                 echo '<div class="footer-icons">';
 
+                // Facebook
                 if (!empty($social['facebook'])) {
                     echo '<a href="' . htmlspecialchars($social['facebook']) . '" target="_blank"><i class="fa fa-facebook"></i></a>';
                 }
+                // X (Twitter)
                 if (!empty($social['twitter'])) {
                     echo '<a href="' . htmlspecialchars($social['twitter']) . '" target="_blank"><i class="fa fa-twitter"></i></a>';
                 }
+                // Instagram
                 if (!empty($social['instagram'])) {
                     echo '<a href="' . htmlspecialchars($social['instagram']) . '" target="_blank"><i class="fa fa-instagram"></i></a>';
                 }
+                // WhatsApp
+                if (!empty($social['whatsapp'])) {
+                    $wa_number = preg_replace('/[^0-9]/', '', $social['whatsapp']);
+                    echo '<a href="https://wa.me/' . $wa_number . '" target="_blank"><i class="fa fa-whatsapp"></i></a>';
+                }
+                // Telegram
                 if (!empty($social['telegram'])) {
                     echo '<a href="' . htmlspecialchars($social['telegram']) . '" target="_blank"><i class="fa fa-telegram"></i></a>';
                 }

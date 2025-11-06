@@ -99,9 +99,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
                     'body' => $_POST['email_body'] ?? ''
                 ],
                 'whatsapp' => [
-                    'enabled' => isset($_POST['whatsapp_enabled']),
-                    'number' => $_POST['whatsapp_number'] ?? '',
-                    'message' => $_POST['whatsapp_message'] ?? 'Hola, consulta desde el sitio web'
+                    'enabled' => isset($_POST['whatsapp_left_enabled']),
+                    'number' => $_POST['whatsapp_left_number'] ?? '',
+                    'message' => $_POST['whatsapp_left_message'] ?? 'Hola, consulta desde el sitio web',
+                    'display_text' => $_POST['whatsapp_left_display_text'] ?? ''
                 ]
             ],
             'center_column' => [
@@ -113,6 +114,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
                     'map_url' => $_POST['address_map_url'] ?? ''
                 ],
                 'phones' => $phones,
+                'whatsapp' => [
+                    'enabled' => isset($_POST['whatsapp_center_enabled']),
+                    'number' => $_POST['whatsapp_center_number'] ?? '',
+                    'message' => $_POST['whatsapp_center_message'] ?? 'Hola, consulta desde el sitio web',
+                    'display_text' => $_POST['whatsapp_center_display_text'] ?? ''
+                ],
                 'schedule' => [
                     'enabled' => isset($_POST['schedule_enabled']),
                     'days' => $_POST['schedule_days'] ?? 'Lunes a Viernes',
@@ -130,6 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
                     'facebook' => $_POST['social_facebook'] ?? '',
                     'twitter' => $_POST['social_twitter'] ?? '',
                     'instagram' => $_POST['social_instagram'] ?? '',
+                    'whatsapp' => $_POST['social_whatsapp'] ?? '',
                     'telegram' => $_POST['social_telegram'] ?? ''
                 ]
             ]
@@ -327,22 +335,27 @@ $user = get_logged_user();
                 </div>
 
                 <!-- WhatsApp -->
-                <h3 style="margin: 20px 0 10px; font-size: 16px;">WhatsApp</h3>
+                <h3 style="margin: 20px 0 10px; font-size: 16px;">WhatsApp (sin icono)</h3>
                 <div class="form-group">
                     <label class="checkbox-label">
-                        <input type="checkbox" name="whatsapp_enabled" <?php echo ($footer_config['left_column']['whatsapp']['enabled'] ?? false) ? 'checked' : ''; ?>>
+                        <input type="checkbox" name="whatsapp_left_enabled" <?php echo ($footer_config['left_column']['whatsapp']['enabled'] ?? false) ? 'checked' : ''; ?>>
                         <span>Mostrar WhatsApp</span>
                     </label>
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Número de WhatsApp</label>
-                        <input type="text" name="whatsapp_number" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['number'] ?? ''); ?>" placeholder="+54 9 11 1234-5678">
+                        <input type="text" name="whatsapp_left_number" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['number'] ?? ''); ?>" placeholder="+54 9 11 1234-5678">
                         <div class="help-text">Formato internacional con código de país</div>
                     </div>
                     <div class="form-group">
+                        <label>Texto a mostrar</label>
+                        <input type="text" name="whatsapp_left_display_text" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['display_text'] ?? ''); ?>" placeholder="WhatsApp: +54 9 11 1234-5678">
+                        <div class="help-text">Texto que se mostrará (si está vacío, usa el número)</div>
+                    </div>
+                    <div class="form-group">
                         <label>Mensaje predeterminado</label>
-                        <input type="text" name="whatsapp_message" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['message'] ?? 'Hola, consulta desde el sitio web'); ?>">
+                        <input type="text" name="whatsapp_left_message" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['message'] ?? 'Hola, consulta desde el sitio web'); ?>">
                     </div>
                 </div>
             </div>
@@ -402,6 +415,31 @@ $user = get_logged_user();
                 </div>
                 <button type="button" class="btn-add" onclick="addPhone()">➕ Agregar teléfono</button>
 
+                <!-- WhatsApp en columna central -->
+                <h3 style="margin: 20px 0 10px; font-size: 16px;">WhatsApp (con icono)</h3>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="whatsapp_center_enabled" <?php echo ($footer_config['center_column']['whatsapp']['enabled'] ?? false) ? 'checked' : ''; ?>>
+                        <span>Mostrar WhatsApp</span>
+                    </label>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Número de WhatsApp</label>
+                        <input type="text" name="whatsapp_center_number" value="<?php echo htmlspecialchars($footer_config['center_column']['whatsapp']['number'] ?? ''); ?>" placeholder="+54 9 11 1234-5678">
+                        <div class="help-text">Formato internacional con código de país</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Texto a mostrar</label>
+                        <input type="text" name="whatsapp_center_display_text" value="<?php echo htmlspecialchars($footer_config['center_column']['whatsapp']['display_text'] ?? ''); ?>" placeholder="Envíenos un WhatsApp">
+                        <div class="help-text">Texto que se mostrará (si está vacío, usa el número)</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Mensaje predeterminado</label>
+                        <input type="text" name="whatsapp_center_message" value="<?php echo htmlspecialchars($footer_config['center_column']['whatsapp']['message'] ?? 'Hola, consulta desde el sitio web'); ?>">
+                    </div>
+                </div>
+
                 <!-- Schedule -->
                 <h3 style="margin: 20px 0 10px; font-size: 16px;">Horario de atención</h3>
                 <div class="form-group">
@@ -456,12 +494,17 @@ $user = get_logged_user();
                         <input type="url" name="social_facebook" value="<?php echo htmlspecialchars($footer_config['right_column']['social']['facebook'] ?? ''); ?>" placeholder="https://facebook.com/...">
                     </div>
                     <div class="form-group">
-                        <label><i class="fa fa-twitter"></i> Twitter</label>
+                        <label><i class="fa fa-twitter"></i> X (Twitter)</label>
                         <input type="url" name="social_twitter" value="<?php echo htmlspecialchars($footer_config['right_column']['social']['twitter'] ?? ''); ?>" placeholder="https://twitter.com/...">
                     </div>
                     <div class="form-group">
                         <label><i class="fa fa-instagram"></i> Instagram</label>
                         <input type="url" name="social_instagram" value="<?php echo htmlspecialchars($footer_config['right_column']['social']['instagram'] ?? ''); ?>" placeholder="https://instagram.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fa fa-whatsapp"></i> WhatsApp</label>
+                        <input type="text" name="social_whatsapp" value="<?php echo htmlspecialchars($footer_config['right_column']['social']['whatsapp'] ?? ''); ?>" placeholder="+54 9 11 1234-5678">
+                        <div class="help-text">Solo número (sin mensaje), para link directo</div>
                     </div>
                     <div class="form-group">
                         <label><i class="fa fa-telegram"></i> Telegram</label>

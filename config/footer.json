@@ -30,7 +30,8 @@
         "whatsapp": {
             "enabled": false,
             "number": "",
-            "message": "Hola, consulta desde el sitio web"
+            "message": "Hola, consulta desde el sitio web",
+            "display_text": ""
         }
     },
     "center_column": {
@@ -47,6 +48,12 @@
                 "label": ""
             }
         ],
+        "whatsapp": {
+            "enabled": false,
+            "number": "",
+            "message": "Hola, consulta desde el sitio web",
+            "display_text": ""
+        },
         "schedule": {
             "enabled": true,
             "days": "Lunes a Viernes",
@@ -64,6 +71,7 @@
             "facebook": "",
             "twitter": "",
             "instagram": "",
+            "whatsapp": "",
             "telegram": ""
         }
     }
