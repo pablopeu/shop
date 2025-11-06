@@ -487,11 +487,163 @@ function render_site_logo($site_config) {
  * @return void Echoes HTML
  */
 function render_footer($site_config, $footer_config) {
-    // If custom footer is enabled and has HTML content, use it
-    if (!empty($footer_config['enabled']) && !empty($footer_config['html'])) {
-        echo $footer_config['html'];
+    // Check if advanced footer is configured
+    if (!empty($footer_config['enabled']) && $footer_config['type'] === 'advanced') {
+        // Render advanced 3-column footer
+        echo '<div class="footer-distributed">';
+
+        // Left Column
+        echo '<div class="footer-left">';
+
+        // Logo
+        if (!empty($footer_config['left_column']['logo']['enabled']) && !empty($footer_config['left_column']['logo']['path'])) {
+            $logo = $footer_config['left_column']['logo'];
+            echo '<img src="' . htmlspecialchars($logo['path']) . '" ';
+            echo 'alt="' . htmlspecialchars($logo['alt'] ?? 'Logo') . '" ';
+            echo 'height="' . (int)($logo['height'] ?? 83) . '" ';
+            echo 'width="' . (int)($logo['width'] ?? 169) . '">';
+        }
+
+        // Links
+        if (!empty($footer_config['left_column']['links'])) {
+            echo '<p class="footer-links">';
+            $first = true;
+            foreach ($footer_config['left_column']['links'] as $link) {
+                if (!$first) echo ' | ';
+                echo '<a href="' . htmlspecialchars($link['url']) . '">' . htmlspecialchars($link['text']) . '</a>';
+                $first = false;
+            }
+            echo '</p>';
+        }
+
+        // Email
+        if (!empty($footer_config['left_column']['email']['enabled']) && !empty($footer_config['left_column']['email']['address'])) {
+            $email = $footer_config['left_column']['email'];
+            $subject = urlencode($email['subject'] ?? 'Consulta desde el sitio web');
+            echo '<div>';
+            echo '<i class="fa fa-envelope"></i> ';
+            echo '<a href="mailto:' . htmlspecialchars($email['address']) . '?Subject=' . $subject . '" style="color: #007eff;">';
+            echo htmlspecialchars($email['address']);
+            echo '</a>';
+            echo '</div>';
+        }
+
+        echo '</div>'; // End footer-left
+
+        // Center Column
+        echo '<div class="footer-center">';
+
+        // Address
+        if (!empty($footer_config['center_column']['address']['enabled'])) {
+            $address = $footer_config['center_column']['address'];
+            if (!empty($address['street']) || !empty($address['city'])) {
+                echo '<div>';
+                if (!empty($address['map_url'])) {
+                    echo '<a href="' . htmlspecialchars($address['map_url']) . '" target="_blank"><i class="fa fa-map-marker"></i></a>';
+                } else {
+                    echo '<i class="fa fa-map-marker"></i>';
+                }
+                echo '<p>';
+                if (!empty($address['street'])) {
+                    echo '<span>' . htmlspecialchars($address['street']) . '</span>';
+                }
+                if (!empty($address['city']) || !empty($address['country'])) {
+                    $location = trim(($address['city'] ?? '') . ', ' . ($address['country'] ?? ''), ', ');
+                    if ($location) {
+                        echo '<span>' . htmlspecialchars($location) . '</span>';
+                    }
+                }
+                echo '</p>';
+                echo '</div>';
+            }
+        }
+
+        // Phones
+        if (!empty($footer_config['center_column']['phones'])) {
+            echo '<div>';
+            echo '<i class="fa fa-phone"></i>';
+            echo '<p>';
+            foreach ($footer_config['center_column']['phones'] as $phone) {
+                if (!empty($phone['number'])) {
+                    echo '<span>' . htmlspecialchars($phone['number']);
+                    if (!empty($phone['label'])) {
+                        echo ' (' . htmlspecialchars($phone['label']) . ')';
+                    }
+                    echo '</span>';
+                }
+            }
+            echo '</p>';
+            echo '</div>';
+        }
+
+        // Schedule
+        if (!empty($footer_config['center_column']['schedule']['enabled'])) {
+            $schedule = $footer_config['center_column']['schedule'];
+            if (!empty($schedule['days']) || !empty($schedule['hours'])) {
+                echo '<div>';
+                echo '<i class="fa fa-clock-o"></i>';
+                echo '<p>';
+                if (!empty($schedule['days'])) {
+                    echo '<span>' . htmlspecialchars($schedule['days']) . '</span>';
+                }
+                if (!empty($schedule['hours'])) {
+                    echo '<span>' . htmlspecialchars($schedule['hours']) . '</span>';
+                }
+                echo '</p>';
+                echo '</div>';
+            }
+        }
+
+        echo '</div>'; // End footer-center
+
+        // Right Column
+        echo '<div class="footer-right">';
+
+        // About
+        if (!empty($footer_config['right_column']['about']['enabled'])) {
+            $about = $footer_config['right_column']['about'];
+            echo '<p class="footer-company-about">';
+            if (!empty($about['title'])) {
+                echo '<span>' . htmlspecialchars($about['title']) . '</span>';
+            }
+            if (!empty($about['text'])) {
+                echo nl2br(htmlspecialchars($about['text']));
+            }
+            echo '</p>';
+        }
+
+        // Social Media
+        if (!empty($footer_config['right_column']['social']['enabled'])) {
+            $social = $footer_config['right_column']['social'];
+            $has_social = !empty($social['facebook']) || !empty($social['twitter']) ||
+                         !empty($social['instagram']) || !empty($social['telegram']);
+
+            if ($has_social) {
+                echo '<div class="footer-icons">';
+
+                if (!empty($social['facebook'])) {
+                    echo '<a href="' . htmlspecialchars($social['facebook']) . '" target="_blank"><i class="fa fa-facebook"></i></a>';
+                }
+                if (!empty($social['twitter'])) {
+                    echo '<a href="' . htmlspecialchars($social['twitter']) . '" target="_blank"><i class="fa fa-twitter"></i></a>';
+                }
+                if (!empty($social['instagram'])) {
+                    echo '<a href="' . htmlspecialchars($social['instagram']) . '" target="_blank"><i class="fa fa-instagram"></i></a>';
+                }
+                if (!empty($social['telegram'])) {
+                    echo '<a href="' . htmlspecialchars($social['telegram']) . '" target="_blank"><i class="fa fa-telegram"></i></a>';
+                }
+
+                echo '</div>';
+            }
+        }
+
+        echo '</div>'; // End footer-right
+
+        echo '</div>'; // End footer-distributed
+
     } else {
-        // Otherwise, render default footer
+        // Default simple footer
         echo '<div class="container">';
         echo '    <div class="footer-content">';
         echo '        <div class="footer-section">';

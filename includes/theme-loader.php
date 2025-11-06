@@ -23,6 +23,9 @@ function render_theme_css($active_theme = 'minimal') {
         $active_theme = 'minimal';
     }
 
+    // Font Awesome for icons
+    echo '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">' . PHP_EOL . '    ';
+
     // Base path para themes
     $base_path = '/themes';
 

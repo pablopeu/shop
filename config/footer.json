@@ -1,5 +1,68 @@
 {
-    "enabled": false,
-    "html": "",
-    "use_default": true
+    "enabled": true,
+    "type": "advanced",
+    "background_color": "#292c2f",
+    "text_color": "#ffffff",
+    "left_column": {
+        "logo": {
+            "enabled": true,
+            "path": "",
+            "alt": "Logo",
+            "width": 169,
+            "height": 83
+        },
+        "links": [
+            {
+                "text": "Inicio",
+                "url": "/"
+            },
+            {
+                "text": "Contacto",
+                "url": "/contacto.php"
+            }
+        ],
+        "email": {
+            "enabled": true,
+            "address": "",
+            "subject": "Consulta desde el sitio web",
+            "icon_color": "#4f4f4f"
+        }
+    },
+    "center_column": {
+        "address": {
+            "enabled": true,
+            "street": "",
+            "city": "",
+            "country": "",
+            "map_url": "",
+            "icon_color": "#4f4f4f"
+        },
+        "phones": [
+            {
+                "number": "",
+                "label": ""
+            }
+        ],
+        "schedule": {
+            "enabled": true,
+            "days": "Lunes a Viernes",
+            "hours": "de 9 a 18hs",
+            "icon_color": "#4f4f4f"
+        }
+    },
+    "right_column": {
+        "about": {
+            "enabled": true,
+            "title": "Acerca de nosotros",
+            "text": ""
+        },
+        "social": {
+            "enabled": true,
+            "facebook": "",
+            "twitter": "",
+            "instagram": "",
+            "telegram": "",
+            "icon_bg_color": "#4f4f4f"
+        }
+    }
 }
