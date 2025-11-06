@@ -11,6 +11,7 @@ require_admin();
 
 $message = '';
 $error = '';
+$logo_uploaded = false; // Track if logo was just uploaded
 
 // Update site config
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
@@ -25,8 +26,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
         $config['site_keywords'] = sanitize_input($_POST['site_keywords'] ?? '');
         $config['contact_email'] = sanitize_input($_POST['contact_email'] ?? '');
         $config['contact_phone'] = sanitize_input($_POST['contact_phone'] ?? '');
-        $config['whatsapp_number'] = sanitize_input($_POST['whatsapp_number'] ?? '');
         $config['footer_text'] = sanitize_input($_POST['footer_text'] ?? '');
+
+        // WhatsApp configuration (new structure)
+        $config['whatsapp'] = [
+            'enabled' => isset($_POST['whatsapp_enabled']),
+            'number' => sanitize_input($_POST['whatsapp_number'] ?? ''),
+            'message' => sanitize_input($_POST['whatsapp_message'] ?? 'Hola! Me interesa un producto de su tienda')
+        ];
+
+        // Keep old whatsapp_number for backward compatibility
+        $config['whatsapp_number'] = $config['whatsapp']['number'];
 
         // Handle logo upload
         if (isset($_FILES['logo_file']) && $_FILES['logo_file']['error'] === UPLOAD_ERR_OK) {
@@ -52,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
 
                     $config['logo']['path'] = '/assets/logos/' . $new_filename;
                     $config['logo']['enabled'] = true;
+                    $logo_uploaded = true;
                     $message = 'Logo subido exitosamente';
                 } else {
                     $error = 'Error al subir el logo. Verifique los permisos del directorio.';
@@ -61,8 +72,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
             }
         }
 
-        // Update logo settings
-        $config['logo']['enabled'] = isset($_POST['logo_enabled']);
+        // Update logo settings (but keep enabled=true if just uploaded)
+        if (!$logo_uploaded) {
+            $config['logo']['enabled'] = isset($_POST['logo_enabled']);
+        }
         $config['logo']['alt'] = sanitize_input($_POST['logo_alt'] ?? 'Logo');
 
         if (write_json($config_file, $config)) {
@@ -227,11 +240,32 @@ $user = get_logged_user();
                            placeholder="+54 9 11 1234-5678">
                 </div>
 
-                <div class="form-group">
-                    <label for="whatsapp_number">Número de WhatsApp</label>
-                    <input type="text" id="whatsapp_number" name="whatsapp_number"
-                           value="<?php echo htmlspecialchars($site_config['whatsapp_number'] ?? ''); ?>"
-                           placeholder="5491112345678">
+                <!-- WhatsApp Configuration Section -->
+                <div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 20px; margin-top: 20px;">
+                    <label style="font-size: 16px; margin-bottom: 10px;">💬 Configuración de WhatsApp</label>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 15px;">Configura el botón flotante de WhatsApp que aparecerá en tu sitio</p>
+
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; cursor: pointer;">
+                        <input type="checkbox" name="whatsapp_enabled" <?php echo ($site_config['whatsapp']['enabled'] ?? false) ? 'checked' : ''; ?>>
+                        <span style="font-weight: normal;">Mostrar botón de WhatsApp en el sitio</span>
+                    </label>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <label for="whatsapp_number" style="display: block; margin-bottom: 5px; font-weight: normal;">Número de WhatsApp</label>
+                            <input type="text" id="whatsapp_number" name="whatsapp_number"
+                                   value="<?php echo htmlspecialchars($site_config['whatsapp']['number'] ?? $site_config['whatsapp_number'] ?? ''); ?>"
+                                   placeholder="5491112345678"
+                                   style="width: 100%;">
+                        </div>
+                        <div>
+                            <label for="whatsapp_message" style="display: block; margin-bottom: 5px; font-weight: normal;">Mensaje predeterminado</label>
+                            <input type="text" id="whatsapp_message" name="whatsapp_message"
+                                   value="<?php echo htmlspecialchars($site_config['whatsapp']['message'] ?? 'Hola! Me interesa un producto de su tienda'); ?>"
+                                   placeholder="Hola! Me interesa un producto de su tienda"
+                                   style="width: 100%;">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
