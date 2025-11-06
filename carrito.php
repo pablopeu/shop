@@ -21,6 +21,7 @@ session_start();
 
 // Get site configuration
 $site_config = read_json(__DIR__ . '/config/site.json');
+$footer_config = read_json(__DIR__ . '/config/footer.json');
 $currency_config = read_json(__DIR__ . '/config/currency.json');
 $theme_config = read_json(__DIR__ . '/config/theme.json');
 
@@ -62,7 +63,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php echo htmlspecialchars($site_config['site_name']); ?></a>
+            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
             <nav class="nav">
                 <a href="/">Inicio</a>
                 <a href="/buscar.php">Buscar</a>
@@ -751,5 +752,10 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
     </script>
     <!-- Mobile Menu -->
     <script src="/includes/mobile-menu.js"></script>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <?php render_footer($site_config, $footer_config); ?>
+    </footer>
 </body>
 </html>

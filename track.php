@@ -16,6 +16,7 @@ session_start();
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/config/site.json');
+$footer_config = read_json(__DIR__ . '/config/footer.json');
 $theme_config = read_json(__DIR__ . '/config/theme.json');
 
 $active_theme = $theme_config['active_theme'] ?? 'minimal';
@@ -133,5 +134,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <!-- Mobile Menu -->
     <script src="/includes/mobile-menu.js"></script>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <?php render_footer($site_config, $footer_config); ?>
+    </footer>
 </body>
 </html>

@@ -32,6 +32,7 @@ if (!$order || $order['id'] !== $order_id) {
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/config/site.json');
+$footer_config = read_json(__DIR__ . '/config/footer.json');
 $theme_config = read_json(__DIR__ . '/config/theme.json');
 
 $active_theme = $theme_config['active_theme'] ?? 'minimal';
@@ -162,5 +163,10 @@ $active_theme = $theme_config['active_theme'] ?? 'minimal';
         localStorage.removeItem('cart');
         console.log('Cart cleared from localStorage');
     </script>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <?php render_footer($site_config, $footer_config); ?>
+    </footer>
 </body>
 </html>

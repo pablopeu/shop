@@ -52,6 +52,7 @@ $_SESSION['cart'] = $valid_items;
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/config/site.json');
+$footer_config = read_json(__DIR__ . '/config/footer.json');
 $currency_config = read_json(__DIR__ . '/config/currency.json');
 $payment_config = read_json(__DIR__ . '/config/payment.json');
 $theme_config = read_json(__DIR__ . '/config/theme.json');
@@ -329,7 +330,7 @@ $csrf_token = generate_csrf_token();
     <!-- Header -->
     <div class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php echo htmlspecialchars($site_config['site_name']); ?></a>
+            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
             <div>
                 <a href="/carrito.php" class="btn-secondary">← Volver al carrito</a>
             </div>
@@ -576,5 +577,10 @@ $csrf_token = generate_csrf_token();
     </script>
     <!-- Mobile Menu -->
     <script src="/includes/mobile-menu.js"></script>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <?php render_footer($site_config, $footer_config); ?>
+    </footer>
 </body>
 </html>

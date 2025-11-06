@@ -30,12 +30,18 @@ $product = get_product_by_slug($slug);
 
 if (!$product) {
     http_response_code(404);
-    echo '<!DOCTYPE html><html><head><title>Producto no encontrado</title></head><body><h1>Producto no encontrado</h1><a href="/">Volver al inicio</a></body></html>';
+    echo '<!DOCTYPE html><html><head><title>Producto no encontrado</title></head><body><h1>Producto no encontrado</h1><a href="/">Volver al inicio</a>
+    <!-- Footer -->
+    <footer class="footer">
+        <?php render_footer($site_config, $footer_config); ?>
+    </footer>
+</body></html>';
     exit;
 }
 
 // Get site configuration
 $site_config = read_json(__DIR__ . '/config/site.json');
+$footer_config = read_json(__DIR__ . '/config/footer.json');
 $currency_config = read_json(__DIR__ . '/config/currency.json');
 $theme_config = read_json(__DIR__ . '/config/theme.json');
 
@@ -154,7 +160,7 @@ write_json($visits_file, $visits_data);
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php echo htmlspecialchars($site_config['site_name']); ?></a>
+            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
             <nav class="nav">
                 <a href="/">Inicio</a>
                 <a href="/buscar.php">Buscar</a>
@@ -641,5 +647,10 @@ write_json($visits_file, $visits_data);
 
     <!-- Mobile Menu -->
     <script src="/includes/mobile-menu.js"></script>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <?php render_footer($site_config, $footer_config); ?>
+    </footer>
 </body>
 </html>

@@ -35,6 +35,7 @@ if (empty($order_id) || empty($token)) {
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/config/site.json');
+$footer_config = read_json(__DIR__ . '/config/footer.json');
 $theme_config = read_json(__DIR__ . '/config/theme.json');
 
 $active_theme = $theme_config['active_theme'] ?? 'minimal';
@@ -93,7 +94,7 @@ $status_config = [
     <!-- Header -->
     <div class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php echo htmlspecialchars($site_config['site_name']); ?></a>
+            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
         </div>
     </div>
 
@@ -371,5 +372,10 @@ $status_config = [
 
     <!-- Mobile Menu -->
     <script src="/includes/mobile-menu.js"></script>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <?php render_footer($site_config, $footer_config); ?>
+    </footer>
 </body>
 </html>
