@@ -7,6 +7,8 @@ require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/products.php';
 require_once __DIR__ . '/includes/orders.php';
 require_once __DIR__ . '/includes/theme-loader.php';
+require_once __DIR__ . '/includes/email.php';
+require_once __DIR__ . '/includes/telegram.php';
 
 // Set security headers
 set_security_headers();
@@ -288,6 +290,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             if ($coupon_code) {
                 increment_coupon_usage($coupon_code);
             }
+
+            // Send order confirmation notifications
+            send_order_confirmation_email($order);
+            send_admin_new_order_email($order);
+            send_telegram_new_order($order);
 
             // Clear cart and coupon
             unset($_SESSION['cart']);

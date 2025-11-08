@@ -7,6 +7,8 @@
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/mercadopago.php';
 require_once __DIR__ . '/includes/orders.php';
+require_once __DIR__ . '/includes/email.php';
+require_once __DIR__ . '/includes/telegram.php';
 
 header('Content-Type: application/json');
 
@@ -142,6 +144,11 @@ try {
             $orders_data['orders'][$order_index]['stock_reduced'] = true;
         }
 
+        // Send notifications (using updated order data)
+        $updated_order = $orders_data['orders'][$order_index];
+        send_payment_approved_email($updated_order);
+        send_telegram_payment_approved($updated_order);
+
         $redirect_url = '/gracias.php?order=' . $order_id . '&token=' . $tracking_token;
     } elseif ($payment['status'] === 'in_process' ||
               $payment['status'] === 'pending' ||
@@ -149,12 +156,23 @@ try {
               $payment['status'] === 'in_mediation') {
         // Pending, in process, authorized, or in mediation
         $orders_data['orders'][$order_index]['status'] = 'pendiente';
+
+        // Send notifications (using updated order data)
+        $updated_order = $orders_data['orders'][$order_index];
+        send_payment_pending_email($updated_order);
+
         $redirect_url = '/gracias.php?order=' . $order_id . '&token=' . $tracking_token .
                        '&payment_status=' . urlencode($payment['status']) .
                        '&payment_status_detail=' . urlencode($payment['status_detail']);
     } else {
         // Rejected, cancelled, or any other status
         $orders_data['orders'][$order_index]['status'] = 'rechazada';
+
+        // Send notifications (using updated order data)
+        $updated_order = $orders_data['orders'][$order_index];
+        send_payment_rejected_email($updated_order, $payment['status_detail']);
+        send_telegram_payment_rejected($updated_order);
+
         $redirect_url = '/error.php?order=' . $order_id . '&token=' . $tracking_token .
                        '&payment_status=' . urlencode($payment['status']) .
                        '&payment_status_detail=' . urlencode($payment['status_detail']);

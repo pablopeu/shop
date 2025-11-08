@@ -7,6 +7,8 @@
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/mercadopago.php';
 require_once __DIR__ . '/includes/orders.php';
+require_once __DIR__ . '/includes/email.php';
+require_once __DIR__ . '/includes/telegram.php';
 
 // Log webhook for debugging
 function log_webhook($message, $data = []) {
@@ -272,9 +274,25 @@ if ($data['type'] === 'payment') {
                 'payment_status' => $payment_status
             ]);
 
-            // TODO: Send email to customer about status change
-            // require_once __DIR__ . '/includes/email.php';
-            // send_order_status_email($order, $new_order_status);
+            // Send notifications based on new status
+            $updated_order = $orders_data['orders'][$order_index];
+
+            if ($new_order_status === 'cobrada') {
+                // Payment approved
+                send_payment_approved_email($updated_order);
+                send_telegram_payment_approved($updated_order);
+            } elseif ($new_order_status === 'pendiente' && in_array($payment_status, ['pending', 'in_process', 'authorized', 'in_mediation'])) {
+                // Payment pending
+                send_payment_pending_email($updated_order);
+            } elseif ($new_order_status === 'rechazada') {
+                // Payment rejected
+                send_payment_rejected_email($updated_order, $status_detail);
+                send_telegram_payment_rejected($updated_order);
+            } elseif ($new_order_status === 'cancelada' && in_array($payment_status, ['refunded', 'charged_back'])) {
+                // Refunded or charged back - don't send regular rejection email
+                // Chargeback notification will be sent separately
+                log_webhook('Order cancelled due to refund/chargeback - no customer notification sent');
+            }
 
             http_response_code(200);
             exit('OK');
@@ -383,6 +401,23 @@ if ($data['type'] === 'chargebacks') {
 
                         // Save orders
                         write_json($orders_file, $orders_data);
+
+                        // Send chargeback alert notifications
+                        $updated_order = $orders_data['orders'][$order_index];
+                        $chargeback_data = [
+                            'chargeback_id' => $chargeback_id,
+                            'payment_id' => $payment_id,
+                            'action' => $data['action'] ?? 'unknown',
+                            'date' => date('Y-m-d H:i:s')
+                        ];
+
+                        send_admin_chargeback_alert($updated_order, $chargeback_data);
+                        send_telegram_chargeback_alert($updated_order, $chargeback_data);
+
+                        log_webhook('Chargeback alerts sent', [
+                            'order_id' => $order_id,
+                            'chargeback_id' => $chargeback_id
+                        ]);
                     }
                 }
             } catch (Exception $e) {
