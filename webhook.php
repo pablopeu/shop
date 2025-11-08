@@ -284,7 +284,150 @@ if ($data['type'] === 'payment') {
         exit('OK - No changes');
 
     } catch (Exception $e) {
-        log_webhook('Error processing webhook', ['error' => $e->getMessage()]);
+        log_webhook('Error processing payment webhook', ['error' => $e->getMessage()]);
+        http_response_code(500);
+        exit('Error: ' . $e->getMessage());
+    }
+}
+
+// Handle chargeback notification
+if ($data['type'] === 'chargebacks') {
+    try {
+        $chargeback_id = $data['data']['id'] ?? null;
+
+        if (!$chargeback_id) {
+            log_webhook('No chargeback ID in webhook');
+            http_response_code(400);
+            exit('No chargeback ID');
+        }
+
+        log_webhook('Chargeback notification received', [
+            'chargeback_id' => $chargeback_id,
+            'action' => $data['action'] ?? 'unknown'
+        ]);
+
+        // Get payment ID from chargeback data if available
+        $payment_id = $data['data']['payment_id'] ?? null;
+
+        if ($payment_id) {
+            // Get payment details to find the order
+            $mp = new MercadoPago($access_token, $sandbox_mode);
+
+            try {
+                $payment = $mp->getPayment($payment_id);
+                $order_id = $payment['external_reference'] ?? null;
+
+                if ($order_id) {
+                    // Load orders
+                    $orders_file = __DIR__ . '/data/orders.json';
+                    $orders_data = read_json($orders_file);
+
+                    // Find order
+                    $order_index = null;
+                    foreach ($orders_data['orders'] as $index => $order) {
+                        if ($order['id'] === $order_id) {
+                            $order_index = $index;
+                            break;
+                        }
+                    }
+
+                    if ($order_index !== null) {
+                        $order = $orders_data['orders'][$order_index];
+
+                        // Update order with chargeback info
+                        if (!isset($orders_data['orders'][$order_index]['chargebacks'])) {
+                            $orders_data['orders'][$order_index]['chargebacks'] = [];
+                        }
+
+                        $orders_data['orders'][$order_index]['chargebacks'][] = [
+                            'chargeback_id' => $chargeback_id,
+                            'payment_id' => $payment_id,
+                            'action' => $data['action'] ?? 'unknown',
+                            'date' => date('Y-m-d H:i:s'),
+                            'data' => $data
+                        ];
+
+                        // If chargeback is created/lost, mark order as charged_back and restore stock
+                        if (in_array($data['action'] ?? '', ['created', 'lost'])) {
+                            $old_status = $order['status'];
+                            $orders_data['orders'][$order_index]['status'] = 'cancelada';
+
+                            // Restore stock if it was reduced
+                            if ($order['stock_reduced'] ?? false) {
+                                foreach ($order['items'] as $item) {
+                                    restore_product_stock($item['product_id'], $item['quantity']);
+                                }
+                                $orders_data['orders'][$order_index]['stock_reduced'] = false;
+                                log_webhook('Stock restored due to chargeback', ['order_id' => $order_id]);
+                            }
+
+                            // Add to status history
+                            if (!isset($orders_data['orders'][$order_index]['status_history'])) {
+                                $orders_data['orders'][$order_index]['status_history'] = [];
+                            }
+
+                            $orders_data['orders'][$order_index]['status_history'][] = [
+                                'status' => 'cancelada',
+                                'date' => date('Y-m-d H:i:s'),
+                                'user' => 'mercadopago_webhook',
+                                'reason' => 'chargeback_' . ($data['action'] ?? 'unknown'),
+                                'previous_status' => $old_status
+                            ];
+
+                            log_webhook('Order marked as charged_back', [
+                                'order_id' => $order_id,
+                                'chargeback_id' => $chargeback_id,
+                                'action' => $data['action']
+                            ]);
+                        }
+
+                        // Save orders
+                        write_json($orders_file, $orders_data);
+                    }
+                }
+            } catch (Exception $e) {
+                log_webhook('Error processing chargeback - payment not found', [
+                    'payment_id' => $payment_id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        http_response_code(200);
+        exit('OK - Chargeback processed');
+
+    } catch (Exception $e) {
+        log_webhook('Error processing chargeback webhook', ['error' => $e->getMessage()]);
+        http_response_code(500);
+        exit('Error: ' . $e->getMessage());
+    }
+}
+
+// Handle merchant_order notification
+if ($data['type'] === 'merchant_order') {
+    try {
+        $merchant_order_id = $data['data']['id'] ?? null;
+
+        if (!$merchant_order_id) {
+            log_webhook('No merchant_order ID in webhook');
+            http_response_code(400);
+            exit('No merchant_order ID');
+        }
+
+        log_webhook('Merchant order notification received', [
+            'merchant_order_id' => $merchant_order_id,
+            'action' => $data['action'] ?? 'unknown'
+        ]);
+
+        // For Checkout Bricks, we primarily rely on payment webhooks
+        // Merchant orders are more relevant for Checkout Pro
+        // We'll log it but not take specific action unless needed
+
+        http_response_code(200);
+        exit('OK - Merchant order logged');
+
+    } catch (Exception $e) {
+        log_webhook('Error processing merchant_order webhook', ['error' => $e->getMessage()]);
         http_response_code(500);
         exit('Error: ' . $e->getMessage());
     }

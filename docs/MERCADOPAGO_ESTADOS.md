@@ -275,12 +275,134 @@ Registra en `error_log`:
 - Compara con datos en la orden del sistema
 - Lista últimos 10 pedidos con MP
 
+## Tipos de Webhooks (Topics)
+
+El sistema maneja múltiples tipos de eventos de Mercadopago para cubrir todo el ciclo de vida de un pago:
+
+### 1. **payment** (Pagos) ✅ IMPLEMENTADO
+
+**Descripción**: Notificación cuando se crea un pago o cambia su estado
+
+**Cuándo se dispara**:
+- Se crea un nuevo pago
+- Un pago cambia de estado (pending → approved, approved → refunded, etc.)
+
+**Acciones del sistema**:
+- Consulta detalles del pago a la API de MP
+- Encuentra la orden por `external_reference`
+- Actualiza estado de la orden según el estado del pago
+- Maneja stock (reduce si aprobado, restaura si rechazado/cancelado)
+- Guarda datos completos del pago en `mercadopago_data`
+- Registra evento en `webhook_log.json`
+
+**Archivo**: `webhook.php` (líneas 76-291)
+
+---
+
+### 2. **chargebacks** (Contracargos) ✅ IMPLEMENTADO
+
+**Descripción**: Notificación cuando un cliente disputa un pago con su banco
+
+**Cuándo se dispara**:
+- Se crea un contracargo (`action: created`)
+- El vendedor pierde el contracargo (`action: lost`)
+- El vendedor gana el contracargo (`action: won`)
+
+**Acciones del sistema**:
+- Registra información del contracargo en array `chargebacks` de la orden
+- Si el action es `created` o `lost`:
+  - Cambia estado de orden a `cancelada`
+  - Restaura stock automáticamente
+  - Agrega entrada al historial de estados
+- Guarda todos los detalles del contracargo
+- Registra evento en `webhook_log.json`
+
+**Archivo**: `webhook.php` (líneas 293-404)
+
+**Visualización**: Se muestra en vista de detalle de venta en admin con:
+- ID del contracargo
+- Acción (CREATED, LOST, WON)
+- Payment ID relacionado
+- Fecha del evento
+- Advertencia sobre restauración de stock
+
+---
+
+### 3. **merchant_order** (Órdenes) ✅ IMPLEMENTADO (solo logging)
+
+**Descripción**: Notificación sobre creación y actualización de merchant orders
+
+**Cuándo se dispara**:
+- Se crea una merchant order
+- Se actualiza una merchant order
+- Se cierra o expira una merchant order
+
+**Acciones del sistema**:
+- Registra el evento en `webhook_log.json`
+- No toma acciones específicas (más relevante para Checkout Pro)
+- Para Checkout Bricks, el topic `payment` es suficiente
+
+**Archivo**: `webhook.php` (líneas 406-434)
+
+**Nota**: En Checkout Bricks, las órdenes se manejan principalmente vía el topic `payment`. Este topic es más importante para Checkout Pro donde hay merchant_orders explícitas.
+
+---
+
+### Resumen de Topics Manejados
+
+| Topic | Estado | Prioridad | Notas |
+|-------|--------|-----------|-------|
+| `payment` | ✅ Completo | 🔴 Alta | Maneja todo el ciclo de vida del pago |
+| `chargebacks` | ✅ Completo | 🔴 Alta | Crítico para disputas |
+| `merchant_order` | ✅ Logging | 🟡 Media | Principalmente para Checkout Pro |
+| `point_integration_wh` | ⚪ No aplica | 🟢 Baja | Solo para pagos presenciales con Point |
+| `subscription` | ⚪ No aplica | 🟢 Baja | Solo si se implementan suscripciones |
+
+---
+
+### Estructura de Datos Guardados
+
+#### Para pagos (`mercadopago_data`):
+```json
+{
+  "payment_id": "1342310445",
+  "status": "approved",
+  "status_detail": "accredited",
+  "transaction_amount": 1500.00,
+  "currency_id": "ARS",
+  "date_created": "2025-11-08T15:30:45.000Z",
+  "date_approved": "2025-11-08T15:30:50.000Z",
+  "payment_method_id": "visa",
+  "payment_type_id": "credit_card",
+  "installments": 1,
+  "card_last_four_digits": "4242",
+  "payer_email": "test@test.com",
+  "webhook_received_at": "2025-11-08 15:31:00"
+}
+```
+
+#### Para contracargos (`chargebacks`):
+```json
+[
+  {
+    "chargeback_id": "123456",
+    "payment_id": "1342310445",
+    "action": "created",
+    "date": "2025-11-08 16:00:00",
+    "data": { /* datos completos del webhook */ }
+  }
+]
+```
+
+---
+
 ## Consideraciones de Seguridad
 
 1. **Verificación de webhooks**: El sistema valida que las notificaciones vengan de MP
 2. **External reference**: Se usa el Order ID para vincular pagos
 3. **Token tracking**: Cada orden tiene un token único para acceso seguro
 4. **Stock protegido**: Operaciones idempotentes previenen duplicaciones
+5. **Logging completo**: Todos los webhooks se registran en `webhook_log.json`
 
 ## Mantenimiento Futuro
 

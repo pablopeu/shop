@@ -928,6 +928,45 @@ $status_labels = [
                 </div>
                 ` : ''}
 
+                ${order.chargebacks && order.chargebacks.length > 0 ? `
+                <div class="form-group" style="background: #ffebee; padding: 15px; border-radius: 6px; border-left: 4px solid #f44336;">
+                    <label><strong>🚨 Contracargos (Chargebacks):</strong></label>
+                    <div style="margin-top: 10px;">
+                        ${order.chargebacks.map((cb, index) => `
+                            <div style="background: white; padding: 12px; border-radius: 4px; margin-bottom: ${index < order.chargebacks.length - 1 ? '10px' : '0'}; border: 1px solid #ffcdd2;">
+                                <div style="font-size: 13px;">
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f5f5f5;">
+                                        <span style="color: #666; font-weight: 600;">Chargeback ID:</span>
+                                        <span style="font-family: monospace; font-size: 12px;">${cb.chargeback_id}</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f5f5f5;">
+                                        <span style="color: #666; font-weight: 600;">Acción:</span>
+                                        <span>
+                                            <span style="padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; color: white;
+                                                  background: ${cb.action === 'created' ? '#ff9800' : cb.action === 'lost' ? '#f44336' : cb.action === 'won' ? '#4CAF50' : '#999'};">
+                                                ${cb.action ? cb.action.toUpperCase() : 'UNKNOWN'}
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f5f5f5;">
+                                        <span style="color: #666; font-weight: 600;">Payment ID:</span>
+                                        <span style="font-family: monospace; font-size: 12px;">${cb.payment_id}</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0;">
+                                        <span style="color: #666; font-weight: 600;">Fecha:</span>
+                                        <span>${new Date(cb.date).toLocaleString('es-AR')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <small style="display: block; margin-top: 12px; color: #c62828; font-weight: 600;">
+                        ⚠️ Un contracargo indica que el comprador disputó el pago con su banco.
+                        ${order.chargebacks.some(cb => cb.action === 'created' || cb.action === 'lost') ? 'El stock fue restaurado automáticamente.' : ''}
+                    </small>
+                </div>
+                ` : ''}
+
                 ${order.payment_link ? `
                 <div class="form-group" style="background: #e3f2fd; padding: 15px; border-radius: 6px; border-left: 4px solid #2196F3;">
                     <label><strong>🔗 Link de Pago de Mercadopago:</strong></label>
