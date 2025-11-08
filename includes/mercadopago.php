@@ -78,6 +78,69 @@ class MercadoPago {
     }
 
     /**
+     * Create a payment
+     */
+    public function createPayment($data) {
+        $url = $this->base_url . '/v1/payments';
+
+        $headers = [
+            'Authorization: Bearer ' . $this->access_token,
+            'Content-Type: application/json',
+            'X-Idempotency-Key: ' . uniqid('payment_', true)
+        ];
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if (curl_errno($ch)) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            throw new Exception('Curl error: ' . $error);
+        }
+
+        curl_close($ch);
+
+        $result = json_decode($response, true);
+
+        if ($http_code !== 201 && $http_code !== 200) {
+            // Extract detailed error information
+            $error_msg = 'Mercadopago API error (HTTP ' . $http_code . '): ';
+
+            if (isset($result['message'])) {
+                $error_msg .= $result['message'];
+            } elseif (isset($result['error'])) {
+                $error_msg .= $result['error'];
+            } else {
+                $error_msg .= 'Unknown error';
+            }
+
+            // Add cause details if available
+            if (isset($result['cause']) && is_array($result['cause'])) {
+                foreach ($result['cause'] as $cause) {
+                    if (isset($cause['code']) && isset($cause['description'])) {
+                        $error_msg .= ' [' . $cause['code'] . ': ' . $cause['description'] . ']';
+                    }
+                }
+            }
+
+            // Log full response for debugging
+            error_log("Mercadopago createPayment error: " . json_encode($result));
+
+            throw new Exception($error_msg);
+        }
+
+        return $result;
+    }
+
+    /**
      * Get payment information
      */
     public function getPayment($payment_id) {
