@@ -434,3 +434,115 @@ function increment_coupon_usage($code) {
 
     return false;
 }
+
+/**
+ * Archive an order
+ * Moves order from orders.json to archived_orders.json
+ * @param string $order_id Order ID
+ * @return bool Success or failure
+ */
+function archive_order($order_id) {
+    $orders_file = __DIR__ . '/../data/orders.json';
+    $archived_file = __DIR__ . '/../data/archived_orders.json';
+
+    // Load orders
+    $orders_data = read_json($orders_file);
+    $archived_data = read_json($archived_file);
+
+    if (!isset($archived_data['orders'])) {
+        $archived_data = ['orders' => []];
+    }
+
+    // Find and remove order from orders.json
+    $order_to_archive = null;
+    foreach ($orders_data['orders'] as $index => $order) {
+        if ($order['id'] === $order_id) {
+            $order_to_archive = $order;
+            $order_to_archive['archived_date'] = date('Y-m-d H:i:s');
+            array_splice($orders_data['orders'], $index, 1);
+            break;
+        }
+    }
+
+    if (!$order_to_archive) {
+        return false;
+    }
+
+    // Add to archived orders
+    array_unshift($archived_data['orders'], $order_to_archive);
+
+    // Save both files
+    return write_json($orders_file, $orders_data) && write_json($archived_file, $archived_data);
+}
+
+/**
+ * Get all archived orders
+ * @return array Archived orders array
+ */
+function get_archived_orders() {
+    $archived_file = __DIR__ . '/../data/archived_orders.json';
+    $data = read_json($archived_file);
+    return $data['orders'] ?? [];
+}
+
+/**
+ * Permanently delete an archived order
+ * @param string $order_id Order ID
+ * @return bool Success or failure
+ */
+function delete_archived_order($order_id) {
+    $archived_file = __DIR__ . '/../data/archived_orders.json';
+    $data = read_json($archived_file);
+
+    if (!isset($data['orders'])) {
+        return false;
+    }
+
+    foreach ($data['orders'] as $index => $order) {
+        if ($order['id'] === $order_id) {
+            array_splice($data['orders'], $index, 1);
+            return write_json($archived_file, $data);
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Restore archived order back to active orders
+ * @param string $order_id Order ID
+ * @return bool Success or failure
+ */
+function restore_archived_order($order_id) {
+    $orders_file = __DIR__ . '/../data/orders.json';
+    $archived_file = __DIR__ . '/../data/archived_orders.json';
+
+    // Load both files
+    $orders_data = read_json($orders_file);
+    $archived_data = read_json($archived_file);
+
+    if (!isset($archived_data['orders'])) {
+        return false;
+    }
+
+    // Find and remove order from archived
+    $order_to_restore = null;
+    foreach ($archived_data['orders'] as $index => $order) {
+        if ($order['id'] === $order_id) {
+            $order_to_restore = $order;
+            unset($order_to_restore['archived_date']); // Remove archived date
+            array_splice($archived_data['orders'], $index, 1);
+            break;
+        }
+    }
+
+    if (!$order_to_restore) {
+        return false;
+    }
+
+    // Add back to active orders
+    array_unshift($orders_data['orders'], $order_to_restore);
+
+    // Save both files
+    return write_json($orders_file, $orders_data) && write_json($archived_file, $archived_data);
+}

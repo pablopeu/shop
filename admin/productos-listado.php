@@ -21,6 +21,13 @@ $currency_config = read_json(__DIR__ . '/../config/currency.json');
 $message = '';
 $error = '';
 
+// Check for messages in URL
+if (isset($_GET['msg'])) {
+    if ($_GET['msg'] === 'product_updated') {
+        $message = 'Producto actualizado exitosamente';
+    }
+}
+
 // Delete product
 if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
     $product_id = $_GET['id'];

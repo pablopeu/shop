@@ -135,14 +135,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
         } else {
             // Update product
             if (update_product($product_id, $product_data)) {
-                $message = 'Producto actualizado exitosamente';
                 log_admin_action('product_updated', $_SESSION['username'], [
                     'product_id' => $product_id,
                     'name' => $product_data['name']
                 ]);
 
-                // Reload product
-                $product = get_product_by_id($product_id);
+                // Redirect to product listing
+                header('Location: /admin/productos-listado.php?msg=product_updated');
+                exit;
             } else {
                 $error = 'Error al actualizar el producto';
             }

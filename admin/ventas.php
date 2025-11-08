@@ -59,16 +59,71 @@ if (isset($_GET['action']) && $_GET['action'] === 'cancel' && isset($_GET['id'])
     }
 }
 
+// Handle bulk actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
+    $action = $_POST['bulk_action'];
+    $selected_orders = $_POST['selected_orders'] ?? [];
+
+    if (!empty($selected_orders)) {
+        $success_count = 0;
+        foreach ($selected_orders as $order_id) {
+            if ($action === 'archive') {
+                if (archive_order($order_id)) {
+                    $success_count++;
+                }
+            } elseif ($action === 'cancel') {
+                if (cancel_order($order_id, 'Cancelado en masa por admin', $_SESSION['username'])) {
+                    $success_count++;
+                }
+            } elseif (in_array($action, ['pending', 'confirmed', 'shipped', 'delivered'])) {
+                if (update_order_status($order_id, $action, $_SESSION['username'])) {
+                    $success_count++;
+                }
+            }
+        }
+
+        $message = "$success_count orden(es) procesada(s) exitosamente";
+    } else {
+        $error = 'No se seleccionaron órdenes';
+    }
+}
+
 // Filter orders
 $filter_status = $_GET['filter'] ?? 'all';
+$search_query = $_GET['search'] ?? '';
+$date_from = $_GET['date_from'] ?? '';
+$date_to = $_GET['date_to'] ?? '';
 $all_orders = get_all_orders();
 
-// Apply filter
+// Apply status filter
 if ($filter_status === 'all') {
     $orders = $all_orders;
 } else {
     $orders = array_filter($all_orders, function($order) use ($filter_status) {
         return $order['status'] === $filter_status;
+    });
+}
+
+// Apply search filter (order number or customer name/email)
+if (!empty($search_query)) {
+    $orders = array_filter($orders, function($order) use ($search_query) {
+        $search_lower = mb_strtolower($search_query);
+        return stripos($order['order_number'], $search_query) !== false ||
+               stripos(mb_strtolower($order['customer_name'] ?? ''), $search_lower) !== false ||
+               stripos(mb_strtolower($order['customer_email'] ?? ''), $search_lower) !== false;
+    });
+}
+
+// Apply date filter
+if (!empty($date_from)) {
+    $orders = array_filter($orders, function($order) use ($date_from) {
+        return strtotime($order['date']) >= strtotime($date_from . ' 00:00:00');
+    });
+}
+
+if (!empty($date_to)) {
+    $orders = array_filter($orders, function($order) use ($date_to) {
+        return strtotime($order['date']) <= strtotime($date_to . ' 23:59:59');
     });
 }
 
@@ -462,10 +517,65 @@ $status_labels = [
                     </a>
                 </div>
 
+                <!-- Advanced Filters -->
+                <div class="card">
+                    <div class="card-header">Filtros Avanzados</div>
+                    <form method="GET" action="" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; align-items: end;">
+                        <input type="hidden" name="filter" value="<?php echo htmlspecialchars($filter_status); ?>">
+
+                        <div class="form-group" style="margin: 0;">
+                            <label for="search" style="font-size: 13px; margin-bottom: 5px; display: block;">Buscar (Nro pedido, cliente, email)</label>
+                            <input type="text" id="search" name="search" placeholder="Ej: 1001 o Juan Perez"
+                                   value="<?php echo htmlspecialchars($search_query); ?>"
+                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
+                        </div>
+
+                        <div class="form-group" style="margin: 0;">
+                            <label for="date_from" style="font-size: 13px; margin-bottom: 5px; display: block;">Desde</label>
+                            <input type="date" id="date_from" name="date_from"
+                                   value="<?php echo htmlspecialchars($date_from); ?>"
+                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
+                        </div>
+
+                        <div class="form-group" style="margin: 0;">
+                            <label for="date_to" style="font-size: 13px; margin-bottom: 5px; display: block;">Hasta</label>
+                            <input type="date" id="date_to" name="date_to"
+                                   value="<?php echo htmlspecialchars($date_to); ?>"
+                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
+                        </div>
+
+                        <div style="display: flex; gap: 8px;">
+                            <button type="submit" class="btn btn-primary btn-sm">Aplicar Filtros</button>
+                            <a href="?" class="btn btn-secondary btn-sm">Limpiar</a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Bulk Actions -->
+                <form method="POST" id="bulkForm">
+                    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+                        <select name="bulk_action" id="bulkAction" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="">Seleccionar acción...</option>
+                            <option value="pending">Marcar como Pendiente</option>
+                            <option value="confirmed">Marcar como Confirmada</option>
+                            <option value="shipped">Marcar como Enviada</option>
+                            <option value="delivered">Marcar como Entregada</option>
+                            <option value="cancel">Cancelar</option>
+                            <option value="archive">Archivar</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm" onclick="return confirmBulkAction()">Aplicar a Seleccionadas</button>
+                        <a href="archivo-ventas.php" class="btn btn-secondary btn-sm">Ver Archivo</a>
+                        <span id="selectedCount" style="color: #666; font-size: 13px;"></span>
+                    </div>
+
                 <!-- Orders Table -->
                 <table class="orders-table">
                     <thead>
                         <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes(this)">
+                            </th>
                             <th>Pedido #</th>
                             <th>Cliente</th>
                             <th>Fecha</th>
@@ -478,13 +588,19 @@ $status_labels = [
                     <tbody>
                         <?php if (empty($orders)): ?>
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                                <td colspan="8" style="text-align: center; padding: 40px; color: #999;">
                                     No hay órdenes<?php echo $filter_status !== 'all' ? ' con este estado' : ''; ?>.
                                 </td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($orders as $order): ?>
                                 <tr>
+                                    <td>
+                                        <input type="checkbox" name="selected_orders[]"
+                                               value="<?php echo htmlspecialchars($order['id']); ?>"
+                                               class="order-checkbox"
+                                               onchange="updateSelectedCount()">
+                                    </td>
                                     <td>
                                         <strong><?php echo htmlspecialchars($order['order_number']); ?></strong>
                                     </td>
@@ -533,6 +649,7 @@ $status_labels = [
                         <?php endif; ?>
                     </tbody>
                 </table>
+                </form>
             </div>
         </div>
     </div>
@@ -729,6 +846,64 @@ $status_labels = [
                 closeCancelModal();
             }
         });
+
+        // Checkbox management
+        function toggleAllCheckboxes(source) {
+            const checkboxes = document.querySelectorAll('.order-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = source.checked;
+            });
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+            const count = checkboxes.length;
+            const countElement = document.getElementById('selectedCount');
+
+            if (count > 0) {
+                countElement.textContent = `${count} orden(es) seleccionada(s)`;
+                countElement.style.fontWeight = 'bold';
+                countElement.style.color = '#4CAF50';
+            } else {
+                countElement.textContent = '';
+            }
+
+            // Update "select all" checkbox state
+            const allCheckboxes = document.querySelectorAll('.order-checkbox');
+            const selectAllCheckbox = document.getElementById('selectAll');
+            selectAllCheckbox.checked = allCheckboxes.length > 0 && count === allCheckboxes.length;
+        }
+
+        function confirmBulkAction() {
+            const action = document.getElementById('bulkAction').value;
+            const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+
+            if (!action) {
+                alert('Por favor selecciona una acción');
+                return false;
+            }
+
+            if (checkboxes.length === 0) {
+                alert('Por favor selecciona al menos una orden');
+                return false;
+            }
+
+            const actionNames = {
+                'pending': 'marcar como Pendiente',
+                'confirmed': 'marcar como Confirmada',
+                'shipped': 'marcar como Enviada',
+                'delivered': 'marcar como Entregada',
+                'cancel': 'cancelar',
+                'archive': 'archivar'
+            };
+
+            const actionName = actionNames[action] || action;
+            return confirm(`¿Estás seguro de ${actionName} ${checkboxes.length} orden(es)?`);
+        }
+
+        // Initialize selected count on page load
+        document.addEventListener('DOMContentLoaded', updateSelectedCount);
     </script>
 </body>
 </html>
