@@ -62,6 +62,16 @@ if ($payment_status && $payment_status !== 'approved') {
     <link rel="stylesheet" href="/includes/mobile-menu.css">
 </head>
 <body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
+            <nav class="nav">
+                <a href="/">🏠 Volver al inicio</a>
+            </nav>
+        </div>
+    </header>
+
     <div class="success-container">
         <?php if ($payment_message): ?>
         <div class="success-icon"><?php echo $payment_message['icon']; ?></div>
