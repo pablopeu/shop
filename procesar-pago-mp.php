@@ -21,14 +21,18 @@ if (!$data) {
 }
 
 // Validate required fields
-if (!isset($data['order_id']) || !isset($data['token']) || !isset($data['token'])) {
+if (!isset($data['order_id']) || !isset($data['tracking_token']) || !isset($data['token'])) {
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Missing required fields']);
     exit;
 }
 
 $order_id = $data['order_id'];
-$token = $data['token'];
+$tracking_token = $data['tracking_token'];
+$card_token = $data['token']; // Token de la tarjeta generado por MP SDK
+
+// Log received data for debugging
+error_log("Payment request received: Order ID: $order_id, Card token present: " . (isset($card_token) ? 'Yes' : 'No'));
 
 // Load order
 $orders_file = __DIR__ . '/data/orders.json';
@@ -37,7 +41,7 @@ $orders_data = read_json($orders_file);
 $order = null;
 $order_index = null;
 foreach ($orders_data['orders'] as $index => $o) {
-    if ($o['id'] === $order_id && $o['tracking_token'] === $token) {
+    if ($o['id'] === $order_id && $o['tracking_token'] === $tracking_token) {
         $order = $o;
         $order_index = $index;
         break;
@@ -76,7 +80,7 @@ try {
     // Prepare payment data for Mercadopago
     $payment_data = [
         'transaction_amount' => floatval($total_ars),
-        'token' => $data['token'],
+        'token' => $card_token, // Token de la tarjeta generado por MP SDK
         'description' => 'Orden #' . $order['order_number'],
         'installments' => intval($data['installments'] ?? 1),
         'payment_method_id' => $data['payment_method_id'],
@@ -91,6 +95,9 @@ try {
         'external_reference' => $order_id,
         'statement_descriptor' => 'ORDEN-' . $order['order_number']
     ];
+
+    // Log payment data for debugging (without sensitive data)
+    error_log("Creating payment - Amount: $total_ars ARS, Payment method: {$data['payment_method_id']}, Token length: " . strlen($card_token));
 
     // Process payment with Mercadopago
     $mp = new MercadoPago($access_token, $sandbox_mode);
@@ -113,13 +120,13 @@ try {
             $orders_data['orders'][$order_index]['stock_reduced'] = true;
         }
 
-        $redirect_url = '/gracias.php?order=' . $order_id . '&token=' . $token;
+        $redirect_url = '/gracias.php?order=' . $order_id . '&token=' . $tracking_token;
     } elseif ($payment['status'] === 'in_process' || $payment['status'] === 'pending') {
         $orders_data['orders'][$order_index]['status'] = 'pendiente';
-        $redirect_url = '/gracias.php?order=' . $order_id . '&token=' . $token;
+        $redirect_url = '/gracias.php?order=' . $order_id . '&token=' . $tracking_token;
     } else {
         $orders_data['orders'][$order_index]['status'] = 'rechazada';
-        $redirect_url = '/error.php?order=' . $order_id . '&token=' . $token;
+        $redirect_url = '/error.php?order=' . $order_id . '&token=' . $tracking_token;
     }
 
     // Save order

@@ -272,7 +272,7 @@ if ($order['currency'] === 'USD') {
                             body: JSON.stringify({
                                 ...cardFormData,
                                 order_id: '<?php echo $order_id; ?>',
-                                token: '<?php echo $token; ?>'
+                                tracking_token: '<?php echo $token; ?>'
                             })
                         })
                         .then(response => response.json())
