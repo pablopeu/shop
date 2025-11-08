@@ -255,6 +255,128 @@ $status_labels = [
             border-radius: 6px;
             color: #856404;
         }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        /* Confirmation Modal */
+        .confirm-modal-content {
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .confirm-modal-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .confirm-modal-icon.warning {
+            color: #ffc107;
+        }
+
+        .confirm-modal-icon.danger {
+            color: #dc3545;
+        }
+
+        .confirm-modal-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .confirm-modal-description {
+            font-size: 15px;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .confirm-modal-details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .confirm-modal-details ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .confirm-modal-details li {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .confirm-modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn-cancel {
+            background: #6c757d;
+            color: white;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #5a6268;
+        }
+
+        .modal-btn-confirm {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .modal-btn-confirm:hover {
+            background: #45a049;
+        }
+
+        .modal-btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .modal-btn-danger:hover {
+            background: #c82333;
+        }
     </style>
 </head>
 <body>
@@ -366,14 +488,14 @@ $status_labels = [
                                     </td>
                                     <td>
                                         <div class="actions">
-                                            <a href="?action=restore&id=<?php echo urlencode($order['id']); ?>"
+                                            <a href="#"
                                                class="btn btn-sm btn-secondary"
-                                               onclick="return confirm('¿Restaurar esta orden a ventas activas?')">
+                                               onclick="confirmSingleAction('restore', '<?php echo htmlspecialchars($order['id']); ?>', '<?php echo htmlspecialchars($order['order_number']); ?>'); return false;">
                                                 ↩️ Restaurar
                                             </a>
-                                            <a href="?action=delete&id=<?php echo urlencode($order['id']); ?>"
+                                            <a href="#"
                                                class="btn btn-sm btn-danger"
-                                               onclick="return confirm('⚠️ ¿ELIMINAR PERMANENTEMENTE esta orden? Esta acción no se puede deshacer.')">
+                                               onclick="confirmSingleAction('delete', '<?php echo htmlspecialchars($order['id']); ?>', '<?php echo htmlspecialchars($order['order_number']); ?>'); return false;">
                                                 🗑️ Eliminar
                                             </a>
                                         </div>
@@ -384,6 +506,42 @@ $status_labels = [
                     </tbody>
                 </table>
             </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Action Confirmation Modal -->
+    <div id="confirmBulkModal" class="modal">
+        <div class="modal-content confirm-modal-content">
+            <div class="confirm-modal-icon" id="confirmIcon">⚠️</div>
+            <h2 class="confirm-modal-title" id="confirmTitle">Confirmar Acción</h2>
+            <p class="confirm-modal-description" id="confirmDescription"></p>
+            <div class="confirm-modal-details" id="confirmDetails"></div>
+            <div class="confirm-modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeConfirmModal()">
+                    Cancelar
+                </button>
+                <button class="modal-btn" id="confirmButton" onclick="executeBulkAction()">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Action Confirmation Modal -->
+    <div id="confirmSingleModal" class="modal">
+        <div class="modal-content confirm-modal-content">
+            <div class="confirm-modal-icon" id="singleConfirmIcon">⚠️</div>
+            <h2 class="confirm-modal-title" id="singleConfirmTitle">Confirmar Acción</h2>
+            <p class="confirm-modal-description" id="singleConfirmDescription"></p>
+            <div class="confirm-modal-details" id="singleConfirmDetails"></div>
+            <div class="confirm-modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeSingleConfirmModal()">
+                    Cancelar
+                </button>
+                <a class="modal-btn" id="singleConfirmButton" href="#">
+                    Confirmar
+                </a>
             </div>
         </div>
     </div>
@@ -422,23 +580,182 @@ $status_labels = [
             const checkboxes = document.querySelectorAll('.order-checkbox:checked');
 
             if (!action) {
-                alert('Por favor selecciona una acción');
+                showNotification('Por favor selecciona una acción', 'warning');
                 return false;
             }
 
             if (checkboxes.length === 0) {
-                alert('Por favor selecciona al menos una orden');
+                showNotification('Por favor selecciona al menos una orden', 'warning');
                 return false;
             }
 
-            if (action === 'delete') {
-                return confirm(`⚠️ ¿ELIMINAR PERMANENTEMENTE ${checkboxes.length} orden(es)? Esta acción no se puede deshacer.`);
-            } else if (action === 'restore') {
-                return confirm(`¿Restaurar ${checkboxes.length} orden(es) a ventas activas?`);
-            }
-
-            return true;
+            // Show confirmation modal
+            showBulkActionModal(action, checkboxes.length);
+            return false; // Prevent form submission, will be handled by modal
         }
+
+        function showBulkActionModal(action, count) {
+            const modal = document.getElementById('confirmBulkModal');
+            const icon = document.getElementById('confirmIcon');
+            const title = document.getElementById('confirmTitle');
+            const description = document.getElementById('confirmDescription');
+            const details = document.getElementById('confirmDetails');
+            const confirmBtn = document.getElementById('confirmButton');
+
+            const actionConfig = {
+                'restore': {
+                    icon: '↩️',
+                    iconClass: 'warning',
+                    title: 'Restaurar Órdenes',
+                    description: 'Las siguientes órdenes serán restauradas al listado activo de ventas:',
+                    effects: ['Las órdenes volverán al listado principal de ventas', 'Se eliminarán del archivo', 'Podrán ser gestionadas normalmente'],
+                    btnClass: 'modal-btn-confirm',
+                    btnText: 'Restaurar Órdenes'
+                },
+                'delete': {
+                    icon: '🗑️',
+                    iconClass: 'danger',
+                    title: 'Eliminar Permanentemente',
+                    description: '⚠️ ATENCIÓN: Esta acción eliminará permanentemente las órdenes seleccionadas:',
+                    effects: ['Las órdenes serán ELIMINADAS PERMANENTEMENTE', '❌ Esta acción NO se puede deshacer', '❌ No podrás recuperar esta información', '⚠️ Solo elimina si estás completamente seguro'],
+                    btnClass: 'modal-btn-danger',
+                    btnText: 'Eliminar Permanentemente'
+                }
+            };
+
+            const config = actionConfig[action];
+
+            // Set icon
+            icon.textContent = config.icon;
+            icon.className = 'confirm-modal-icon ' + config.iconClass;
+
+            // Set title and description
+            title.textContent = config.title;
+            description.textContent = config.description;
+
+            // Set details
+            details.innerHTML = `
+                <strong>${count} orden(es) seleccionada(s)</strong>
+                <p style="margin: 10px 0; font-size: 13px; color: #666;">${action === 'delete' ? '⚠️ Ten en cuenta que:' : 'Esta acción:'}</p>
+                <ul>
+                    ${config.effects.map(effect => `<li>${effect}</li>`).join('')}
+                </ul>
+            `;
+
+            // Configure button
+            confirmBtn.className = 'modal-btn ' + config.btnClass;
+            confirmBtn.textContent = config.btnText;
+
+            // Show modal
+            modal.classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmBulkModal').classList.remove('active');
+        }
+
+        function executeBulkAction() {
+            // Close modal
+            closeConfirmModal();
+
+            // Submit form
+            document.getElementById('bulkForm').submit();
+        }
+
+        function showNotification(message, type = 'info') {
+            // Simple notification
+            const notification = document.createElement('div');
+            notification.className = 'message ' + (type === 'warning' ? 'error' : 'success');
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '10000';
+            notification.style.minWidth = '300px';
+            notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Show single action confirmation modal
+        function confirmSingleAction(action, orderId, orderNumber) {
+            const modal = document.getElementById('confirmSingleModal');
+            const icon = document.getElementById('singleConfirmIcon');
+            const title = document.getElementById('singleConfirmTitle');
+            const description = document.getElementById('singleConfirmDescription');
+            const details = document.getElementById('singleConfirmDetails');
+            const confirmBtn = document.getElementById('singleConfirmButton');
+
+            const actionConfig = {
+                'restore': {
+                    icon: '↩️',
+                    iconClass: 'warning',
+                    title: 'Restaurar Orden',
+                    description: `¿Deseas restaurar la orden ${orderNumber} al listado activo?`,
+                    effects: ['La orden volverá al listado principal de ventas', 'Se eliminará del archivo'],
+                    btnClass: 'modal-btn-confirm',
+                    btnText: 'Restaurar',
+                    url: `?action=restore&id=${orderId}`
+                },
+                'delete': {
+                    icon: '🗑️',
+                    iconClass: 'danger',
+                    title: 'Eliminar Permanentemente',
+                    description: `⚠️ ¿Estás seguro de eliminar PERMANENTEMENTE la orden ${orderNumber}?`,
+                    effects: ['La orden será ELIMINADA PERMANENTEMENTE', '❌ Esta acción NO se puede deshacer', '❌ No podrás recuperar esta información'],
+                    btnClass: 'modal-btn-danger',
+                    btnText: 'Eliminar Permanentemente',
+                    url: `?action=delete&id=${orderId}`
+                }
+            };
+
+            const config = actionConfig[action];
+
+            // Set icon
+            icon.textContent = config.icon;
+            icon.className = 'confirm-modal-icon ' + config.iconClass;
+
+            // Set title and description
+            title.textContent = config.title;
+            description.textContent = config.description;
+
+            // Set details
+            details.innerHTML = `
+                <p style="margin: 10px 0; font-size: 13px; color: #666;">${action === 'delete' ? '⚠️ Ten en cuenta que:' : 'Esta acción:'}</p>
+                <ul>
+                    ${config.effects.map(effect => `<li>${effect}</li>`).join('')}
+                </ul>
+            `;
+
+            // Configure button
+            confirmBtn.className = 'modal-btn ' + config.btnClass;
+            confirmBtn.textContent = config.btnText;
+            confirmBtn.href = config.url;
+
+            // Show modal
+            modal.classList.add('active');
+        }
+
+        function closeSingleConfirmModal() {
+            document.getElementById('confirmSingleModal').classList.remove('active');
+        }
+
+        // Close modals when clicking outside
+        document.getElementById('confirmBulkModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeConfirmModal();
+            }
+        });
+
+        document.getElementById('confirmSingleModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSingleConfirmModal();
+            }
+        });
 
         // Initialize selected count on page load
         document.addEventListener('DOMContentLoaded', updateSelectedCount);
