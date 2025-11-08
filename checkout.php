@@ -376,17 +376,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                         ];
 
                         // Add notification_url for webhook
-                        // NOTE: Temporarily disabled - Mercadopago rejects the URL
-                        // Webhook can be configured manually in MP dashboard instead
-                        /*
-                        if (!preg_match('/^(localhost|127\.0\.0\.1|::1)(:\d+)?$/', $host)) {
-                            $webhook_url = $base_url . '/webhook.php';
-                            $preference_data['notification_url'] = $webhook_url;
-                            error_log("Mercadopago checkout - Webhook URL: $webhook_url");
-                        } else {
-                            error_log("Mercadopago checkout - Skipping webhook URL (localhost detected)");
+                        // NOTE: Disabled - Mercadopago rejects the URL in preference
+                        // Configure webhook globally in MP Developers Dashboard instead
+                        // URL: https://your-domain.com/webhook.php
+
+                        // Ensure notification_url is NOT in the preference data
+                        if (isset($preference_data['notification_url'])) {
+                            unset($preference_data['notification_url']);
+                            error_log("Mercadopago checkout - Removed notification_url from preference");
                         }
-                        */
+
                         error_log("Mercadopago checkout - Webhook disabled, configure manually in MP dashboard");
 
                         // Log the complete preference data being sent to MP
