@@ -155,16 +155,24 @@ function create_order($order_data) {
 
     // Save to file
     if (write_json($orders_file, $data)) {
-        // Reduce stock for all items
-        foreach ($order_data['items'] as $item) {
-            update_stock($item['product_id'], -$item['quantity'], "Order {$order_number}");
+        // Reduce stock only for non-mercadopago orders
+        // For mercadopago, stock is reduced when webhook confirms payment
+        $payment_method = $order_data['payment_method'] ?? 'presencial';
+        if ($payment_method !== 'mercadopago') {
+            foreach ($order_data['items'] as $item) {
+                update_stock($item['product_id'], -$item['quantity'], "Order {$order_number}");
+            }
+            // Mark stock as reduced
+            $data['orders'][count($data['orders']) - 1]['stock_reduced'] = true;
+            write_json($orders_file, $data);
         }
 
         // Log action
         log_admin_action('order_created', 'system', [
             'order_id' => $order_id,
             'order_number' => $order_number,
-            'total' => $order_data['total']
+            'total' => $order_data['total'],
+            'payment_method' => $payment_method
         ]);
 
         return ['success' => true, 'order' => $order];

@@ -73,7 +73,8 @@ $exchange_rate = $currency_config['exchange_rate'] ?? 1500;
 
 // First pass: determine if all products are USD-only
 $all_products_usd = true;
-foreach ($_SESSION['cart'] as $product_id => $quantity) {
+foreach ($_SESSION['cart'] as $cart_item) {
+    $product_id = $cart_item['product_id'];
     $product = get_product_by_id($product_id);
     if (!$product || !$product['active']) {
         continue;
@@ -93,7 +94,9 @@ foreach ($_SESSION['cart'] as $product_id => $quantity) {
 $checkout_currency = ($all_products_usd) ? 'USD' : 'ARS';
 
 // Second pass: calculate totals
-foreach ($_SESSION['cart'] as $product_id => $quantity) {
+foreach ($_SESSION['cart'] as $cart_item) {
+    $product_id = $cart_item['product_id'];
+    $quantity = $cart_item['quantity'];
     $product = get_product_by_id($product_id);
 
     if (!$product || !$product['active']) {
@@ -295,10 +298,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                 // Redirect to thank you page
                 header("Location: /gracias.php?order={$order['id']}&token={$order['tracking_token']}");
                 exit;
-            } else {
-                // TODO: Integrate with Mercadopago and redirect to payment
-                // For now, redirect to pending page
-                header("Location: /pendiente.php?order={$order['id']}&token={$order['tracking_token']}");
+            } elseif ($payment_method === 'mercadopago') {
+                // Redirect to Checkout Bricks payment page
+                // Payment will be processed using embedded form
+                header("Location: /pagar-mercadopago.php?order={$order['id']}&token={$order['tracking_token']}");
                 exit;
             }
         } else {

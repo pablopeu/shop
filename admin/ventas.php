@@ -594,6 +594,31 @@ $status_labels = [
                        ${order.customer_phone || ''}</p>
                 </div>
 
+                <div class="form-group">
+                    <label><strong>Método de Pago:</strong></label>
+                    <p>${order.payment_method === 'presencial' ? '💵 Pago Presencial' : '💳 Mercadopago'}</p>
+                </div>
+
+                ${order.payment_link ? `
+                <div class="form-group" style="background: #e3f2fd; padding: 15px; border-radius: 6px; border-left: 4px solid #2196F3;">
+                    <label><strong>🔗 Link de Pago de Mercadopago:</strong></label>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
+                        <input type="text" value="${order.payment_link}" readonly
+                               style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; font-family: monospace; background: white;">
+                        <button type="button" onclick="copyPaymentLink('${order.payment_link}')"
+                                style="padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
+                            📋 Copiar
+                        </button>
+                    </div>
+                    <small style="color: #666; display: block; margin-top: 8px;">
+                        ${order.payment_status === 'approved' ? '✅ Pago aprobado' :
+                          order.payment_status === 'pending' ? '⏳ Pago pendiente' :
+                          order.payment_status === 'rejected' ? '❌ Pago rechazado' :
+                          '📝 Esperando pago'}
+                    </small>
+                </div>
+                ` : ''}
+
                 ${order.shipping_address ? `
                 <div class="form-group">
                     <label><strong>Dirección de Envío:</strong></label>
@@ -677,6 +702,14 @@ $status_labels = [
 
         function closeCancelModal() {
             document.getElementById('cancelModal').classList.remove('active');
+        }
+
+        function copyPaymentLink(link) {
+            navigator.clipboard.writeText(link).then(() => {
+                alert('✅ Link de pago copiado al portapapeles');
+            }).catch(() => {
+                prompt('Copia este link:', link);
+            });
         }
 
         function formatPrice(price, currency) {
