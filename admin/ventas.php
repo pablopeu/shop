@@ -828,6 +828,106 @@ $status_labels = [
                     <p>${order.payment_method === 'presencial' ? '💵 Pago Presencial' : '💳 Mercadopago'}</p>
                 </div>
 
+                ${order.mercadopago_data ? `
+                <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea;">
+                    <label><strong>📊 Detalles de Mercadopago:</strong></label>
+                    <div style="margin-top: 10px; font-size: 13px;">
+                        ${order.mercadopago_data.payment_id ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Payment ID:</span>
+                            <span style="font-family: monospace;">${order.mercadopago_data.payment_id}</span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.status ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Estado:</span>
+                            <span>
+                                <span style="padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; color: white;
+                                      background: ${order.mercadopago_data.status === 'approved' ? '#4CAF50' :
+                                                     order.mercadopago_data.status === 'pending' || order.mercadopago_data.status === 'in_process' ? '#FFA726' : '#f44336'};">
+                                    ${order.mercadopago_data.status.toUpperCase()}
+                                </span>
+                                ${order.mercadopago_data.status_detail ? `<span style="color: #999; font-size: 11px; margin-left: 8px;">(${order.mercadopago_data.status_detail})</span>` : ''}
+                            </span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.transaction_amount ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Monto:</span>
+                            <span><strong>${order.mercadopago_data.currency_id || 'ARS'} $${parseFloat(order.mercadopago_data.transaction_amount).toFixed(2)}</strong></span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.payment_method_id ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Método:</span>
+                            <span>${order.mercadopago_data.payment_type_id || 'N/A'} - ${order.mercadopago_data.payment_method_id}</span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.installments && order.mercadopago_data.installments > 1 ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Cuotas:</span>
+                            <span>${order.mercadopago_data.installments}x</span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.card_last_four_digits ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Tarjeta:</span>
+                            <span>**** **** **** ${order.mercadopago_data.card_last_four_digits}</span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.date_created ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Fecha creación:</span>
+                            <span>${new Date(order.mercadopago_data.date_created).toLocaleString('es-AR')}</span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.date_approved ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Fecha aprobación:</span>
+                            <span style="color: #4CAF50; font-weight: 600;">${new Date(order.mercadopago_data.date_approved).toLocaleString('es-AR')}</span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.payer_email ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0;">
+                            <span style="color: #666; font-weight: 600;">Email pagador:</span>
+                            <span>${order.mercadopago_data.payer_email}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ${order.mercadopago_data.payment_id ? `
+                    <a href="/admin/verificar-pago-mp.php?payment_id=${order.mercadopago_data.payment_id}"
+                       target="_blank"
+                       style="display: inline-block; margin-top: 12px; padding: 6px 12px; background: #667eea; color: white;
+                              text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                        🔍 Ver detalles completos en MP
+                    </a>
+                    ` : ''}
+                </div>
+                ` : ''}
+
+                ${order.payment_error ? `
+                <div class="form-group" style="background: #fff3cd; padding: 15px; border-radius: 6px; border-left: 4px solid #ff9800;">
+                    <label><strong>⚠️ Error de Pago:</strong></label>
+                    <div style="margin-top: 10px; font-size: 13px;">
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Mensaje:</span>
+                            <span style="color: #d32f2f; font-family: monospace; font-size: 12px;">${order.payment_error.message}</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Fecha del error:</span>
+                            <span>${new Date(order.payment_error.date).toLocaleString('es-AR')}</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0;">
+                            <span style="color: #666; font-weight: 600;">Modo:</span>
+                            <span>${order.payment_error.sandbox_mode ? 'Sandbox (prueba)' : 'Producción'}</span>
+                        </div>
+                    </div>
+                    <small style="display: block; margin-top: 10px; color: #856404;">
+                        💡 Este error indica un problema técnico al procesar el pago (error de API, problemas de conexión, etc.)
+                    </small>
+                </div>
+                ` : ''}
+
                 ${order.payment_link ? `
                 <div class="form-group" style="background: #e3f2fd; padding: 15px; border-radius: 6px; border-left: 4px solid #2196F3;">
                     <label><strong>🔗 Link de Pago de Mercadopago:</strong></label>

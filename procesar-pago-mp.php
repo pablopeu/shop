@@ -108,6 +108,28 @@ try {
     $orders_data['orders'][$order_index]['payment_status'] = $payment['status'];
     $orders_data['orders'][$order_index]['payment_status_detail'] = $payment['status_detail'];
 
+    // Save complete Mercadopago data for reference
+    $orders_data['orders'][$order_index]['mercadopago_data'] = [
+        'payment_id' => $payment['id'],
+        'status' => $payment['status'],
+        'status_detail' => $payment['status_detail'],
+        'transaction_amount' => $payment['transaction_amount'] ?? null,
+        'currency_id' => $payment['currency_id'] ?? null,
+        'date_created' => $payment['date_created'] ?? null,
+        'date_approved' => $payment['date_approved'] ?? null,
+        'date_last_updated' => $payment['date_last_updated'] ?? null,
+        'payment_method_id' => $payment['payment_method_id'] ?? null,
+        'payment_type_id' => $payment['payment_type_id'] ?? null,
+        'installments' => $payment['installments'] ?? 1,
+        'description' => $payment['description'] ?? null,
+        'capture' => $payment['capture'] ?? null,
+        'external_reference' => $payment['external_reference'] ?? null,
+        'payer_email' => $payment['payer']['email'] ?? null,
+        'payer_identification' => $payment['payer']['identification']['number'] ?? null,
+        'card_last_four_digits' => $payment['card']['last_four_digits'] ?? null,
+        'card_first_six_digits' => $payment['card']['first_six_digits'] ?? null,
+    ];
+
     // Update order status based on payment status
     if ($payment['status'] === 'approved') {
         $orders_data['orders'][$order_index]['status'] = 'cobrada';
@@ -153,6 +175,16 @@ try {
 
 } catch (Exception $e) {
     error_log("Payment error: " . $e->getMessage());
+
+    // Save error info in order for debugging
+    if (isset($order_index) && isset($orders_data['orders'][$order_index])) {
+        $orders_data['orders'][$order_index]['payment_error'] = [
+            'message' => $e->getMessage(),
+            'date' => date('Y-m-d H:i:s'),
+            'sandbox_mode' => $sandbox_mode ?? true
+        ];
+        write_json($orders_file, $orders_data);
+    }
 
     http_response_code(500);
     echo json_encode([

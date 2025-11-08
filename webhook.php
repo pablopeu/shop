@@ -211,6 +211,29 @@ if ($data['type'] === 'payment') {
             $orders_data['orders'][$order_index]['payment_status_detail'] = $status_detail;
             $orders_data['orders'][$order_index]['payment_id'] = $payment_id;
 
+            // Update/create complete Mercadopago data
+            $orders_data['orders'][$order_index]['mercadopago_data'] = [
+                'payment_id' => $payment['id'],
+                'status' => $payment['status'],
+                'status_detail' => $payment['status_detail'],
+                'transaction_amount' => $payment['transaction_amount'] ?? null,
+                'currency_id' => $payment['currency_id'] ?? null,
+                'date_created' => $payment['date_created'] ?? null,
+                'date_approved' => $payment['date_approved'] ?? null,
+                'date_last_updated' => $payment['date_last_updated'] ?? null,
+                'payment_method_id' => $payment['payment_method_id'] ?? null,
+                'payment_type_id' => $payment['payment_type_id'] ?? null,
+                'installments' => $payment['installments'] ?? 1,
+                'description' => $payment['description'] ?? null,
+                'capture' => $payment['capture'] ?? null,
+                'external_reference' => $payment['external_reference'] ?? null,
+                'payer_email' => $payment['payer']['email'] ?? null,
+                'payer_identification' => $payment['payer']['identification']['number'] ?? null,
+                'card_last_four_digits' => $payment['card']['last_four_digits'] ?? null,
+                'card_first_six_digits' => $payment['card']['first_six_digits'] ?? null,
+                'webhook_received_at' => date('Y-m-d H:i:s'),
+            ];
+
             // Add to status history
             if (!isset($orders_data['orders'][$order_index]['status_history'])) {
                 $orders_data['orders'][$order_index]['status_history'] = [];
