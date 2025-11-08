@@ -318,7 +318,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                         $mp_currency = 'ARS';
                         $mp_items = [];
 
-                        foreach ($order['items'] as $item) {
+                        foreach ($order['items'] as $index => $item) {
                             $item_price = floatval($item['price']);
 
                             // Convert to ARS if order currency is USD
@@ -327,6 +327,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                             }
 
                             $mp_items[] = [
+                                'id' => $item['product_id'] ?? 'item-' . ($index + 1),
                                 'title' => $item['name'],
                                 'quantity' => intval($item['quantity']),
                                 'unit_price' => round($item_price, 2),
