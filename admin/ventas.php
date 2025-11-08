@@ -726,12 +726,12 @@ $status_labels = [
                                     </td>
                                     <td>
                                         <div class="actions">
-                                            <button onclick="viewOrder('<?php echo $order['id']; ?>')"
+                                            <button type="button" onclick="viewOrder('<?php echo $order['id']; ?>')"
                                                     class="btn btn-primary btn-sm">
                                                 👁️ Ver
                                             </button>
                                             <?php if ($order['status'] !== 'cancelled'): ?>
-                                                <button onclick="showCancelModal('<?php echo $order['id']; ?>', '<?php echo $order['order_number']; ?>')"
+                                                <button type="button" onclick="showCancelModal('<?php echo $order['id']; ?>', '<?php echo $order['order_number']; ?>')"
                                                         class="btn btn-danger btn-sm">
                                                     ❌ Cancelar
                                                 </button>
