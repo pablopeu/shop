@@ -121,12 +121,21 @@ try {
         }
 
         $redirect_url = '/gracias.php?order=' . $order_id . '&token=' . $tracking_token;
-    } elseif ($payment['status'] === 'in_process' || $payment['status'] === 'pending') {
+    } elseif ($payment['status'] === 'in_process' ||
+              $payment['status'] === 'pending' ||
+              $payment['status'] === 'authorized' ||
+              $payment['status'] === 'in_mediation') {
+        // Pending, in process, authorized, or in mediation
         $orders_data['orders'][$order_index]['status'] = 'pendiente';
-        $redirect_url = '/gracias.php?order=' . $order_id . '&token=' . $tracking_token;
+        $redirect_url = '/gracias.php?order=' . $order_id . '&token=' . $tracking_token .
+                       '&payment_status=' . urlencode($payment['status']) .
+                       '&payment_status_detail=' . urlencode($payment['status_detail']);
     } else {
+        // Rejected, cancelled, or any other status
         $orders_data['orders'][$order_index]['status'] = 'rechazada';
-        $redirect_url = '/error.php?order=' . $order_id . '&token=' . $tracking_token;
+        $redirect_url = '/error.php?order=' . $order_id . '&token=' . $tracking_token .
+                       '&payment_status=' . urlencode($payment['status']) .
+                       '&payment_status_detail=' . urlencode($payment['status_detail']);
     }
 
     // Save order

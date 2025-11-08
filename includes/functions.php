@@ -730,3 +730,297 @@ function render_footer($site_config, $footer_config) {
         echo '</div>';
     }
 }
+
+/**
+ * Get user-friendly payment error message and details based on Mercadopago status_detail
+ *
+ * @param string $status Payment status (approved, rejected, pending, etc.)
+ * @param string $status_detail Detailed status from Mercadopago
+ * @return array ['title' => string, 'message' => string, 'icon' => string, 'suggestions' => array]
+ */
+function get_payment_message($status, $status_detail = '') {
+    // Default messages
+    $messages = [
+        'title' => 'Error en el pago',
+        'message' => 'No se pudo procesar el pago',
+        'icon' => '❌',
+        'suggestions' => [
+            'Verifica los datos de tu tarjeta',
+            'Intenta con otro medio de pago',
+            'Contáctanos si el problema persiste'
+        ]
+    ];
+
+    // Handle approved payments
+    if ($status === 'approved') {
+        return [
+            'title' => '¡Pago aprobado!',
+            'message' => 'Tu pago fue procesado exitosamente',
+            'icon' => '✅',
+            'suggestions' => []
+        ];
+    }
+
+    // Handle authorized payments (pending capture)
+    if ($status === 'authorized') {
+        return [
+            'title' => 'Pago autorizado',
+            'message' => 'Tu pago ha sido autorizado y está pendiente de confirmación final.',
+            'icon' => '🔐',
+            'suggestions' => [
+                'El pago será confirmado automáticamente',
+                'Recibirás una notificación cuando se complete',
+                'Este proceso es normal y seguro'
+            ]
+        ];
+    }
+
+    // Handle in_mediation payments (disputes)
+    if ($status === 'in_mediation') {
+        return [
+            'title' => 'Pago en mediación',
+            'message' => 'Tu pago está siendo revisado debido a una disputa.',
+            'icon' => '⚖️',
+            'suggestions' => [
+                'El equipo de Mercadopago está revisando el caso',
+                'Te contactaremos si necesitamos más información',
+                'Recibirás una notificación con la resolución'
+            ]
+        ];
+    }
+
+    // Handle pending payments
+    if ($status === 'pending' || $status === 'in_process') {
+        $pending_messages = [
+            'pending_contingency' => [
+                'title' => 'Pago pendiente',
+                'message' => 'Estamos procesando tu pago. Te avisaremos cuando esté aprobado.',
+                'icon' => '⏳',
+                'suggestions' => [
+                    'El proceso puede tomar unos minutos',
+                    'Recibirás una confirmación por email',
+                    'Puedes verificar el estado desde "Seguir mi pedido"'
+                ]
+            ],
+            'pending_review_manual' => [
+                'title' => 'Pago en revisión',
+                'message' => 'Tu pago está siendo revisado por el equipo de Mercadopago.',
+                'icon' => '🔍',
+                'suggestions' => [
+                    'La revisión puede tomar hasta 48 horas',
+                    'Te notificaremos por email cuando se apruebe',
+                    'No es necesario que hagas nada más'
+                ]
+            ]
+        ];
+
+        if (isset($pending_messages[$status_detail])) {
+            return $pending_messages[$status_detail];
+        }
+
+        return [
+            'title' => 'Pago pendiente',
+            'message' => 'Tu pago está siendo procesado',
+            'icon' => '⏳',
+            'suggestions' => [
+                'Recibirás una confirmación cuando se apruebe',
+                'Puedes hacer seguimiento desde tu email',
+                'El proceso es automático'
+            ]
+        ];
+    }
+
+    // Handle rejected payments - specific error messages
+    if ($status === 'rejected') {
+        $rejection_messages = [
+            'cc_rejected_bad_filled_card_number' => [
+                'title' => 'Número de tarjeta incorrecto',
+                'message' => 'El número de tarjeta que ingresaste no es válido',
+                'icon' => '💳',
+                'suggestions' => [
+                    'Verifica que hayas ingresado los 16 dígitos correctamente',
+                    'Asegúrate de no incluir espacios ni guiones',
+                    'Revisa que la tarjeta no esté vencida'
+                ]
+            ],
+            'cc_rejected_bad_filled_date' => [
+                'title' => 'Fecha de vencimiento incorrecta',
+                'message' => 'La fecha de vencimiento de la tarjeta no es válida',
+                'icon' => '📅',
+                'suggestions' => [
+                    'Verifica el mes y año de vencimiento en tu tarjeta',
+                    'Asegúrate de que la tarjeta no esté vencida',
+                    'Intenta con otra tarjeta si esta ya expiró'
+                ]
+            ],
+            'cc_rejected_bad_filled_security_code' => [
+                'title' => 'Código de seguridad incorrecto',
+                'message' => 'El código CVV/CVC que ingresaste no coincide',
+                'icon' => '🔒',
+                'suggestions' => [
+                    'El CVV son los 3 dígitos al dorso de tu tarjeta',
+                    'En tarjetas AMEX son 4 dígitos en el frente',
+                    'Verifica que estés ingresando el código correcto'
+                ]
+            ],
+            'cc_rejected_bad_filled_other' => [
+                'title' => 'Datos incorrectos',
+                'message' => 'Hay un error en los datos de la tarjeta',
+                'icon' => '⚠️',
+                'suggestions' => [
+                    'Revisa todos los campos del formulario',
+                    'Verifica nombre, número, fecha y CVV',
+                    'Asegúrate de completar todos los campos requeridos'
+                ]
+            ],
+            'cc_rejected_blacklist' => [
+                'title' => 'Tarjeta no permitida',
+                'message' => 'Esta tarjeta no puede ser utilizada para pagos en línea',
+                'icon' => '🚫',
+                'suggestions' => [
+                    'Contacta a tu banco para más información',
+                    'Intenta con otra tarjeta o medio de pago',
+                    'Puedes elegir pago presencial en el checkout'
+                ]
+            ],
+            'cc_rejected_call_for_authorize' => [
+                'title' => 'Autorización requerida',
+                'message' => 'Tu banco requiere que autorices esta compra',
+                'icon' => '📞',
+                'suggestions' => [
+                    'Comunícate con tu banco para autorizar el pago',
+                    'Es posible que necesites confirmar la operación',
+                    'Intenta nuevamente después de hablar con tu banco'
+                ]
+            ],
+            'cc_rejected_card_disabled' => [
+                'title' => 'Tarjeta deshabilitada',
+                'message' => 'Tu tarjeta está deshabilitada para compras en línea',
+                'icon' => '⛔',
+                'suggestions' => [
+                    'Contacta a tu banco para habilitar compras online',
+                    'Verifica que la tarjeta no esté bloqueada',
+                    'Intenta con otra tarjeta mientras tanto'
+                ]
+            ],
+            'cc_rejected_card_error' => [
+                'title' => 'Error de tarjeta',
+                'message' => 'Hubo un problema al procesar tu tarjeta',
+                'icon' => '❌',
+                'suggestions' => [
+                    'Verifica que la tarjeta esté activa',
+                    'Contacta a tu banco si el problema persiste',
+                    'Intenta con otro medio de pago'
+                ]
+            ],
+            'cc_rejected_duplicated_payment' => [
+                'title' => 'Pago duplicado',
+                'message' => 'Ya existe un pago reciente idéntico a este',
+                'icon' => '🔄',
+                'suggestions' => [
+                    'Verifica si ya completaste esta compra anteriormente',
+                    'Revisa tu email para confirmaciones previas',
+                    'Si no realizaste el pago, espera unos minutos e intenta de nuevo'
+                ]
+            ],
+            'cc_rejected_high_risk' => [
+                'title' => 'Pago no autorizado',
+                'message' => 'El sistema de seguridad detectó un riesgo en esta transacción',
+                'icon' => '🛡️',
+                'suggestions' => [
+                    'Por tu seguridad, este pago fue bloqueado',
+                    'Contacta a tu banco para más información',
+                    'Intenta con otro medio de pago o pago presencial'
+                ]
+            ],
+            'cc_rejected_insufficient_amount' => [
+                'title' => 'Fondos insuficientes',
+                'message' => 'Tu tarjeta no tiene saldo suficiente para esta compra',
+                'icon' => '💰',
+                'suggestions' => [
+                    'Verifica el saldo disponible en tu tarjeta',
+                    'Intenta con otra tarjeta o medio de pago',
+                    'Puedes elegir pago presencial en el checkout'
+                ]
+            ],
+            'cc_rejected_invalid_installments' => [
+                'title' => 'Cuotas no disponibles',
+                'message' => 'La cantidad de cuotas seleccionada no está permitida',
+                'icon' => '📊',
+                'suggestions' => [
+                    'Intenta con menos cuotas',
+                    'Consulta con tu banco las opciones de financiación',
+                    'Puedes intentar pagar en una sola cuota'
+                ]
+            ],
+            'cc_rejected_max_attempts' => [
+                'title' => 'Máximo de intentos excedido',
+                'message' => 'Superaste el límite de intentos de pago con esta tarjeta',
+                'icon' => '🚨',
+                'suggestions' => [
+                    'Espera unas horas antes de intentar nuevamente',
+                    'Intenta con otra tarjeta',
+                    'Contacta a tu banco si crees que hay un error'
+                ]
+            ],
+            'cc_rejected_other_reason' => [
+                'title' => 'Pago rechazado',
+                'message' => 'Tu banco rechazó la transacción',
+                'icon' => '❌',
+                'suggestions' => [
+                    'Contacta a tu banco para conocer el motivo',
+                    'Verifica que tu tarjeta tenga habilitadas las compras online',
+                    'Intenta con otro medio de pago'
+                ]
+            ]
+        ];
+
+        if (isset($rejection_messages[$status_detail])) {
+            return $rejection_messages[$status_detail];
+        }
+    }
+
+    // Handle cancelled payments
+    if ($status === 'cancelled') {
+        return [
+            'title' => 'Pago cancelado',
+            'message' => 'El pago fue cancelado',
+            'icon' => '⛔',
+            'suggestions' => [
+                'Puedes intentar realizar el pago nuevamente',
+                'Elige otro medio de pago si lo prefieres',
+                'Tu carrito sigue disponible'
+            ]
+        ];
+    }
+
+    // Handle refunded payments
+    if ($status === 'refunded') {
+        return [
+            'title' => 'Pago reembolsado',
+            'message' => 'Este pago fue reembolsado',
+            'icon' => '↩️',
+            'suggestions' => [
+                'El dinero será devuelto a tu cuenta',
+                'El proceso puede tomar algunos días hábiles',
+                'Recibirás una confirmación de tu banco'
+            ]
+        ];
+    }
+
+    // Handle chargebacks
+    if ($status === 'charged_back') {
+        return [
+            'title' => 'Contracargo',
+            'message' => 'Se realizó un contracargo en este pago',
+            'icon' => '⚠️',
+            'suggestions' => [
+                'Contacta a soporte para más información',
+                'Revisa tu email para detalles del caso'
+            ]
+        ];
+    }
+
+    // Default error message for unknown status
+    return $messages;
+}

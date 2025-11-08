@@ -14,6 +14,13 @@ session_start();
 // Get configurations
 $site_config = read_json(__DIR__ . '/config/site.json');
 
+// Get payment status from URL parameters
+$payment_status = $_GET['payment_status'] ?? 'rejected';
+$payment_status_detail = $_GET['payment_status_detail'] ?? '';
+
+// Get user-friendly message based on payment status
+$payment_message = get_payment_message($payment_status, $payment_status_detail);
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -163,22 +170,25 @@ $site_config = read_json(__DIR__ . '/config/site.json');
 </head>
 <body>
     <div class="error-container">
-        <div class="error-icon">❌</div>
+        <div class="error-icon"><?php echo $payment_message['icon']; ?></div>
 
-        <h1>No se pudo procesar el pago</h1>
+        <h1><?php echo htmlspecialchars($payment_message['title']); ?></h1>
         <p class="subtitle">
-            Hubo un problema al procesar tu pago. No te preocupes, tu orden no ha sido confirmada y no se ha realizado ningún cargo.
+            <?php echo htmlspecialchars($payment_message['message']); ?>
+            <br><br>
+            No te preocupes, tu orden no ha sido confirmada y no se ha realizado ningún cargo.
         </p>
 
+        <?php if (!empty($payment_message['suggestions'])): ?>
         <div class="info-box">
-            <h3>💡 Posibles causas:</h3>
+            <h3>💡 ¿Qué puedes hacer?</h3>
             <ul>
-                <li>Fondos insuficientes en tu cuenta</li>
-                <li>Datos de la tarjeta incorrectos</li>
-                <li>Límite de compra excedido</li>
-                <li>Problema temporal con el procesador de pagos</li>
+                <?php foreach ($payment_message['suggestions'] as $suggestion): ?>
+                <li><?php echo htmlspecialchars($suggestion); ?></li>
+                <?php endforeach; ?>
             </ul>
         </div>
+        <?php endif; ?>
 
         <div class="info-box" style="background: #e3f2fd; border-left-color: #2196F3;">
             <h3 style="color: #1976D2;">📞 ¿Necesitas ayuda?</h3>

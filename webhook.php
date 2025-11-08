@@ -161,9 +161,24 @@ if ($data['type'] === 'payment') {
                 $new_order_status = 'cobrada';
                 break;
 
+            case 'authorized':
+                // Payment authorized but not yet captured - treat as pending
+                $new_order_status = 'pendiente';
+                log_webhook('Payment authorized - pending capture', ['order_id' => $order_id]);
+                break;
+
             case 'pending':
             case 'in_process':
                 $new_order_status = 'pendiente';
+                break;
+
+            case 'in_mediation':
+                // Payment is being disputed - keep current status but log it
+                $new_order_status = 'pendiente';
+                log_webhook('Payment in mediation (dispute)', [
+                    'order_id' => $order_id,
+                    'status_detail' => $status_detail
+                ]);
                 break;
 
             case 'rejected':
@@ -177,6 +192,16 @@ if ($data['type'] === 'payment') {
                 $new_order_status = 'cancelada';
                 $restore_stock = true;
                 break;
+
+            default:
+                // Unknown status - log it and don't change order status
+                log_webhook('Unknown payment status received', [
+                    'order_id' => $order_id,
+                    'payment_status' => $payment_status,
+                    'status_detail' => $status_detail
+                ]);
+                http_response_code(200);
+                exit('OK - Unknown status');
         }
 
         if ($new_order_status && $order['status'] !== $new_order_status) {
