@@ -15,6 +15,7 @@ require_admin();
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/../config/site.json');
+$page_title = 'Archivo de Ventas';
 
 // Handle actions
 $message = '';
@@ -119,18 +120,6 @@ $status_labels = [
         .main-content {
             margin-left: 260px;
             padding: 15px 20px;
-        }
-
-        .content-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .content-header h1 {
-            font-size: 22px;
-            color: #2c3e50;
         }
 
         /* Messages */
@@ -386,10 +375,7 @@ $status_labels = [
     <!-- Main Content -->
     <div class="main-content">
         <div>
-            <div class="content-header">
-                <h1>📦 Archivo de Ventas</h1>
-                <a href="/admin/ventas.php" class="btn btn-secondary">← Volver a Ventas Activas</a>
-            </div>
+            <?php include __DIR__ . '/includes/header.php'; ?>
 
             <?php if ($message): ?>
                 <div class="message success"><?php echo htmlspecialchars($message); ?></div>

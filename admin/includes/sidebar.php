@@ -153,9 +153,31 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         <!-- Ventas -->
         <li>
-            <a href="/admin/ventas.php" class="<?php echo $current_page === 'ventas.php' ? 'active' : ''; ?>">
-                💰 Ventas
-            </a>
+            <div class="menu-item" onclick="toggleSubmenu('ventas')">
+                <span>💰 Ventas</span>
+                <span class="menu-arrow" id="arrow-ventas">▶</span>
+            </div>
+            <ul class="submenu <?php echo in_array($current_page, ['ventas.php', 'archivo-ventas.php', 'reviews-listado.php']) ? 'open' : ''; ?>"
+                id="submenu-ventas">
+                <li>
+                    <a href="/admin/ventas.php"
+                       class="<?php echo $current_page === 'ventas.php' ? 'active' : ''; ?>">
+                        📋 Gestión de Ventas
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/archivo-ventas.php"
+                       class="<?php echo $current_page === 'archivo-ventas.php' ? 'active' : ''; ?>">
+                        📦 Archivo de Ventas
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/reviews-listado.php"
+                       class="<?php echo $current_page === 'reviews-listado.php' ? 'active' : ''; ?>">
+                        ⭐ Reviews
+                    </a>
+                </li>
+            </ul>
         </li>
 
         <!-- Promociones y Cupones -->
@@ -183,13 +205,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </ul>
         </li>
 
-        <!-- Reviews -->
-        <li>
-            <a href="/admin/reviews-listado.php" class="<?php echo $current_page === 'reviews-listado.php' ? 'active' : ''; ?>">
-                ⭐ Reviews
-            </a>
-        </li>
-
         <!-- Notificaciones -->
         <li>
             <a href="/admin/notificaciones.php" class="<?php echo $current_page === 'notificaciones.php' ? 'active' : ''; ?>">
@@ -208,13 +223,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <li><a href="/admin/config-sitio.php" <?php echo $current_page === 'config-sitio.php' ? 'class="active"' : ''; ?>>📄 Información del Sitio</a></li>
                 <li><a href="/admin/config-payment.php" <?php echo $current_page === 'config-payment.php' ? 'class="active"' : ''; ?>>💳 Medios de Pago</a></li>
                 <li><a href="/admin/config-moneda.php" <?php echo $current_page === 'config-moneda.php' ? 'class="active"' : ''; ?>>💱 Moneda y Cambio</a></li>
-                <li><a href="/admin/config-themes.php" <?php echo $current_page === 'config-themes.php' ? 'class="active"' : ''; ?>>🎨 Themes Visuales</a></li>
-                <li><a href="/admin/config-footer.php" <?php echo $current_page === 'config-footer.php' ? 'class="active"' : ''; ?>>🦶 Footer Personalizado</a></li>
+                <li><a href="/admin/config-mantenimiento.php" <?php echo $current_page === 'config-mantenimiento.php' ? 'class="active"' : ''; ?>>🚧 Mantenimiento</a></li>
+                <li style="margin-top: 10px; padding: 8px 20px; font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Ajustes Visuales</li>
+                <li><a href="/admin/config-themes.php" <?php echo $current_page === 'config-themes.php' ? 'class="active"' : ''; ?>>🎨 Themes</a></li>
                 <li><a href="/admin/config-hero.php" <?php echo $current_page === 'config-hero.php' ? 'class="active"' : ''; ?>>🖼️ Hero Principal</a></li>
                 <li><a href="/admin/config-carrusel.php" <?php echo $current_page === 'config-carrusel.php' ? 'class="active"' : ''; ?>>🎠 Carrusel</a></li>
-                <li><a href="/admin/config-productos-heading.php" <?php echo $current_page === 'config-productos-heading.php' ? 'class="active"' : ''; ?>>📝 Encabezado de Productos</a></li>
+                <li><a href="/admin/config-footer.php" <?php echo $current_page === 'config-footer.php' ? 'class="active"' : ''; ?>>🦶 Footer</a></li>
                 <li><a href="/admin/config-dashboard.php" <?php echo $current_page === 'config-dashboard.php' ? 'class="active"' : ''; ?>>📊 Dashboard</a></li>
-                <li><a href="/admin/config-mantenimiento.php" <?php echo $current_page === 'config-mantenimiento.php' ? 'class="active"' : ''; ?>>🚧 Mantenimiento</a></li>
+                <li><a href="/admin/config-productos-heading.php" <?php echo $current_page === 'config-productos-heading.php' ? 'class="active"' : ''; ?>>📝 Encabezado Productos</a></li>
             </ul>
         </li>
     </ul>

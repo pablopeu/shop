@@ -141,6 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_dashboard'])) {
 
 // Load current configs
 $site_config = read_json(__DIR__ . '/../config/site.json');
+$page_title = 'Configuración General';
 $currency_config = read_json(__DIR__ . '/../config/currency.json');
 $maintenance_config = read_json(__DIR__ . '/../config/maintenance.json');
 $hero_config = read_json(__DIR__ . '/../config/hero.json');
@@ -179,18 +180,6 @@ $user = get_logged_user();
             margin-left: 260px;
             padding: 30px;
             max-width: 1200px;
-        }
-
-        .content-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .content-header h1 {
-            font-size: 28px;
-            color: #2c3e50;
         }
 
         /* Messages */
@@ -348,10 +337,7 @@ $user = get_logged_user();
 
     <!-- Main Content -->
     <div class="main-content">
-            <div class="content-header">
-                <h1>Configuración del Sitio</h1>
-                <a href="/" class="btn btn-secondary" target="_blank">Ver sitio público</a>
-            </div>
+            <?php include __DIR__ . '/includes/header.php'; ?>
 
             <?php if ($message): ?>
                 <div class="message success"><?php echo htmlspecialchars($message); ?></div>

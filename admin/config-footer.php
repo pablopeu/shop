@@ -158,6 +158,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
 }
 
 $footer_config = read_json(__DIR__ . '/../config/footer.json');
+$site_config = read_json(__DIR__ . '/../config/site.json');
+$page_title = 'Configuración del Footer';
 $csrf_token = generate_csrf_token();
 $user = get_logged_user();
 ?>
@@ -172,8 +174,6 @@ $user = get_logged_user();
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
         .main-content { margin-left: 260px; padding: 20px; max-width: 1400px; }
-        .content-header { margin-bottom: 20px; }
-        .content-header h1 { font-size: 24px; color: #2c3e50; }
         .message { padding: 12px 16px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
         .message.success { background: #d4edda; border-left: 4px solid #28a745; color: #155724; }
         .message.error { background: #f8d7da; border-left: 4px solid #dc3545; color: #721c24; }
@@ -216,9 +216,7 @@ $user = get_logged_user();
     <?php include __DIR__ . '/includes/sidebar.php'; ?>
 
     <div class="main-content">
-        <div class="content-header">
-            <h1>🦶 Configuración del Footer Avanzado</h1>
-        </div>
+        <?php include __DIR__ . '/includes/header.php'; ?>
 
         <?php if ($message): ?>
             <div class="message success"><?php echo htmlspecialchars($message); ?></div>

@@ -20,6 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
     }
 }
 $config = read_json(__DIR__ . '/../config/maintenance.json');
+$site_config = read_json(__DIR__ . '/../config/site.json');
+$page_title = 'Modo Mantenimiento';
 $csrf_token = generate_csrf_token();
 $user = get_logged_user();
 ?>
@@ -29,7 +31,7 @@ $user = get_logged_user();
 </head><body>
 <?php include __DIR__ . '/includes/sidebar.php'; ?>
 <div class="main-content">
-<div class="content-header"><h1>🚧 Modo Mantenimiento</h1></div>
+<?php include __DIR__ . '/includes/header.php'; ?>
 <?php if ($message): ?><div class="message success"><?= htmlspecialchars($message) ?></div><?php endif; ?>
 <?php if ($error): ?><div class="message error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 <div class="card">

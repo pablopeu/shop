@@ -12,6 +12,7 @@ session_start();
 require_admin();
 
 $site_config = read_json(__DIR__ . '/../config/site.json');
+$page_title = 'Editar Cupón';
 $coupon_id = $_GET['id'] ?? '';
 
 if (empty($coupon_id)) {
@@ -78,8 +79,6 @@ $user = get_logged_user();
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
         .main-content { margin-left: 260px; padding: 30px; max-width: 1200px; }
-        .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .content-header h1 { font-size: 28px; color: #2c3e50; }
         .message { padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; }
         .message.success { background: #d4edda; border-left: 4px solid #28a745; color: #155724; }
         .message.error { background: #f8d7da; border-left: 4px solid #dc3545; color: #721c24; }
@@ -106,10 +105,7 @@ $user = get_logged_user();
 <body>
     <?php include __DIR__ . '/includes/sidebar.php'; ?>
     <div class="main-content">
-        <div class="content-header">
-            <h1>✏️ Editar Cupón</h1>
-            <a href="/admin/cupones-listado.php" class="btn btn-secondary">← Volver</a>
-        </div>
+        <?php include __DIR__ . '/includes/header.php'; ?>
 
         <?php if ($message): ?>
             <div class="message success"><?php echo htmlspecialchars($message); ?></div>

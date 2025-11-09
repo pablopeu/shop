@@ -44,6 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
     }
 }
 $config = read_json(__DIR__ . '/../config/dashboard.json');
+$site_config = read_json(__DIR__ . '/../config/site.json');
+$page_title = 'Configuración del Dashboard';
 $csrf_token = generate_csrf_token();
 $user = get_logged_user();
 $widget_names = ['productos_activos'=>'📦 Productos Activos','stock_bajo'=>'⚠️ Stock Bajo','sin_stock'=>'🚨 Sin Stock','ordenes_totales'=>'💰 Órdenes','promociones'=>'🎯 Promociones','cupones'=>'🎫 Cupones','reviews_pendientes'=>'⭐ Reviews'];
@@ -56,7 +58,7 @@ $action_names = ['productos'=>'📦 Productos','ventas'=>'💰 Ventas','cupones'
 </head><body>
 <?php include __DIR__ . '/includes/sidebar.php'; ?>
 <div class="main-content">
-<div class="content-header"><h1>📊 Configuración Dashboard</h1></div>
+<?php include __DIR__ . '/includes/header.php'; ?>
 <?php if ($message): ?><div class="message success"><?= $message ?></div><?php endif; ?>
 <form method="POST" id="configForm">
 <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">

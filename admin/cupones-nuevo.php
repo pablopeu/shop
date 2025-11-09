@@ -16,6 +16,7 @@ require_admin();
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/../config/site.json');
+$page_title = 'Nuevo Cupón';
 
 // Get all products for selection
 $all_products = get_all_products(false);
@@ -108,18 +109,6 @@ $user = get_logged_user();
             margin-left: 260px;
             padding: 30px;
             max-width: 1200px;
-        }
-
-        .content-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .content-header h1 {
-            font-size: 28px;
-            color: #2c3e50;
         }
 
         /* Messages */
@@ -299,12 +288,7 @@ $user = get_logged_user();
 
     <!-- Main Content -->
     <div class="main-content">
-        <div class="content-header">
-            <h1>➕ Crear Nuevo Cupón</h1>
-            <div>
-                <a href="/admin/cupones-listado.php" class="btn btn-secondary">← Volver al listado</a>
-            </div>
-        </div>
+        <?php include __DIR__ . '/includes/header.php'; ?>
 
         <?php if ($message): ?>
             <div class="message success">

@@ -14,6 +14,7 @@ require_admin();
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/../config/site.json');
+$page_title = 'Gestión de Cupones';
 
 // Handle actions
 $message = '';
@@ -101,18 +102,6 @@ $user = get_logged_user();
         .main-content {
             margin-left: 260px;
             padding: 15px 20px;
-        }
-
-        .content-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .content-header h1 {
-            font-size: 22px;
-            color: #2c3e50;
         }
 
         /* Messages */
@@ -332,13 +321,7 @@ $user = get_logged_user();
 
     <!-- Main Content -->
     <div class="main-content">
-        <div class="content-header">
-            <h1>🎫 Gestión de Cupones</h1>
-            <div>
-                <a href="/admin/cupones-nuevo.php" class="btn btn-primary">➕ Crear Cupón</a>
-                <a href="/" class="btn btn-secondary" target="_blank">Ver sitio público</a>
-            </div>
-        </div>
+        <?php include __DIR__ . '/includes/header.php'; ?>
 
         <?php if ($message): ?>
             <div class="message success"><?php echo htmlspecialchars($message); ?></div>
