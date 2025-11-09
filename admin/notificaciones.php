@@ -18,6 +18,9 @@ require_admin();
 // Get configurations
 $site_config = read_json(__DIR__ . '/../config/site.json');
 
+// Page title for header
+$page_title = '🔔 Configuración de Notificaciones';
+
 // File paths
 $email_config_file = __DIR__ . '/../config/email.json';
 $telegram_config_file = __DIR__ . '/../config/telegram.json';
@@ -207,20 +210,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding: 15px 20px;
         }
 
-        .content-header {
-            margin-bottom: 20px;
-        }
-
-        .content-header h1 {
-            font-size: 24px;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-
-        .content-header p {
-            color: #7f8c8d;
-            font-size: 14px;
-        }
 
         /* Messages */
         .message {
@@ -474,10 +463,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include __DIR__ . '/includes/sidebar.php'; ?>
 
     <div class="main-content">
-        <div class="content-header">
-            <h1>🔔 Configuración de Notificaciones</h1>
-            <p>Configura las notificaciones por email y Telegram</p>
-        </div>
+        <?php include __DIR__ . '/includes/header.php'; ?>
 
         <?php if ($message): ?>
         <div class="message success"><?php echo $message; ?></div>

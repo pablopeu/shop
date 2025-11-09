@@ -20,6 +20,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         position: fixed;
         height: 100vh;
         overflow-y: auto;
+        padding-bottom: 20px;
     }
 
     .sidebar-header {
@@ -111,42 +112,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
     .menu-arrow.rotated {
         transform: rotate(90deg);
     }
-
-    .sidebar-footer {
-        position: absolute;
-        bottom: 0;
-        width: 100%;
-        padding: 20px;
-        border-top: 1px solid rgba(255,255,255,0.1);
-        background: #2c3e50;
-    }
-
-    .sidebar-footer a {
-        color: #e74c3c;
-        text-decoration: none;
-        display: block;
-        padding: 10px;
-        text-align: center;
-        background: rgba(231, 76, 60, 0.1);
-        border-radius: 6px;
-        transition: background 0.3s;
-    }
-
-    .sidebar-footer a:hover {
-        background: rgba(231, 76, 60, 0.2);
-    }
-
-    .user-info {
-        background: rgba(52, 152, 219, 0.1);
-        padding: 10px 15px;
-        border-radius: 6px;
-        font-size: 13px;
-        margin-bottom: 10px;
-    }
-
-    .user-info strong {
-        color: white;
-    }
 </style>
 
 <aside class="sidebar">
@@ -193,31 +158,20 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
         </li>
 
-        <!-- Promociones -->
+        <!-- Promociones y Cupones -->
         <li>
-            <div class="menu-item" onclick="toggleSubmenu('promociones')">
-                <span>🎯 Promociones</span>
-                <span class="menu-arrow" id="arrow-promociones">▶</span>
+            <div class="menu-item" onclick="toggleSubmenu('promociones-cupones')">
+                <span>🎯 Promociones y Cupones</span>
+                <span class="menu-arrow" id="arrow-promociones-cupones">▶</span>
             </div>
-            <ul class="submenu <?php echo in_array($current_page, ['promociones-listado.php', 'promociones-nuevo.php', 'promociones-editar.php']) ? 'open' : ''; ?>"
-                id="submenu-promociones">
+            <ul class="submenu <?php echo in_array($current_page, ['promociones-listado.php', 'promociones-nuevo.php', 'promociones-editar.php', 'cupones-listado.php', 'cupones-nuevo.php', 'cupones-editar.php']) ? 'open' : ''; ?>"
+                id="submenu-promociones-cupones">
                 <li><a href="/admin/promociones-listado.php" <?php echo $current_page === 'promociones-listado.php' ? 'class="active"' : ''; ?>>📋 Listado de Promociones</a></li>
                 <li><a href="/admin/promociones-nuevo.php" <?php echo $current_page === 'promociones-nuevo.php' ? 'class="active"' : ''; ?>>➕ Nueva Promoción</a></li>
-            </ul>
-        </li>
-
-        <!-- Cupones -->
-        <li>
-            <div class="menu-item" onclick="toggleSubmenu('cupones')">
-                <span>🎫 Cupones</span>
-                <span class="menu-arrow" id="arrow-cupones">▶</span>
-            </div>
-            <ul class="submenu <?php echo in_array($current_page, ['cupones-listado.php', 'cupones-nuevo.php', 'cupones-editar.php']) ? 'open' : ''; ?>"
-                id="submenu-cupones">
                 <li>
                     <a href="/admin/cupones-listado.php"
                        class="<?php echo $current_page === 'cupones-listado.php' ? 'active' : ''; ?>">
-                        📋 Listado de Cupones
+                        🎫 Listado de Cupones
                     </a>
                 </li>
                 <li>
@@ -264,16 +218,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </ul>
         </li>
     </ul>
-
-    <div class="sidebar-footer">
-        <?php if (isset($user) && $user): ?>
-        <div class="user-info">
-            <strong><?php echo htmlspecialchars($user['username']); ?></strong><br>
-            <small><?php echo htmlspecialchars($user['email']); ?></small>
-        </div>
-        <?php endif; ?>
-        <a href="/admin/logout.php">🚪 Cerrar Sesión</a>
-    </div>
 </aside>
 
 <script>
