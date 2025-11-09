@@ -218,12 +218,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <span>⚙️ Configuración</span>
                 <span class="menu-arrow" id="arrow-configuracion">▶</span>
             </div>
-            <ul class="submenu <?php echo in_array($current_page, ['config-sitio.php', 'config-moneda.php', 'config-payment.php', 'config-hero.php', 'config-carrusel.php', 'config-productos-heading.php', 'config-dashboard.php', 'config-mantenimiento.php', 'config-themes.php', 'config-footer.php']) ? 'open' : ''; ?>"
+            <ul class="submenu <?php echo in_array($current_page, ['config-sitio.php', 'config-moneda.php', 'config-payment.php', 'config-sistema.php', 'config-hero.php', 'config-carrusel.php', 'config-productos-heading.php', 'config-dashboard.php', 'config-mantenimiento.php', 'config-themes.php', 'config-footer.php']) ? 'open' : ''; ?>"
                 id="submenu-configuracion">
                 <li><a href="/admin/config-sitio.php" <?php echo $current_page === 'config-sitio.php' ? 'class="active"' : ''; ?>>📄 Información del Sitio</a></li>
                 <li><a href="/admin/config-payment.php" <?php echo $current_page === 'config-payment.php' ? 'class="active"' : ''; ?>>💳 Medios de Pago</a></li>
                 <li><a href="/admin/config-moneda.php" <?php echo $current_page === 'config-moneda.php' ? 'class="active"' : ''; ?>>💱 Moneda y Cambio</a></li>
                 <li><a href="/admin/config-mantenimiento.php" <?php echo $current_page === 'config-mantenimiento.php' ? 'class="active"' : ''; ?>>🚧 Mantenimiento</a></li>
+                <li><a href="/admin/config-sistema.php" <?php echo $current_page === 'config-sistema.php' ? 'class="active"' : ''; ?>>🔐 Configuración del Sistema</a></li>
                 <li style="margin-top: 10px; padding: 8px 20px; font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Ajustes Visuales</li>
                 <li><a href="/admin/config-themes.php" <?php echo $current_page === 'config-themes.php' ? 'class="active"' : ''; ?>>🎨 Themes</a></li>
                 <li><a href="/admin/config-hero.php" <?php echo $current_page === 'config-hero.php' ? 'class="active"' : ''; ?>>🖼️ Hero Principal</a></li>

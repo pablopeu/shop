@@ -32,13 +32,6 @@ $default_email_config = [
     'from_email' => 'noreply@' . ($_SERVER['HTTP_HOST'] ?? 'tienda.com'),
     'from_name' => $site_config['site_name'] ?? 'Mi Tienda',
     'admin_email' => '',
-    'smtp' => [
-        'host' => 'smtp.gmail.com',
-        'port' => 587,
-        'username' => '',
-        'password' => '',
-        'encryption' => 'tls'
-    ],
     'notifications' => [
         'customer' => [
             'order_created' => true,
@@ -59,8 +52,6 @@ $default_email_config = [
 
 $default_telegram_config = [
     'enabled' => false,
-    'bot_token' => '',
-    'chat_id' => '',
     'notifications' => [
         'new_order' => true,
         'payment_approved' => true,
@@ -97,13 +88,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'from_email' => sanitize_input($_POST['from_email'] ?? ''),
             'from_name' => sanitize_input($_POST['from_name'] ?? ''),
             'admin_email' => sanitize_input($_POST['admin_email'] ?? ''),
-            'smtp' => [
-                'host' => sanitize_input($_POST['smtp_host'] ?? ''),
-                'port' => (int)($_POST['smtp_port'] ?? 587),
-                'username' => sanitize_input($_POST['smtp_username'] ?? ''),
-                'password' => sanitize_input($_POST['smtp_password'] ?? ''),
-                'encryption' => sanitize_input($_POST['smtp_encryption'] ?? 'tls')
-            ],
             'notifications' => [
                 'customer' => [
                     'order_created' => isset($_POST['email_customer_order_created']),
@@ -133,8 +117,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['save_telegram'])) {
         $telegram_config = [
             'enabled' => isset($_POST['telegram_enabled']),
-            'bot_token' => sanitize_input($_POST['bot_token'] ?? ''),
-            'chat_id' => sanitize_input($_POST['chat_id'] ?? ''),
             'notifications' => [
                 'new_order' => isset($_POST['telegram_new_order']),
                 'payment_approved' => isset($_POST['telegram_payment_approved']),
@@ -537,48 +519,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <small>Recibirás notificaciones de órdenes, chargebacks, etc.</small>
                     </div>
 
-                    <!-- SMTP Settings -->
+                    <!-- SMTP Settings Info -->
                     <div class="smtp-fields <?php echo $email_config['method'] === 'smtp' ? 'show' : ''; ?>" id="smtp-fields">
                         <div class="form-section">
-                            <h3>⚙️ Configuración SMTP</h3>
-
-                            <div class="grid-2">
-                                <div class="form-group">
-                                    <label for="smtp_host">Host SMTP</label>
-                                    <input type="text" id="smtp_host" name="smtp_host"
-                                           value="<?php echo htmlspecialchars($email_config['smtp']['host']); ?>"
-                                           placeholder="smtp.gmail.com">
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="smtp_port">Puerto</label>
-                                    <input type="number" id="smtp_port" name="smtp_port"
-                                           value="<?php echo $email_config['smtp']['port']; ?>"
-                                           placeholder="587">
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="smtp_username">Usuario SMTP</label>
-                                <input type="text" id="smtp_username" name="smtp_username"
-                                       value="<?php echo htmlspecialchars($email_config['smtp']['username']); ?>"
-                                       placeholder="tu-email@gmail.com">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="smtp_password">Contraseña SMTP</label>
-                                <input type="password" id="smtp_password" name="smtp_password"
-                                       value="<?php echo htmlspecialchars($email_config['smtp']['password']); ?>"
-                                       placeholder="••••••••">
-                                <small>Para Gmail, usa una "App Password" en lugar de tu contraseña normal</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="smtp_encryption">Encriptación</label>
-                                <select id="smtp_encryption" name="smtp_encryption">
-                                    <option value="tls" <?php echo $email_config['smtp']['encryption'] === 'tls' ? 'selected' : ''; ?>>TLS</option>
-                                    <option value="ssl" <?php echo $email_config['smtp']['encryption'] === 'ssl' ? 'selected' : ''; ?>>SSL</option>
-                                </select>
+                            <div class="info-box" style="background: #e7f3ff; border-left: 4px solid #007bff; padding: 15px; margin: 0; border-radius: 4px;">
+                                <strong>🔐 Credenciales SMTP (Seguras)</strong><br><br>
+                                Las credenciales SMTP (host, puerto, usuario, contraseña) se configuran de forma segura en:<br>
+                                <strong><a href="/admin/config-sistema.php" style="color: #007bff;">⚙️ Configuración → Configuración del Sistema</a></strong><br><br>
+                                Allí se guardan en un archivo JSON <strong>fuera del directorio público</strong> para máxima seguridad.
                             </div>
                         </div>
                     </div>
@@ -681,34 +629,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label for="telegram_enabled">Activar notificaciones por Telegram</label>
                     </div>
 
-                    <!-- Bot Configuration -->
-                    <div class="form-group">
-                        <label for="bot_token">Bot Token</label>
-                        <input type="text" id="bot_token" name="bot_token"
-                               value="<?php echo htmlspecialchars($telegram_config['bot_token']); ?>"
-                               placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
-                        <small>Obtén tu token de <a href="https://t.me/BotFather" target="_blank">@BotFather</a></small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="chat_id">Chat ID</label>
-                        <input type="text" id="chat_id" name="chat_id"
-                               value="<?php echo htmlspecialchars($telegram_config['chat_id']); ?>"
-                               placeholder="123456789">
-                        <small>ID del chat/canal donde recibirás mensajes</small>
-                    </div>
-
-                    <!-- Info Box -->
-                    <div class="message info" style="margin: 20px 0; font-size: 13px;">
-                        <strong>ℹ️ Cómo obtener Bot Token y Chat ID:</strong><br><br>
-                        <strong>1. Bot Token:</strong><br>
-                        • Abre Telegram y busca <a href="https://t.me/BotFather" target="_blank" style="color: #0c5460;">@BotFather</a><br>
-                        • Envía <code>/newbot</code> y sigue las instrucciones<br>
-                        • Copia el token que te da<br><br>
-                        <strong>2. Chat ID:</strong><br>
-                        • Busca tu bot en Telegram y envía <code>/start</code><br>
-                        • Visita: <code>https://api.telegram.org/bot&lt;TU_TOKEN&gt;/getUpdates</code><br>
-                        • Busca el número en <code>"chat":{"id":123456789}</code>
+                    <!-- Bot Configuration Info -->
+                    <div class="info-box" style="background: #e7f3ff; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                        <strong>🔐 Credenciales de Telegram (Seguras)</strong><br><br>
+                        Las credenciales de Telegram (bot_token y chat_id) se configuran de forma segura en:<br>
+                        <strong><a href="/admin/config-sistema.php" style="color: #007bff;">⚙️ Configuración → Configuración del Sistema</a></strong><br><br>
+                        Allí se guardan en un archivo JSON <strong>fuera del directorio público</strong> para máxima seguridad.
                     </div>
 
                     <!-- Notifications -->

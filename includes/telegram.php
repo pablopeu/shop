@@ -7,6 +7,16 @@
 require_once __DIR__ . '/functions.php';
 
 /**
+ * Get secure Telegram credentials from external file
+ */
+function get_secure_telegram_credentials() {
+    // Reuse the same function from email.php
+    require_once __DIR__ . '/email.php';
+    $credentials = get_secure_credentials();
+    return $credentials['telegram'] ?? ['bot_token' => '', 'chat_id' => ''];
+}
+
+/**
  * Get Telegram configuration with defaults if file doesn't exist
  */
 function get_telegram_config() {
@@ -47,8 +57,10 @@ function send_telegram_message($message, $parse_mode = 'HTML') {
         return false;
     }
 
-    $bot_token = $config['bot_token'] ?? '';
-    $chat_id = $config['chat_id'] ?? '';
+    // Get credentials from secure external file
+    $credentials = get_secure_telegram_credentials();
+    $bot_token = $credentials['bot_token'] ?? '';
+    $chat_id = $credentials['chat_id'] ?? '';
 
     if (empty($bot_token) || empty($chat_id)) {
         error_log("Telegram not configured - missing bot_token or chat_id");

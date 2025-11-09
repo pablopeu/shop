@@ -7,6 +7,52 @@
 require_once __DIR__ . '/functions.php';
 
 /**
+ * Get secure credentials from external file
+ * Returns SMTP credentials stored outside webroot
+ */
+function get_secure_credentials() {
+    $credentials_path_file = __DIR__ . '/../.credentials_path';
+
+    // Get path to credentials file
+    if (!file_exists($credentials_path_file)) {
+        error_log("Credentials path file not found. Using default path.");
+        $credentials_path = '/home/smtp_credentials.json';
+    } else {
+        $credentials_path = trim(file_get_contents($credentials_path_file));
+    }
+
+    // Read credentials file
+    if (!file_exists($credentials_path)) {
+        error_log("Credentials file not found at: $credentials_path");
+        return [
+            'smtp' => [
+                'host' => '',
+                'port' => 587,
+                'username' => '',
+                'password' => '',
+                'encryption' => 'tls'
+            ],
+            'telegram' => [
+                'bot_token' => '',
+                'chat_id' => ''
+            ]
+        ];
+    }
+
+    $credentials = @json_decode(file_get_contents($credentials_path), true);
+
+    if (!$credentials || json_last_error() !== JSON_ERROR_NONE) {
+        error_log("Invalid JSON in credentials file: " . json_last_error_msg());
+        return [
+            'smtp' => ['host' => '', 'port' => 587, 'username' => '', 'password' => '', 'encryption' => 'tls'],
+            'telegram' => ['bot_token' => '', 'chat_id' => '']
+        ];
+    }
+
+    return $credentials;
+}
+
+/**
  * Get email configuration with defaults if file doesn't exist
  */
 function get_email_config() {
@@ -76,7 +122,9 @@ function send_email($to, $subject, $html_body, $plain_body = '') {
     $method = $config['method'] ?? 'mail';
 
     if ($method === 'smtp') {
-        return send_email_smtp($to, $subject, $html_body, $plain_body, $from_email, $from_name, $config['smtp']);
+        // Get credentials from secure external file
+        $credentials = get_secure_credentials();
+        return send_email_smtp($to, $subject, $html_body, $plain_body, $from_email, $from_name, $credentials['smtp']);
     } else {
         return send_email_native($to, $subject, $html_body, $plain_body, $from_email, $from_name);
     }
