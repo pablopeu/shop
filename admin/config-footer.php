@@ -100,11 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
                     'body' => $_POST['email_body'] ?? $current_config['left_column']['email']['body'] ?? ''
                 ],
                 'whatsapp' => [
-                    'enabled' => isset($_POST['whatsapp_left_enabled']),
-                    'number' => $_POST['whatsapp_left_number'] ?? $current_config['left_column']['whatsapp']['number'] ?? '',
-                    'message' => $_POST['whatsapp_left_message'] ?? $current_config['left_column']['whatsapp']['message'] ?? 'Hola, consulta desde el sitio web',
-                    'display_text' => $_POST['whatsapp_left_display_text'] ?? $current_config['left_column']['whatsapp']['display_text'] ?? '',
-                    'custom_link' => $_POST['whatsapp_left_custom_link'] ?? $current_config['left_column']['whatsapp']['custom_link'] ?? ''
+                    'enabled' => isset($_POST['whatsapp_left_enabled'])
                 ]
             ],
             'center_column' => [
@@ -117,11 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
                 ],
                 'phones' => $phones, // Replace completely, not merge
                 'whatsapp' => [
-                    'enabled' => isset($_POST['whatsapp_center_enabled']),
-                    'number' => $_POST['whatsapp_center_number'] ?? $current_config['center_column']['whatsapp']['number'] ?? '',
-                    'message' => $_POST['whatsapp_center_message'] ?? $current_config['center_column']['whatsapp']['message'] ?? 'Hola, consulta desde el sitio web',
-                    'display_text' => $_POST['whatsapp_center_display_text'] ?? $current_config['center_column']['whatsapp']['display_text'] ?? '',
-                    'custom_link' => $_POST['whatsapp_center_custom_link'] ?? $current_config['center_column']['whatsapp']['custom_link'] ?? ''
+                    'enabled' => isset($_POST['whatsapp_center_enabled'])
                 ],
                 'schedule' => [
                     'enabled' => isset($_POST['schedule_enabled']),
@@ -140,7 +132,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_footer'])) {
                     'facebook' => $_POST['social_facebook'] ?? $current_config['right_column']['social']['facebook'] ?? '',
                     'twitter' => $_POST['social_twitter'] ?? $current_config['right_column']['social']['twitter'] ?? '',
                     'instagram' => $_POST['social_instagram'] ?? $current_config['right_column']['social']['instagram'] ?? '',
-                    'whatsapp' => $_POST['social_whatsapp'] ?? $current_config['right_column']['social']['whatsapp'] ?? '',
+                    'whatsapp' => [
+                        'enabled' => isset($_POST['social_whatsapp_enabled'])
+                    ],
                     'telegram' => $_POST['social_telegram'] ?? $current_config['right_column']['social']['telegram'] ?? ''
                 ]
             ]
@@ -343,30 +337,9 @@ $user = get_logged_user();
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" name="whatsapp_left_enabled" <?php echo ($footer_config['left_column']['whatsapp']['enabled'] ?? false) ? 'checked' : ''; ?>>
-                        <span>Mostrar WhatsApp</span>
+                        <span>Mostrar WhatsApp en esta sección</span>
                     </label>
-                </div>
-                <div class="form-group">
-                    <label>Link personalizado de WhatsApp (opcional)</label>
-                    <input type="url" name="whatsapp_left_custom_link" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['custom_link'] ?? ''); ?>" placeholder="https://api.whatsapp.com/message/XXXXX">
-                    <div class="help-text">Si usas este campo, ignora el número y mensaje. Útil para links sin teléfono.</div>
-                </div>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Número de WhatsApp</label>
-                        <input type="text" name="whatsapp_left_number" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['number'] ?? ''); ?>" placeholder="+54 9 11 1234-5678">
-                        <div class="help-text">Formato internacional (solo si no usas link personalizado)</div>
-                    </div>
-                    <div class="form-group">
-                        <label>Texto a mostrar</label>
-                        <input type="text" name="whatsapp_left_display_text" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['display_text'] ?? ''); ?>" placeholder="WhatsApp: +54 9 11 1234-5678">
-                        <div class="help-text">Texto que se mostrará (si está vacío, usa el número)</div>
-                    </div>
-                    <div class="form-group">
-                        <label>Mensaje predeterminado</label>
-                        <input type="text" name="whatsapp_left_message" value="<?php echo htmlspecialchars($footer_config['left_column']['whatsapp']['message'] ?? 'Hola, consulta desde el sitio web'); ?>">
-                        <div class="help-text">Solo si usas número (no link personalizado)</div>
-                    </div>
+                    <div class="help-text" style="margin-left: 26px;">La configuración de WhatsApp (número, mensaje, texto) se gestiona en <a href="config-sitio.php" style="color: #667eea;">Configuración del Sitio</a></div>
                 </div>
             </div>
 
@@ -430,30 +403,9 @@ $user = get_logged_user();
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" name="whatsapp_center_enabled" <?php echo ($footer_config['center_column']['whatsapp']['enabled'] ?? false) ? 'checked' : ''; ?>>
-                        <span>Mostrar WhatsApp</span>
+                        <span>Mostrar WhatsApp en esta sección</span>
                     </label>
-                </div>
-                <div class="form-group">
-                    <label>Link personalizado de WhatsApp (opcional)</label>
-                    <input type="url" name="whatsapp_center_custom_link" value="<?php echo htmlspecialchars($footer_config['center_column']['whatsapp']['custom_link'] ?? ''); ?>" placeholder="https://api.whatsapp.com/message/XXXXX">
-                    <div class="help-text">Si usas este campo, ignora el número y mensaje. Útil para links sin teléfono.</div>
-                </div>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Número de WhatsApp</label>
-                        <input type="text" name="whatsapp_center_number" value="<?php echo htmlspecialchars($footer_config['center_column']['whatsapp']['number'] ?? ''); ?>" placeholder="+54 9 11 1234-5678">
-                        <div class="help-text">Formato internacional (solo si no usas link personalizado)</div>
-                    </div>
-                    <div class="form-group">
-                        <label>Texto a mostrar</label>
-                        <input type="text" name="whatsapp_center_display_text" value="<?php echo htmlspecialchars($footer_config['center_column']['whatsapp']['display_text'] ?? ''); ?>" placeholder="Envíenos un WhatsApp">
-                        <div class="help-text">Texto que se mostrará (si está vacío, usa el número)</div>
-                    </div>
-                    <div class="form-group">
-                        <label>Mensaje predeterminado</label>
-                        <input type="text" name="whatsapp_center_message" value="<?php echo htmlspecialchars($footer_config['center_column']['whatsapp']['message'] ?? 'Hola, consulta desde el sitio web'); ?>">
-                        <div class="help-text">Solo si usas número (no link personalizado)</div>
-                    </div>
+                    <div class="help-text" style="margin-left: 26px;">La configuración de WhatsApp (número, mensaje, texto) se gestiona en <a href="config-sitio.php" style="color: #667eea;">Configuración del Sitio</a></div>
                 </div>
 
                 <!-- Schedule -->
@@ -518,9 +470,11 @@ $user = get_logged_user();
                         <input type="url" name="social_instagram" value="<?php echo htmlspecialchars($footer_config['right_column']['social']['instagram'] ?? ''); ?>" placeholder="https://instagram.com/...">
                     </div>
                     <div class="form-group">
-                        <label><i class="fa fa-whatsapp"></i> WhatsApp</label>
-                        <input type="url" name="social_whatsapp" value="<?php echo htmlspecialchars($footer_config['right_column']['social']['whatsapp'] ?? ''); ?>" placeholder="https://wa.me/5491112345678 o https://api.whatsapp.com/...">
-                        <div class="help-text">Link directo de WhatsApp (puede ser wa.me, api.whatsapp.com, etc.)</div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="social_whatsapp_enabled" <?php echo (($footer_config['right_column']['social']['whatsapp']['enabled'] ?? false) || (!is_array($footer_config['right_column']['social']['whatsapp'] ?? null) && !empty($footer_config['right_column']['social']['whatsapp'] ?? ''))) ? 'checked' : ''; ?>>
+                            <span><i class="fa fa-whatsapp"></i> Mostrar WhatsApp</span>
+                        </label>
+                        <div class="help-text" style="margin-left: 26px;">La configuración se gestiona en <a href="config-sitio.php" style="color: #667eea;">Configuración del Sitio</a></div>
                     </div>
                     <div class="form-group">
                         <label><i class="fa fa-telegram"></i> Telegram</label>

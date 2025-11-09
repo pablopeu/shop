@@ -33,7 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
             'enabled' => isset($_POST['whatsapp_enabled']),
             'number' => sanitize_input($_POST['whatsapp_number'] ?? ''),
             'message' => sanitize_input($_POST['whatsapp_message'] ?? 'Hola! Me interesa un producto de su tienda'),
-            'custom_link' => sanitize_input($_POST['whatsapp_custom_link'] ?? '')
+            'custom_link' => sanitize_input($_POST['whatsapp_custom_link'] ?? ''),
+            'display_text' => sanitize_input($_POST['whatsapp_display_text'] ?? '')
         ];
 
         // Keep old whatsapp_number for backward compatibility
@@ -273,6 +274,17 @@ $user = get_logged_user();
                                style="width: 100%;">
                         <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
                             Si usas un link personalizado, este tendrá prioridad sobre el número de WhatsApp
+                        </small>
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <label for="whatsapp_display_text" style="display: block; margin-bottom: 5px; font-weight: normal;">Texto a mostrar (opcional)</label>
+                        <input type="text" id="whatsapp_display_text" name="whatsapp_display_text"
+                               value="<?php echo htmlspecialchars($site_config['whatsapp']['display_text'] ?? ''); ?>"
+                               placeholder="WhatsApp: +54 9 11 1234-5678"
+                               style="width: 100%;">
+                        <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                            Texto que se mostrará en lugar del número. Si está vacío, se muestra el número directamente
                         </small>
                     </div>
                 </div>

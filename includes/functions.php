@@ -529,8 +529,8 @@ function render_footer($site_config, $footer_config) {
         }
 
         // WhatsApp (sin icono, solo texto configurable y link)
-        if (!empty($footer_config['left_column']['whatsapp']['enabled'])) {
-            $whatsapp = $footer_config['left_column']['whatsapp'];
+        if (!empty($footer_config['left_column']['whatsapp']['enabled']) && !empty($site_config['whatsapp']['enabled'])) {
+            $whatsapp = $site_config['whatsapp'];
 
             // Usar custom_link si está configurado, sino generar link con número
             if (!empty($whatsapp['custom_link'])) {
@@ -600,8 +600,8 @@ function render_footer($site_config, $footer_config) {
         }
 
         // WhatsApp en sección central (con icono)
-        if (!empty($footer_config['center_column']['whatsapp']['enabled'])) {
-            $whatsapp = $footer_config['center_column']['whatsapp'];
+        if (!empty($footer_config['center_column']['whatsapp']['enabled']) && !empty($site_config['whatsapp']['enabled'])) {
+            $whatsapp = $site_config['whatsapp'];
 
             // Usar custom_link si está configurado, sino generar link con número
             if (!empty($whatsapp['custom_link'])) {
@@ -664,8 +664,10 @@ function render_footer($site_config, $footer_config) {
         // Social Media - Orden: Facebook / X / Instagram / WhatsApp / Telegram
         if (!empty($footer_config['right_column']['social']['enabled'])) {
             $social = $footer_config['right_column']['social'];
+            // Check if WhatsApp should be shown in social media
+            $show_whatsapp = (!empty($social['whatsapp']['enabled']) || (!is_array($social['whatsapp'] ?? null) && !empty($social['whatsapp']))) && !empty($site_config['whatsapp']['enabled']);
             $has_social = !empty($social['facebook']) || !empty($social['twitter']) ||
-                         !empty($social['instagram']) || !empty($social['whatsapp']) || !empty($social['telegram']);
+                         !empty($social['instagram']) || $show_whatsapp || !empty($social['telegram']);
 
             if ($has_social) {
                 echo '<div class="footer-icons">';
@@ -682,14 +684,17 @@ function render_footer($site_config, $footer_config) {
                 if (!empty($social['instagram'])) {
                     echo '<a href="' . htmlspecialchars($social['instagram']) . '" target="_blank"><i class="fa fa-instagram"></i></a>';
                 }
-                // WhatsApp
-                if (!empty($social['whatsapp'])) {
-                    // Si ya es una URL, usarla directamente. Si no, asumir que es número
-                    if (strpos($social['whatsapp'], 'http') === 0) {
-                        $wa_link = htmlspecialchars($social['whatsapp']);
-                    } else {
-                        $wa_number = preg_replace('/[^0-9]/', '', $social['whatsapp']);
+                // WhatsApp - read from central site config
+                if ($show_whatsapp) {
+                    $whatsapp = $site_config['whatsapp'];
+                    // Usar custom_link si está configurado, sino generar link con número
+                    if (!empty($whatsapp['custom_link'])) {
+                        $wa_link = htmlspecialchars($whatsapp['custom_link']);
+                    } else if (!empty($whatsapp['number'])) {
+                        $wa_number = preg_replace('/[^0-9]/', '', $whatsapp['number']);
                         $wa_link = 'https://wa.me/' . $wa_number;
+                    } else {
+                        $wa_link = '#';
                     }
                     echo '<a href="' . $wa_link . '" target="_blank"><i class="fa fa-whatsapp"></i></a>';
                 }
