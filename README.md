@@ -15,7 +15,9 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
 
 - ✅ Sistema de themes completos intercambiables (4 themes incluidos)
 - ✅ Control de inventario con alertas automáticas
-- ✅ Notificaciones por email automatizadas
+- ✅ **Sistema completo de notificaciones (Email + Telegram)**
+- ✅ **Templates de email profesionales y personalizables**
+- ✅ **Backoffice para configurar notificaciones**
 - ✅ Búsqueda y filtros de productos
 - ✅ Sistema de favoritos/wishlist
 - ✅ Códigos de descuento y promociones
@@ -26,7 +28,9 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
 - ✅ Modo mantenimiento
 - ✅ Sistema de backup automático
 - ✅ Experiencia mobile optimizada
-- ✅ Integración completa con Mercadopago
+- ✅ **Integración completa con Mercadopago (incluye webhook seguro)**
+- ✅ **Manejo de eventos post-venta (chargebacks, merchant_order)**
+- ✅ **Header unificado en todas las páginas del admin**
 
 ## Estructura del Proyecto
 
@@ -47,9 +51,13 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
 │   ├── promociones.php     # Gestión de promociones
 │   ├── cupones.php         # Gestión de cupones
 │   ├── reviews.php         # Gestión de reviews
+│   ├── notificaciones.php  # Configuración de notificaciones
 │   ├── themes.php          # Selector de themes
 │   ├── backup.php          # Sistema de backup
-│   └── config.php          # Configuración del sitio
+│   ├── config.php          # Configuración del sitio
+│   └── includes/
+│       ├── header.php      # Header unificado del admin
+│       └── sidebar.php     # Sidebar del admin
 ├── data/                    # Archivos JSON
 │   ├── products.json       # Listado de productos
 │   ├── products/           # Detalles de productos
@@ -78,7 +86,8 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
 │   ├── auth.php            # Sistema de autenticación
 │   ├── rate_limit.php      # Rate limiting
 │   ├── products.php        # CRUD de productos
-│   ├── email.php           # Sistema de emails
+│   ├── email.php           # Sistema de emails con templates
+│   ├── telegram.php        # Sistema de notificaciones Telegram
 │   └── mercadopago.php     # Integración Mercadopago
 ├── config/                  # Configuración
 │   ├── site.json           # Configuración del sitio
@@ -86,8 +95,20 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
 │   ├── currency.json       # Multi-moneda
 │   ├── maintenance.json    # Modo mantenimiento
 │   ├── payment.json        # Configuración de pagos
+│   ├── email.json          # Configuración de notificaciones email
+│   ├── telegram.json       # Configuración de notificaciones Telegram
 │   ├── hero.json           # Hero image config
 │   └── credentials.php     # Credenciales (NO subir a Git)
+├── templates/               # Templates de email
+│   └── email/
+│       ├── order_confirmation.php
+│       ├── payment_approved.php
+│       ├── payment_pending.php
+│       ├── payment_rejected.php
+│       ├── order_shipped.php
+│       ├── admin_new_order.php
+│       └── admin_chargeback_alert.php
+├── webhook.php              # Webhook de Mercadopago (seguro)
 └── vendor/                  # Librerías externas
     ├── phpmailer/
     └── mercadopago/
@@ -173,7 +194,8 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
 ## Seguridad Implementada
 
 - ✅ Passwords hasheados con bcrypt
-- ✅ Rate limiting (5 intentos / 15 minutos)
+- ✅ Rate limiting (5 intentos / 15 minutos en login)
+- ✅ Rate limiting en webhook (60 requests/minuto)
 - ✅ CSRF tokens en todos los formularios
 - ✅ Validación estricta de uploads de imágenes
 - ✅ HTTPS enforcement
@@ -182,6 +204,9 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
 - ✅ File locking en operaciones JSON
 - ✅ Logs de acciones administrativas
 - ✅ Sanitización de todos los inputs
+- ✅ **Validación de firma HMAC-SHA256 en webhook**
+- ✅ **Verificación de IP de Mercadopago**
+- ✅ **Logging completo de webhooks y notificaciones**
 
 ## Modo Mantenimiento
 
@@ -212,6 +237,55 @@ El sistema soporta ARS y USD:
 - Tipo de cambio manual o vía API
 - API recomendada: https://api.bluelytics.com.ar
 
+## Sistema de Notificaciones
+
+### Notificaciones Email
+
+El sistema incluye **7 templates de email profesionales** con diseño responsive:
+
+**Para clientes:**
+- Confirmación de orden
+- Pago aprobado
+- Pago pendiente
+- Pago rechazado
+- Envío de pedido
+
+**Para administradores:**
+- Nueva orden recibida
+- Alerta de chargeback
+
+**Configuración:**
+1. Ir a admin → Notificaciones → Email
+2. Activar/desactivar notificaciones específicas
+3. Configurar emails destinatarios (admin)
+4. Personalizar remitente y asunto
+5. Probar envío de emails
+
+Ver documentación completa en `docs/NOTIFICACIONES.md`
+
+### Notificaciones Telegram
+
+Recibe notificaciones en tiempo real en Telegram:
+
+**Configuración:**
+1. Crear un bot con @BotFather
+2. Obtener el token del bot
+3. Iniciar conversación con el bot
+4. Obtener tu Chat ID
+5. Configurar en admin → Notificaciones → Telegram
+6. Activar notificaciones deseadas
+
+**Eventos soportados:**
+- Nueva orden
+- Pago aprobado
+- Pago pendiente
+- Pago rechazado
+- Chargeback
+- Envío de pedido
+- Stock bajo
+
+Ver documentación completa en `docs/NOTIFICACIONES_BACKOFFICE.md`
+
 ## Integración Mercadopago
 
 ### Modo Sandbox (Testing)
@@ -227,6 +301,19 @@ El sistema soporta ARS y USD:
 2. Configurar access token de producción
 3. Cambiar a "Modo Producción"
 4. Configurar webhook URL (se muestra en el admin)
+
+### Webhook Seguro
+
+El sistema incluye medidas de seguridad avanzadas para el webhook:
+
+- ✅ Validación de firma HMAC-SHA256
+- ✅ Verificación de IP de Mercadopago
+- ✅ Rate limiting (60 requests/minuto)
+- ✅ Validación de topic y resource
+- ✅ Logging completo de eventos
+- ✅ Manejo de eventos duplicados
+
+Ver documentación completa en `WEBHOOK_SECURITY.md`
 
 ## Themes Incluidos
 
@@ -287,10 +374,19 @@ Ver archivo `docs/PRD-Ecommerce-Platform-FINAL.md` para el roadmap completo.
 
 ## Soporte y Documentación
 
-- PRD completo: `docs/PRD-Ecommerce-Platform-FINAL.md`
+### Documentación del Proyecto
+
+- **PRD completo**: `docs/PRD-Ecommerce-Platform-FINAL.md`
+- **Sistema de notificaciones**: `docs/NOTIFICACIONES.md`
+- **Backoffice de notificaciones**: `docs/NOTIFICACIONES_BACKOFFICE.md`
+- **Seguridad del webhook**: `WEBHOOK_SECURITY.md`
+
+### Referencias Externas
+
 - Documentación de PHP: https://www.php.net/manual/
 - Mercadopago API: https://www.mercadopago.com.ar/developers/
 - PHPMailer: https://github.com/PHPMailer/PHPMailer
+- Telegram Bot API: https://core.telegram.org/bots/api
 
 ## Licencia
 
@@ -304,13 +400,21 @@ Copyright © 2025. Todos los derechos reservados.
 - **Hacer backups regulares antes de cambios importantes**
 - **Verificar permisos de archivos en producción**
 - **Probar emails en ambiente de desarrollo primero**
+- **Configurar y probar el webhook de Mercadopago antes de producción**
+- **Verificar que la validación HMAC esté activa en producción**
+- **Revisar logs del webhook regularmente**: `data/webhook_log.json`
+- **Configurar Telegram es opcional pero recomendado para alertas en tiempo real**
 
 ## Checklist Pre-Deployment
 
 - [ ] Credenciales configuradas
 - [ ] Contraseña de admin cambiada
 - [ ] SMTP configurado y probado
+- [ ] **Notificaciones email configuradas y probadas**
+- [ ] **Telegram bot configurado (opcional)**
 - [ ] Mercadopago en modo correcto (sandbox/prod)
+- [ ] **Webhook configurado y validando firma HMAC**
+- [ ] **Verificar IP whitelisting de Mercadopago**
 - [ ] SSL certificado instalado
 - [ ] Permisos de archivos correctos
 - [ ] `.htaccess` en `/data/passwords/`
@@ -318,3 +422,5 @@ Copyright © 2025. Todos los derechos reservados.
 - [ ] Theme seleccionado
 - [ ] Productos de prueba agregados
 - [ ] Proceso de compra testeado end-to-end
+- [ ] **Probar recepción de notificaciones (email y Telegram)**
+- [ ] **Verificar logs del webhook**
