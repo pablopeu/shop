@@ -3,6 +3,16 @@ config/credentials.php
 config/*.key
 *.pem
 
+# ===== ENVIRONMENT-SPECIFIC CONFIGURATION =====
+# These files contain environment-specific data that should not be shared between branches
+# Use the .example files as templates
+config/site.json
+config/footer.json
+config/email.json
+config/telegram.json
+config/payment.json
+data/products.json
+
 # ===== USER DATA (PRODUCTION) =====
 data/passwords/
 data/rate_limits/

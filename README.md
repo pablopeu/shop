@@ -90,15 +90,17 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
 │   ├── telegram.php        # Sistema de notificaciones Telegram
 │   └── mercadopago.php     # Integración Mercadopago
 ├── config/                  # Configuración
-│   ├── site.json           # Configuración del sitio
+│   ├── site.json           # Configuración del sitio (se configura desde el admin)
 │   ├── theme.json          # Theme activo
 │   ├── currency.json       # Multi-moneda
 │   ├── maintenance.json    # Modo mantenimiento
-│   ├── payment.json        # Configuración de pagos
-│   ├── email.json          # Configuración de notificaciones email
-│   ├── telegram.json       # Configuración de notificaciones Telegram
+│   ├── payment.json        # Configuración de pagos (se configura desde el admin)
+│   ├── email.json          # Notificaciones email (se configura desde el admin)
+│   ├── telegram.json       # Notificaciones Telegram (se configura desde el admin)
 │   ├── hero.json           # Hero image config
-│   └── credentials.php     # Credenciales (NO subir a Git)
+│   ├── footer.json         # Configuración del footer (se configura desde el admin)
+│   ├── credentials.php.example  # Plantilla de credenciales (legacy, opcional)
+│   └── README.md           # Documentación del sistema de configuración
 ├── templates/               # Templates de email
 │   └── email/
 │       ├── order_confirmation.php
@@ -130,12 +132,11 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
    cd shop
    ```
 
-2. **Configurar credenciales**
-   - Copiar `config/credentials.php.example` a `config/credentials.php`
-   - Editar con tus credenciales reales:
-     - SMTP (para emails)
-     - Mercadopago (tokens de sandbox y producción)
-     - OAuth (Google, Apple)
+2. **Inicializar archivos de configuración**
+   ```bash
+   ./init-config.sh
+   ```
+   Este script crea automáticamente todos los archivos de configuración desde sus plantillas `.example`
 
 3. **Configurar permisos**
    ```bash
@@ -147,12 +148,17 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
 4. **Subir vía FTP**
    - Subir todos los archivos al servidor
    - Asegurar que `data/passwords/.htaccess` esté presente
-   - Verificar permisos de escritura en `/data/`
+   - Verificar permisos de escritura en `/data/` y `/config/`
 
 5. **Instalar dependencias**
    - Descargar PHPMailer desde: https://github.com/PHPMailer/PHPMailer
    - Descargar Mercadopago SDK desde: https://github.com/mercadopago/sdk-php
    - Subir a `/vendor/` vía FTP
+
+6. **Ejecutar init-config.sh en el servidor** (si no lo hiciste localmente)
+   ```bash
+   ./init-config.sh
+   ```
 
 ### Configuración Inicial
 
@@ -162,14 +168,43 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
    - Contraseña: `password`
    - ⚠️ **IMPORTANTE**: Cambiar la contraseña inmediatamente
 
-2. **Configurar el sitio**
-   - Ir a "Configuración" en el admin
-   - Configurar:
-     - Nombre del sitio
-     - Emails SMTP
-     - Mercadopago (empezar con sandbox)
-     - WhatsApp
-     - Multi-moneda
+2. **Configurar el sitio desde el panel de administración**
+
+   Todas las configuraciones se realizan desde el backoffice, sin necesidad de editar archivos manualmente:
+
+   - **Configuración General** (Admin → Configuración del Sitio)
+     - Nombre del sitio, descripción, keywords
+     - Logo y contacto
+     - Redes sociales (Facebook, Instagram, Twitter)
+     - WhatsApp (número y mensaje predeterminado)
+     - Google Analytics y Facebook Pixel
+
+   - **Configuración del Footer** (Admin → Configuración → Footer)
+     - Diseño (simple/avanzado)
+     - Columnas personalizables
+     - Links, teléfonos, horarios
+     - Redes sociales
+
+   - **Notificaciones Email** (Admin → Notificaciones → Email)
+     - Configuración SMTP (Gmail, etc.)
+     - Emails de origen y destinatarios
+     - Activar/desactivar notificaciones por tipo
+     - Probar envío de emails
+
+   - **Notificaciones Telegram** (Admin → Notificaciones → Telegram)
+     - Token del bot de Telegram
+     - Chat ID
+     - Activar/desactivar notificaciones
+     - Configurar umbrales (ej: pedidos de alto valor)
+
+   - **Medios de Pago** (Admin → Configuración → Medios de Pago)
+     - Mercadopago (tokens sandbox/producción, webhooks)
+     - Pago presencial (instrucciones)
+     - Seguridad del webhook (firma HMAC, IP whitelisting)
+
+   - **Multi-moneda** (Admin → Configuración → Moneda)
+     - Configurar ARS/USD
+     - Tipo de cambio manual o automático
 
 3. **Seleccionar theme**
    - Ir a "Themes"
@@ -182,6 +217,8 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
    - Subir hasta 10 imágenes por producto
    - Configurar SEO
    - Definir stock y alertas
+
+**Nota importante:** Ya NO es necesario editar manualmente archivos como `config/site.json`, `config/email.json`, `config/payment.json`, etc. Todo se gestiona desde el panel de administración.
 
 ## Credenciales por Defecto
 
@@ -394,33 +431,43 @@ Copyright © 2025. Todos los derechos reservados.
 
 ## Notas Importantes
 
-- **NO subir `config/credentials.php` a Git**
+- **Ejecutar `./init-config.sh` antes de configurar el sitio**
+- **Archivos de configuración NO se versionan en git** (están en .gitignore)
+- **Configurar todo desde el panel de administración** (no editar archivos JSON manualmente)
 - **Cambiar contraseña de admin al primer login**
 - **Empezar con Mercadopago en modo sandbox**
 - **Hacer backups regulares antes de cambios importantes**
-- **Verificar permisos de archivos en producción**
+- **Verificar permisos de escritura en `/data/` y `/config/`**
 - **Probar emails en ambiente de desarrollo primero**
 - **Configurar y probar el webhook de Mercadopago antes de producción**
 - **Verificar que la validación HMAC esté activa en producción**
 - **Revisar logs del webhook regularmente**: `data/webhook_log.json`
 - **Configurar Telegram es opcional pero recomendado para alertas en tiempo real**
+- **Tus configuraciones se preservan entre merges de Git** (cada branch/entorno mantiene las suyas)
 
 ## Checklist Pre-Deployment
 
-- [ ] Credenciales configuradas
-- [ ] Contraseña de admin cambiada
-- [ ] SMTP configurado y probado
-- [ ] **Notificaciones email configuradas y probadas**
-- [ ] **Telegram bot configurado (opcional)**
-- [ ] Mercadopago en modo correcto (sandbox/prod)
-- [ ] **Webhook configurado y validando firma HMAC**
-- [ ] **Verificar IP whitelisting de Mercadopago**
-- [ ] SSL certificado instalado
-- [ ] Permisos de archivos correctos
+- [ ] Ejecutado `./init-config.sh` en el servidor
+- [ ] Contraseña de admin cambiada desde el panel
+- [ ] Permisos de archivos correctos (`/data/` y `/config/` con escritura)
 - [ ] `.htaccess` en `/data/passwords/`
+- [ ] **Configuración del Sitio** (Admin → Configuración del Sitio)
+  - [ ] Nombre, descripción, contacto
+  - [ ] WhatsApp y redes sociales
+  - [ ] Google Analytics (opcional)
+- [ ] **Configuración del Footer** (Admin → Configuración → Footer)
+- [ ] **SMTP configurado y probado** (Admin → Notificaciones → Email)
+- [ ] **Notificaciones email configuradas y probadas**
+- [ ] **Telegram bot configurado (opcional)** (Admin → Notificaciones → Telegram)
+- [ ] **Mercadopago configurado** (Admin → Configuración → Medios de Pago)
+  - [ ] Tokens de sandbox/producción
+  - [ ] Webhook URL configurado
+  - [ ] Validación HMAC activa
+  - [ ] IP whitelisting verificado
+- [ ] SSL certificado instalado
 - [ ] Backup inicial creado
-- [ ] Theme seleccionado
+- [ ] Theme seleccionado (Admin → Themes)
 - [ ] Productos de prueba agregados
 - [ ] Proceso de compra testeado end-to-end
 - [ ] **Probar recepción de notificaciones (email y Telegram)**
-- [ ] **Verificar logs del webhook**
+- [ ] **Verificar logs del webhook** (`data/webhook_log.json`)

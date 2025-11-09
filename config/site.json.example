@@ -1,0 +1,30 @@
+{
+    "site_name": "Mi Tienda",
+    "site_description": "Tu tienda online de confianza",
+    "site_keywords": "tienda, online, ecommerce",
+    "logo": {
+        "enabled": false,
+        "path": "",
+        "alt": "Logo de Mi Tienda",
+        "width": 170,
+        "height": 85
+    },
+    "contact_email": "",
+    "whatsapp": {
+        "enabled": false,
+        "number": "",
+        "message": "Hola! Me interesa un producto de su tienda"
+    },
+    "social": {
+        "facebook": "",
+        "instagram": "",
+        "twitter": ""
+    },
+    "footer_text": "© 2025 Mi Tienda. Todos los derechos reservados.",
+    "analytics": {
+        "google_analytics_id": "",
+        "facebook_pixel": ""
+    },
+    "contact_phone": "",
+    "whatsapp_number": ""
+}
