@@ -91,6 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Save Email Configuration
     if (isset($_POST['save_email'])) {
+        // Load existing config to preserve OAuth2 tokens
+        $existing_config = file_exists($email_config_file) ? read_json($email_config_file) : [];
+
         $email_config = [
             'enabled' => isset($_POST['email_enabled']),
             'method' => sanitize_input($_POST['email_method'] ?? 'mail'),
@@ -102,7 +105,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'port' => (int)($_POST['smtp_port'] ?? 587),
                 'username' => sanitize_input($_POST['smtp_username'] ?? ''),
                 'password' => sanitize_input($_POST['smtp_password'] ?? ''),
-                'encryption' => sanitize_input($_POST['smtp_encryption'] ?? 'tls')
+                'encryption' => sanitize_input($_POST['smtp_encryption'] ?? 'tls'),
+                'auth_method' => sanitize_input($_POST['smtp_auth_method'] ?? 'password')
             ],
             'notifications' => [
                 'customer' => [
@@ -122,10 +126,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]
         ];
 
+        // Preserve existing OAuth2 tokens
+        if (isset($existing_config['oauth2'])) {
+            $email_config['oauth2'] = $existing_config['oauth2'];
+        }
+
         if (write_json($email_config_file, $email_config)) {
             $message = '✅ Configuración de email guardada exitosamente';
         } else {
             $error = '❌ Error al guardar la configuración de email';
+        }
+    }
+
+    // Revoke OAuth2 Authorization
+    if (isset($_POST['revoke_oauth2'])) {
+        $config = read_json($email_config_file);
+        unset($config['oauth2']);
+        if (write_json($email_config_file, $config)) {
+            $message = '✅ Autorización OAuth2 revocada exitosamente';
+            log_admin_action('oauth2_revoked', $_SESSION['username']);
+        } else {
+            $error = '❌ Error al revocar OAuth2';
         }
     }
 
@@ -580,6 +601,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <option value="ssl" <?php echo $email_config['smtp']['encryption'] === 'ssl' ? 'selected' : ''; ?>>SSL</option>
                                 </select>
                             </div>
+
+                            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e0e0e0;">
+
+                            <div class="form-group">
+                                <label for="smtp_auth_method">Método de Autenticación</label>
+                                <select id="smtp_auth_method" name="smtp_auth_method">
+                                    <option value="password" <?php echo ($email_config['smtp']['auth_method'] ?? 'password') === 'password' ? 'selected' : ''; ?>>
+                                        App Password (Menos seguro)
+                                    </option>
+                                    <option value="oauth2" <?php echo ($email_config['smtp']['auth_method'] ?? 'password') === 'oauth2' ? 'selected' : ''; ?>>
+                                        OAuth2 (Más seguro - Recomendado)
+                                    </option>
+                                </select>
+                                <small>OAuth2 es más seguro ya que no almacena contraseñas y los tokens son revocables</small>
+                            </div>
+
+                            <!-- OAuth2 Section -->
+                            <div id="oauth2_section" style="display: <?php echo ($email_config['smtp']['auth_method'] ?? 'password') === 'oauth2' ? 'block' : 'none'; ?>;">
+                                <div class="info-box" style="background: #e7f3ff; border-left: 4px solid #007bff; padding: 12px; margin: 15px 0; border-radius: 4px; font-size: 13px;">
+                                    <strong>🔐 Configuración OAuth2 para Gmail:</strong><br>
+                                    1. Ve a <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a><br>
+                                    2. Crea un proyecto nuevo o selecciona uno existente<br>
+                                    3. Habilita "Gmail API" en APIs & Services<br>
+                                    4. Ve a "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"<br>
+                                    5. Tipo: "Web application"<br>
+                                    6. Authorized redirect URIs: <code><?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . "/admin/oauth2-callback.php"; ?></code><br>
+                                    7. Copia el Client ID y Client Secret a <code>config/credentials.php</code>
+                                </div>
+
+                                <?php if (isset($email_config['oauth2']['access_token'])): ?>
+                                    <div class="success-box" style="background: #d4edda; border-left: 4px solid #28a745; padding: 12px; margin: 15px 0; border-radius: 4px;">
+                                        ✅ <strong>OAuth2 Autorizado</strong><br>
+                                        Email: <strong><?php echo htmlspecialchars($email_config['smtp']['username'] ?? ''); ?></strong><br>
+                                        Token expira: <?php
+                                            if (isset($email_config['oauth2']['expires_at'])) {
+                                                $expires = $email_config['oauth2']['expires_at'] - time();
+                                                if ($expires > 0) {
+                                                    echo "en " . floor($expires / 60) . " minutos";
+                                                } else {
+                                                    echo "<span style='color: #dc3545;'>Token expirado (se refrescará automáticamente)</span>";
+                                                }
+                                            }
+                                        ?>
+                                        <form method="POST" style="margin-top: 10px; display: inline;">
+                                            <input type="hidden" name="csrf_token" value="<?= generate_csrf_token() ?>">
+                                            <button type="submit" name="revoke_oauth2" class="btn-danger" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                                🗑️ Revocar Autorización
+                                            </button>
+                                        </form>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="warning-box" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 4px;">
+                                        ⚠️ <strong>OAuth2 no autorizado</strong><br>
+                                        Debes autorizar tu cuenta de Gmail antes de poder enviar emails con OAuth2.
+                                    </div>
+
+                                    <button type="button" id="authorize_oauth2_btn" class="btn-primary" style="padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                                        🔑 Autorizar con Google
+                                    </button>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
 
@@ -788,9 +870,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        function toggleOAuth2Section() {
+            const authMethod = document.getElementById('smtp_auth_method');
+            const oauth2Section = document.getElementById('oauth2_section');
+
+            if (!authMethod || !oauth2Section) return;
+
+            if (authMethod.value === 'oauth2') {
+                oauth2Section.style.display = 'block';
+            } else {
+                oauth2Section.style.display = 'none';
+            }
+        }
+
+        // OAuth2 Authorization - Simple implementation
+        function authorizeOAuth2() {
+            const username = document.getElementById('smtp_username');
+
+            if (!username || !username.value) {
+                alert('Por favor ingresa tu email de Gmail primero en el campo "Usuario SMTP"');
+                return;
+            }
+
+            // Redirect to start OAuth2 flow
+            // The callback page will handle the authorization
+            const redirectUri = encodeURIComponent(window.location.origin + '/admin/oauth2-callback.php');
+            const state = encodeURIComponent(Math.random().toString(36).substring(7));
+
+            // Note: This requires credentials.php to be configured with Client ID
+            // The actual authorization URL will be generated by the server
+            window.location.href = `/admin/oauth2-start.php?email=${encodeURIComponent(username.value)}`;
+        }
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             toggleSmtpFields();
+            toggleOAuth2Section();
+
+            // Add event listeners
+            const emailMethod = document.getElementById('email_method');
+            if (emailMethod) {
+                emailMethod.addEventListener('change', toggleSmtpFields);
+            }
+
+            const authMethod = document.getElementById('smtp_auth_method');
+            if (authMethod) {
+                authMethod.addEventListener('change', toggleOAuth2Section);
+            }
+
+            const authorizeBtn = document.getElementById('authorize_oauth2_btn');
+            if (authorizeBtn) {
+                authorizeBtn.addEventListener('click', authorizeOAuth2);
+            }
         });
     </script>
 </body>
