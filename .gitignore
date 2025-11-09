@@ -2,6 +2,7 @@
 config/credentials.php
 config/*.key
 *.pem
+.encryption_key
 
 # ===== ENVIRONMENT-SPECIFIC CONFIGURATION =====
 # These files contain environment-specific data that should not be shared between branches

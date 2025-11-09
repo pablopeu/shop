@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/encryption.php';
 
 /**
  * Get email configuration with defaults if file doesn't exist
@@ -130,6 +131,11 @@ function send_email_smtp($to, $subject, $html_body, $plain_body, $from_email, $f
     $username = $smtp_config['username'] ?? '';
     $password = $smtp_config['password'] ?? '';
     $encryption = $smtp_config['encryption'] ?? 'tls';
+
+    // Decrypt password if needed
+    if (!empty($password) && is_encrypted($password)) {
+        $password = decrypt_data($password);
+    }
 
     // Validación básica
     if (empty($username) || empty($password)) {
@@ -424,6 +430,14 @@ function get_valid_oauth2_token() {
     // Load client credentials from email.json
     $client_id = $config['oauth2_credentials']['client_id'] ?? '';
     $client_secret = $config['oauth2_credentials']['client_secret'] ?? '';
+
+    // Decrypt if needed
+    if (!empty($client_id) && is_encrypted($client_id)) {
+        $client_id = decrypt_data($client_id);
+    }
+    if (!empty($client_secret) && is_encrypted($client_secret)) {
+        $client_secret = decrypt_data($client_secret);
+    }
 
     if (empty($client_id) || empty($client_secret)) {
         error_log("OAuth2: Client credentials not configured in email.json");

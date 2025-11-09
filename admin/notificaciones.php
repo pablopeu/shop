@@ -8,6 +8,7 @@ require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/email.php';
 require_once __DIR__ . '/../includes/telegram.php';
+require_once __DIR__ . '/../includes/encryption.php';
 
 // Start session
 session_start();
@@ -81,6 +82,17 @@ $telegram_config = file_exists($telegram_config_file)
     ? read_json($telegram_config_file)
     : $default_telegram_config;
 
+// Decrypt sensitive fields for display in form
+if (isset($email_config['smtp']['password']) && is_encrypted($email_config['smtp']['password'])) {
+    $email_config['smtp']['password'] = decrypt_data($email_config['smtp']['password']);
+}
+if (isset($email_config['oauth2_credentials']['client_id']) && is_encrypted($email_config['oauth2_credentials']['client_id'])) {
+    $email_config['oauth2_credentials']['client_id'] = decrypt_data($email_config['oauth2_credentials']['client_id']);
+}
+if (isset($email_config['oauth2_credentials']['client_secret']) && is_encrypted($email_config['oauth2_credentials']['client_secret'])) {
+    $email_config['oauth2_credentials']['client_secret'] = decrypt_data($email_config['oauth2_credentials']['client_secret']);
+}
+
 // Handle messages
 $message = '';
 $error = '';
@@ -104,13 +116,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'host' => sanitize_input($_POST['smtp_host'] ?? ''),
                 'port' => (int)($_POST['smtp_port'] ?? 587),
                 'username' => sanitize_input($_POST['smtp_username'] ?? ''),
-                'password' => sanitize_input($_POST['smtp_password'] ?? ''),
+                'password' => !empty($_POST['smtp_password']) ? encrypt_data(sanitize_input($_POST['smtp_password'])) : ($existing_config['smtp']['password'] ?? ''),
                 'encryption' => sanitize_input($_POST['smtp_encryption'] ?? 'tls'),
                 'auth_method' => sanitize_input($_POST['smtp_auth_method'] ?? 'password')
             ],
             'oauth2_credentials' => [
-                'client_id' => sanitize_input($_POST['oauth2_client_id'] ?? ''),
-                'client_secret' => sanitize_input($_POST['oauth2_client_secret'] ?? '')
+                'client_id' => !empty($_POST['oauth2_client_id']) ? encrypt_data(sanitize_input($_POST['oauth2_client_id'])) : ($existing_config['oauth2_credentials']['client_id'] ?? ''),
+                'client_secret' => !empty($_POST['oauth2_client_secret']) ? encrypt_data(sanitize_input($_POST['oauth2_client_secret'])) : ($existing_config['oauth2_credentials']['client_secret'] ?? '')
             ],
             'notifications' => [
                 'customer' => [

@@ -7,6 +7,7 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/email.php';
+require_once __DIR__ . '/../includes/encryption.php';
 
 session_start();
 require_admin();
@@ -24,6 +25,15 @@ if (isset($_GET['code'])) {
 
     $client_id = $email_config['oauth2_credentials']['client_id'] ?? '';
     $client_secret = $email_config['oauth2_credentials']['client_secret'] ?? '';
+
+    // Decrypt if needed
+    if (!empty($client_id) && is_encrypted($client_id)) {
+        $client_id = decrypt_data($client_id);
+    }
+    if (!empty($client_secret) && is_encrypted($client_secret)) {
+        $client_secret = decrypt_data($client_secret);
+    }
+
     $redirect_uri = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") .
                     "://" . $_SERVER['HTTP_HOST'] . "/admin/oauth2-callback.php";
 
