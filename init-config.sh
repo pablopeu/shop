@@ -17,6 +17,7 @@ config_files=(
     "config/email.json"
     "config/telegram.json"
     "config/payment.json"
+    "config/currency.json"
     "data/products.json"
 )
 
