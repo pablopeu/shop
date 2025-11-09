@@ -118,10 +118,173 @@ function send_email_native($to, $subject, $html_body, $plain_body, $from_email, 
  * Send email using SMTP
  */
 function send_email_smtp($to, $subject, $html_body, $plain_body, $from_email, $from_name, $smtp_config) {
-    // TODO: Implement SMTP sending using fsockopen or PHPMailer library
-    // For now, fall back to native mail
-    error_log("SMTP not implemented yet, falling back to native mail()");
-    return send_email_native($to, $subject, $html_body, $plain_body, $from_email, $from_name);
+    $host = $smtp_config['host'] ?? 'smtp.gmail.com';
+    $port = $smtp_config['port'] ?? 587;
+    $username = $smtp_config['username'] ?? '';
+    $password = $smtp_config['password'] ?? '';
+    $encryption = $smtp_config['encryption'] ?? 'tls';
+
+    // Validación básica
+    if (empty($username) || empty($password)) {
+        error_log("SMTP: Username or password not configured");
+        return false;
+    }
+
+    try {
+        // Conectar al servidor SMTP
+        $errno = 0;
+        $errstr = '';
+
+        if ($encryption === 'ssl') {
+            $host = 'ssl://' . $host;
+            $smtp = @fsockopen($host, $port, $errno, $errstr, 30);
+        } else {
+            $smtp = @fsockopen($host, $port, $errno, $errstr, 30);
+        }
+
+        if (!$smtp) {
+            error_log("SMTP: Could not connect to $host:$port - Error: $errno - $errstr");
+            return false;
+        }
+
+        // Leer respuesta del servidor
+        $response = fgets($smtp, 515);
+        if (substr($response, 0, 3) != '220') {
+            error_log("SMTP: Connection failed - Response: $response");
+            fclose($smtp);
+            return false;
+        }
+
+        // EHLO
+        fputs($smtp, "EHLO " . ($_SERVER['HTTP_HOST'] ?? 'localhost') . "\r\n");
+        $response = fgets($smtp, 515);
+
+        // STARTTLS si es necesario
+        if ($encryption === 'tls') {
+            fputs($smtp, "STARTTLS\r\n");
+            $response = fgets($smtp, 515);
+
+            if (substr($response, 0, 3) != '220') {
+                error_log("SMTP: STARTTLS failed - Response: $response");
+                fclose($smtp);
+                return false;
+            }
+
+            // Habilitar crypto
+            stream_set_blocking($smtp, true);
+            if (!stream_socket_enable_crypto($smtp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                error_log("SMTP: Failed to enable TLS encryption");
+                fclose($smtp);
+                return false;
+            }
+
+            // EHLO nuevamente después de TLS
+            fputs($smtp, "EHLO " . ($_SERVER['HTTP_HOST'] ?? 'localhost') . "\r\n");
+            $response = fgets($smtp, 515);
+        }
+
+        // AUTH LOGIN
+        fputs($smtp, "AUTH LOGIN\r\n");
+        $response = fgets($smtp, 515);
+
+        if (substr($response, 0, 3) != '334') {
+            error_log("SMTP: AUTH LOGIN failed - Response: $response");
+            fclose($smtp);
+            return false;
+        }
+
+        // Enviar username
+        fputs($smtp, base64_encode($username) . "\r\n");
+        $response = fgets($smtp, 515);
+
+        if (substr($response, 0, 3) != '334') {
+            error_log("SMTP: Username authentication failed - Response: $response");
+            fclose($smtp);
+            return false;
+        }
+
+        // Enviar password
+        fputs($smtp, base64_encode($password) . "\r\n");
+        $response = fgets($smtp, 515);
+
+        if (substr($response, 0, 3) != '235') {
+            error_log("SMTP: Password authentication failed - Response: $response");
+            fclose($smtp);
+            return false;
+        }
+
+        // MAIL FROM
+        fputs($smtp, "MAIL FROM: <$from_email>\r\n");
+        $response = fgets($smtp, 515);
+
+        if (substr($response, 0, 3) != '250') {
+            error_log("SMTP: MAIL FROM failed - Response: $response");
+            fclose($smtp);
+            return false;
+        }
+
+        // RCPT TO
+        fputs($smtp, "RCPT TO: <$to>\r\n");
+        $response = fgets($smtp, 515);
+
+        if (substr($response, 0, 3) != '250') {
+            error_log("SMTP: RCPT TO failed - Response: $response");
+            fclose($smtp);
+            return false;
+        }
+
+        // DATA
+        fputs($smtp, "DATA\r\n");
+        $response = fgets($smtp, 515);
+
+        if (substr($response, 0, 3) != '354') {
+            error_log("SMTP: DATA command failed - Response: $response");
+            fclose($smtp);
+            return false;
+        }
+
+        // Construir mensaje
+        $boundary = md5(time());
+        $headers = "From: $from_name <$from_email>\r\n";
+        $headers .= "To: $to\r\n";
+        $headers .= "Subject: $subject\r\n";
+        $headers .= "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: multipart/alternative; boundary=\"$boundary\"\r\n";
+        $headers .= "\r\n";
+
+        $message = $headers;
+        $message .= "--$boundary\r\n";
+        $message .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        $message .= "Content-Transfer-Encoding: 7bit\r\n\r\n";
+        $message .= $plain_body . "\r\n";
+        $message .= "--$boundary\r\n";
+        $message .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $message .= "Content-Transfer-Encoding: 7bit\r\n\r\n";
+        $message .= $html_body . "\r\n";
+        $message .= "--$boundary--\r\n";
+        $message .= ".\r\n";
+
+        // Enviar mensaje
+        fputs($smtp, $message);
+        $response = fgets($smtp, 515);
+
+        if (substr($response, 0, 3) != '250') {
+            error_log("SMTP: Message send failed - Response: $response");
+            fclose($smtp);
+            return false;
+        }
+
+        // QUIT
+        fputs($smtp, "QUIT\r\n");
+        fclose($smtp);
+
+        error_log("SMTP: Email sent successfully to $to");
+        return true;
+
+    } catch (Exception $e) {
+        error_log("SMTP Exception: " . $e->getMessage());
+        return false;
+    }
 }
 
 /**
