@@ -27,75 +27,8 @@ if (!empty($client_secret) && is_encrypted($client_secret)) {
 }
 
 if (empty($client_id) || empty($client_secret)) {
-    ?>
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <title>Error - OAuth2</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                max-width: 800px;
-                margin: 50px auto;
-                padding: 20px;
-                background: #f5f7fa;
-            }
-            .error-box {
-                background: #f8d7da;
-                border-left: 4px solid #dc3545;
-                padding: 20px;
-                border-radius: 6px;
-                margin-bottom: 20px;
-            }
-            .code-box {
-                background: #f4f4f4;
-                padding: 15px;
-                border-radius: 4px;
-                font-family: monospace;
-                overflow-x: auto;
-                margin: 15px 0;
-            }
-            .btn {
-                display: inline-block;
-                padding: 10px 20px;
-                background: #007bff;
-                color: white;
-                text-decoration: none;
-                border-radius: 4px;
-                margin-top: 10px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="error-box">
-            <h2>❌ Configuración OAuth2 Faltante</h2>
-            <p>Para usar OAuth2, debes configurar primero tu Client ID y Client Secret desde el panel de notificaciones.</p>
-
-            <h3>Pasos para configurar:</h3>
-            <ol>
-                <li>Ve a <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
-                <li>Crea un proyecto nuevo o selecciona uno existente</li>
-                <li>Habilita "Gmail API" en APIs & Services</li>
-                <li>Ve a "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"</li>
-                <li>Tipo de aplicación: "Web application"</li>
-                <li>Authorized JavaScript origins:
-                    <div class="code-box"><?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST']; ?></div>
-                </li>
-                <li>Authorized redirect URIs:
-                    <div class="code-box"><?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . "/admin/oauth2-callback.php"; ?></div>
-                </li>
-                <li>Copia el Client ID y Client Secret</li>
-                <li>Vuelve a <strong>Admin → Email y Notificaciones</strong></li>
-                <li>En la sección OAuth2, pega tu Client ID y Client Secret</li>
-                <li>Guarda la configuración y luego haz click en "Autorizar con Google"</li>
-            </ol>
-
-            <a href="/admin/notificaciones.php" class="btn">Volver a Notificaciones</a>
-        </div>
-    </body>
-    </html>
-    <?php
+    // Redirect back to notifications with error modal parameter
+    header('Location: /admin/notificaciones.php?oauth2_error=missing_credentials');
     exit;
 }
 

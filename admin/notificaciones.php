@@ -494,6 +494,126 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flex: 1;
             margin-bottom: 0;
         }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9998;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 9999;
+            animation: slideIn 0.3s;
+        }
+
+        .modal.show {
+            display: block;
+        }
+
+        .modal-overlay.show {
+            display: block;
+        }
+
+        .modal-header {
+            background: #f8d7da;
+            border-bottom: 3px solid #dc3545;
+            padding: 20px 25px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #721c24;
+            font-size: 20px;
+        }
+
+        .modal-body {
+            padding: 25px;
+            color: #2c3e50;
+        }
+
+        .modal-body h3 {
+            font-size: 16px;
+            margin: 20px 0 10px;
+            color: #2c3e50;
+        }
+
+        .modal-body ol {
+            padding-left: 20px;
+        }
+
+        .modal-body ol li {
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .modal-code-box {
+            background: #f4f4f4;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin: 8px 0;
+            overflow-x: auto;
+            border: 1px solid #ddd;
+        }
+
+        .modal-footer {
+            padding: 15px 25px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+            text-align: right;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .modal-close-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .modal-close-btn:hover {
+            background: #0056b3;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
     </style>
 </head>
 <body>
@@ -959,7 +1079,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (authorizeBtn) {
                 authorizeBtn.addEventListener('click', authorizeOAuth2);
             }
+
+            // Check if we need to show OAuth2 error modal
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('oauth2_error') === 'missing_credentials') {
+                showOAuth2ErrorModal();
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
         });
+
+        // Modal functions
+        function showOAuth2ErrorModal() {
+            document.getElementById('oauth2-error-modal-overlay').classList.add('show');
+            document.getElementById('oauth2-error-modal').classList.add('show');
+        }
+
+        function closeOAuth2ErrorModal() {
+            document.getElementById('oauth2-error-modal-overlay').classList.remove('show');
+            document.getElementById('oauth2-error-modal').classList.remove('show');
+        }
     </script>
+
+    <!-- OAuth2 Error Modal -->
+    <div id="oauth2-error-modal-overlay" class="modal-overlay" onclick="closeOAuth2ErrorModal()"></div>
+    <div id="oauth2-error-modal" class="modal">
+        <div class="modal-header">
+            <h2>❌ Configuración OAuth2 Faltante</h2>
+        </div>
+        <div class="modal-body">
+            <p><strong>Para usar OAuth2, debes configurar primero tu Client ID y Client Secret desde el panel de notificaciones.</strong></p>
+
+            <h3>Pasos para configurar:</h3>
+            <ol>
+                <li>Ve a <a href="https://console.cloud.google.com/" target="_blank" style="color: #007bff;">Google Cloud Console</a></li>
+                <li>Crea un proyecto nuevo o selecciona uno existente</li>
+                <li>Habilita <strong>"Gmail API"</strong> en APIs & Services</li>
+                <li>Ve a <strong>"Credentials"</strong> → <strong>"Create Credentials"</strong> → <strong>"OAuth 2.0 Client IDs"</strong></li>
+                <li>Tipo de aplicación: <strong>"Web application"</strong></li>
+                <li>
+                    <strong>Authorized JavaScript origins:</strong>
+                    <div class="modal-code-box"><?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST']; ?></div>
+                </li>
+                <li>
+                    <strong>Authorized redirect URIs:</strong>
+                    <div class="modal-code-box"><?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . "/admin/oauth2-callback.php"; ?></div>
+                </li>
+                <li>Copia el <strong>Client ID</strong> y <strong>Client Secret</strong></li>
+                <li>En esta página, busca la sección <strong>"OAuth2"</strong> más arriba</li>
+                <li>Pega tu Client ID y Client Secret en los campos correspondientes</li>
+                <li>Haz click en <strong>"Guardar Configuración de Email"</strong></li>
+                <li>Luego haz click en <strong>"Autorizar con Google"</strong></li>
+            </ol>
+
+            <p style="margin-top: 20px; padding: 12px; background: #e7f3ff; border-left: 4px solid #007bff; border-radius: 4px;">
+                <strong>💡 Tip:</strong> Las credenciales se guardan encriptadas con AES-256 para tu seguridad.
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeOAuth2ErrorModal()" class="modal-close-btn">Entendido</button>
+        </div>
+    </div>
 </body>
 </html>
