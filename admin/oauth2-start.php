@@ -33,11 +33,25 @@ if (empty($client_id) || empty($client_secret)) {
 }
 
 // Generate redirect URI
-$redirect_uri = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") .
-                "://" . $_SERVER['HTTP_HOST'] . "/admin/oauth2-callback.php";
+// Check for HTTPS (including proxies and ngrok)
+$is_https = (
+    (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ||
+    (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+    (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') ||
+    (strpos($_SERVER['HTTP_HOST'], 'ngrok') !== false) // ngrok always uses HTTPS
+);
+
+$protocol = $is_https ? 'https' : 'http';
+$redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . "/admin/oauth2-callback.php";
+
+// Get email hint from query parameter
+$email = $_GET['email'] ?? null;
 
 // Generate authorization URL
-$auth_url = get_gmail_oauth2_url($client_id, $redirect_uri);
+$auth_url = get_gmail_oauth2_url($client_id, $redirect_uri, $email);
+
+// Log for debugging
+error_log("OAuth2: Generated auth URL with redirect_uri: $redirect_uri");
 
 // Redirect to Google
 header('Location: ' . $auth_url);

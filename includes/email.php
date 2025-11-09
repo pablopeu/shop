@@ -309,15 +309,21 @@ function send_email_smtp($to, $subject, $html_body, $plain_body, $from_email, $f
 /**
  * Get OAuth2 authorization URL for Gmail
  */
-function get_gmail_oauth2_url($client_id, $redirect_uri) {
+function get_gmail_oauth2_url($client_id, $redirect_uri, $email = null) {
     $params = [
         'client_id' => $client_id,
         'redirect_uri' => $redirect_uri,
         'response_type' => 'code',
         'scope' => 'https://mail.google.com/',
         'access_type' => 'offline',
-        'prompt' => 'consent'
+        'prompt' => 'consent',
+        'state' => bin2hex(random_bytes(16)) // CSRF protection
     ];
+
+    // Add login hint if email provided
+    if ($email) {
+        $params['login_hint'] = $email;
+    }
 
     return 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params);
 }

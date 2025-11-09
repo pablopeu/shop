@@ -34,8 +34,16 @@ if (isset($_GET['code'])) {
         $client_secret = decrypt_data($client_secret);
     }
 
-    $redirect_uri = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") .
-                    "://" . $_SERVER['HTTP_HOST'] . "/admin/oauth2-callback.php";
+    // Check for HTTPS (including proxies and ngrok)
+    $is_https = (
+        (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ||
+        (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+        (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') ||
+        (strpos($_SERVER['HTTP_HOST'], 'ngrok') !== false) // ngrok always uses HTTPS
+    );
+
+    $protocol = $is_https ? 'https' : 'http';
+    $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . "/admin/oauth2-callback.php";
 
     if (empty($client_id) || empty($client_secret)) {
         $error = 'Client ID y Client Secret no están configurados. Por favor, configúralos en Admin → Email y Notificaciones';
