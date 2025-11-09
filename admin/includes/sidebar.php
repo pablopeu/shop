@@ -236,6 +236,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
         </li>
 
+        <!-- Notificaciones -->
+        <li>
+            <a href="/admin/notificaciones.php" class="<?php echo $current_page === 'notificaciones.php' ? 'active' : ''; ?>">
+                🔔 Notificaciones
+            </a>
+        </li>
+
         <!-- Configuración -->
         <li>
             <div class="menu-item" onclick="toggleSubmenu('configuracion')">

@@ -7,10 +7,40 @@
 require_once __DIR__ . '/functions.php';
 
 /**
+ * Get Telegram configuration with defaults if file doesn't exist
+ */
+function get_telegram_config() {
+    $config_file = __DIR__ . '/../config/telegram.json';
+
+    if (!file_exists($config_file)) {
+        // Create default config
+        $default_config = [
+            'enabled' => false,
+            'bot_token' => '',
+            'chat_id' => '',
+            'notifications' => [
+                'new_order' => true,
+                'payment_approved' => true,
+                'payment_rejected' => false,
+                'chargeback_alert' => true,
+                'low_stock_alert' => true,
+                'high_value_order' => true,
+                'high_value_threshold' => 50000
+            ]
+        ];
+
+        write_json($config_file, $default_config);
+        return $default_config;
+    }
+
+    return read_json($config_file);
+}
+
+/**
  * Send Telegram message
  */
 function send_telegram_message($message, $parse_mode = 'HTML') {
-    $config = read_json(__DIR__ . '/../config/telegram.json');
+    $config = get_telegram_config();
 
     if (!($config['enabled'] ?? false)) {
         error_log("Telegram notifications disabled");
@@ -73,7 +103,7 @@ function send_telegram_message($message, $parse_mode = 'HTML') {
  * Send new order notification to admin via Telegram
  */
 function send_telegram_new_order($order) {
-    $config = read_json(__DIR__ . '/../config/telegram.json');
+    $config = get_telegram_config();
 
     if (!($config['notifications']['new_order'] ?? true)) {
         return false;
@@ -106,7 +136,7 @@ function send_telegram_new_order($order) {
  * Send payment approved notification to admin via Telegram
  */
 function send_telegram_payment_approved($order) {
-    $config = read_json(__DIR__ . '/../config/telegram.json');
+    $config = get_telegram_config();
 
     if (!($config['notifications']['payment_approved'] ?? true)) {
         return false;
@@ -155,7 +185,7 @@ function send_telegram_payment_approved($order) {
  * Send payment rejected notification to admin via Telegram
  */
 function send_telegram_payment_rejected($order) {
-    $config = read_json(__DIR__ . '/../config/telegram.json');
+    $config = get_telegram_config();
 
     if (!($config['notifications']['payment_rejected'] ?? false)) {
         return false;
@@ -184,7 +214,7 @@ function send_telegram_payment_rejected($order) {
  * Send chargeback alert to admin via Telegram
  */
 function send_telegram_chargeback_alert($order, $chargeback) {
-    $config = read_json(__DIR__ . '/../config/telegram.json');
+    $config = get_telegram_config();
 
     if (!($config['notifications']['chargeback_alert'] ?? true)) {
         return false;
@@ -220,7 +250,7 @@ function send_telegram_chargeback_alert($order, $chargeback) {
  * Send low stock alert to admin via Telegram
  */
 function send_telegram_low_stock_alert($product, $current_stock) {
-    $config = read_json(__DIR__ . '/../config/telegram.json');
+    $config = get_telegram_config();
 
     if (!($config['notifications']['low_stock_alert'] ?? true)) {
         return false;

@@ -7,10 +7,57 @@
 require_once __DIR__ . '/functions.php';
 
 /**
+ * Get email configuration with defaults if file doesn't exist
+ */
+function get_email_config() {
+    $config_file = __DIR__ . '/../config/email.json';
+
+    if (!file_exists($config_file)) {
+        // Create default config
+        $site_config = read_json(__DIR__ . '/../config/site.json');
+        $default_config = [
+            'enabled' => true,
+            'method' => 'mail',
+            'from_email' => 'noreply@' . ($_SERVER['HTTP_HOST'] ?? 'tienda.com'),
+            'from_name' => $site_config['site_name'] ?? 'Mi Tienda',
+            'admin_email' => '',
+            'smtp' => [
+                'host' => 'smtp.gmail.com',
+                'port' => 587,
+                'username' => '',
+                'password' => '',
+                'encryption' => 'tls'
+            ],
+            'notifications' => [
+                'customer' => [
+                    'order_created' => true,
+                    'payment_approved' => true,
+                    'payment_rejected' => true,
+                    'payment_pending' => true,
+                    'order_shipped' => true,
+                    'chargeback_notice' => true
+                ],
+                'admin' => [
+                    'new_order' => true,
+                    'payment_approved' => true,
+                    'chargeback_alert' => true,
+                    'low_stock_alert' => true
+                ]
+            ]
+        ];
+
+        write_json($config_file, $default_config);
+        return $default_config;
+    }
+
+    return read_json($config_file);
+}
+
+/**
  * Send email using configured method
  */
 function send_email($to, $subject, $html_body, $plain_body = '') {
-    $config = read_json(__DIR__ . '/../config/email.json');
+    $config = get_email_config();
 
     if (!($config['enabled'] ?? true)) {
         error_log("Email system disabled - would send to: $to");
