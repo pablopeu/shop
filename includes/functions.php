@@ -684,8 +684,14 @@ function render_footer($site_config, $footer_config) {
                 }
                 // WhatsApp
                 if (!empty($social['whatsapp'])) {
-                    $wa_number = preg_replace('/[^0-9]/', '', $social['whatsapp']);
-                    echo '<a href="https://wa.me/' . $wa_number . '" target="_blank"><i class="fa fa-whatsapp"></i></a>';
+                    // Si ya es una URL, usarla directamente. Si no, asumir que es número
+                    if (strpos($social['whatsapp'], 'http') === 0) {
+                        $wa_link = htmlspecialchars($social['whatsapp']);
+                    } else {
+                        $wa_number = preg_replace('/[^0-9]/', '', $social['whatsapp']);
+                        $wa_link = 'https://wa.me/' . $wa_number;
+                    }
+                    echo '<a href="' . $wa_link . '" target="_blank"><i class="fa fa-whatsapp"></i></a>';
                 }
                 // Telegram
                 if (!empty($social['telegram'])) {

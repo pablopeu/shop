@@ -519,8 +519,8 @@ $user = get_logged_user();
                     </div>
                     <div class="form-group">
                         <label><i class="fa fa-whatsapp"></i> WhatsApp</label>
-                        <input type="text" name="social_whatsapp" value="<?php echo htmlspecialchars($footer_config['right_column']['social']['whatsapp'] ?? ''); ?>" placeholder="+54 9 11 1234-5678">
-                        <div class="help-text">Solo número (sin mensaje), para link directo</div>
+                        <input type="url" name="social_whatsapp" value="<?php echo htmlspecialchars($footer_config['right_column']['social']['whatsapp'] ?? ''); ?>" placeholder="https://wa.me/5491112345678 o https://api.whatsapp.com/...">
+                        <div class="help-text">Link directo de WhatsApp (puede ser wa.me, api.whatsapp.com, etc.)</div>
                     </div>
                     <div class="form-group">
                         <label><i class="fa fa-telegram"></i> Telegram</label>
