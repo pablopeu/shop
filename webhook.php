@@ -36,6 +36,196 @@ function log_webhook($message, $data = []) {
     file_put_contents($log_file, json_encode($logs, JSON_PRETTY_PRINT));
 }
 
+/**
+ * Validate X-Signature header from Mercadopago
+ * Protects against fraudulent notifications
+ */
+function validate_mercadopago_signature($request_data, $headers, $secret_key) {
+    // Extract x-signature header
+    $signature_header = $headers['x-signature'] ?? $headers['X-Signature'] ?? '';
+    $request_id = $headers['x-request-id'] ?? $headers['X-Request-Id'] ?? '';
+
+    if (empty($signature_header) || empty($request_id)) {
+        log_webhook('Missing required headers for signature validation', [
+            'has_signature' => !empty($signature_header),
+            'has_request_id' => !empty($request_id)
+        ]);
+        return false;
+    }
+
+    // Parse signature header: "ts=1234567890,v1=abc123..."
+    $signature_parts = [];
+    foreach (explode(',', $signature_header) as $part) {
+        $kv = explode('=', $part, 2);
+        if (count($kv) === 2) {
+            $signature_parts[trim($kv[0])] = trim($kv[1]);
+        }
+    }
+
+    $ts = $signature_parts['ts'] ?? '';
+    $received_hash = $signature_parts['v1'] ?? '';
+
+    if (empty($ts) || empty($received_hash)) {
+        log_webhook('Invalid signature header format', ['signature_header' => $signature_header]);
+        return false;
+    }
+
+    // Build the manifest for validation
+    // Format: id:{data_id};request-id:{request_id};ts:{timestamp}
+    $data_id = $request_data['data']['id'] ?? '';
+    $manifest = "id:{$data_id};request-id:{$request_id};ts:{$ts}";
+
+    // Calculate expected signature
+    $expected_hash = hash_hmac('sha256', $manifest, $secret_key);
+
+    // Compare signatures (constant-time comparison to prevent timing attacks)
+    $is_valid = hash_equals($expected_hash, $received_hash);
+
+    if (!$is_valid) {
+        log_webhook('Signature validation failed', [
+            'manifest' => $manifest,
+            'expected' => $expected_hash,
+            'received' => $received_hash,
+            'secret_key_length' => strlen($secret_key)
+        ]);
+    }
+
+    return $is_valid;
+}
+
+/**
+ * Validate timestamp to prevent replay attacks
+ */
+function validate_timestamp($signature_header, $max_age_minutes = 5) {
+    // Parse signature header to get timestamp
+    $signature_parts = [];
+    foreach (explode(',', $signature_header) as $part) {
+        $kv = explode('=', $part, 2);
+        if (count($kv) === 2) {
+            $signature_parts[trim($kv[0])] = trim($kv[1]);
+        }
+    }
+
+    $ts = $signature_parts['ts'] ?? '';
+
+    if (empty($ts) || !is_numeric($ts)) {
+        log_webhook('Invalid or missing timestamp in signature', ['ts' => $ts]);
+        return false;
+    }
+
+    // Convert to milliseconds
+    $current_ts = time() * 1000;
+    $max_age_ms = $max_age_minutes * 60 * 1000;
+
+    $age = abs($current_ts - (int)$ts);
+
+    if ($age > $max_age_ms) {
+        log_webhook('Timestamp too old or in future', [
+            'timestamp' => $ts,
+            'current' => $current_ts,
+            'age_seconds' => $age / 1000,
+            'max_age_minutes' => $max_age_minutes
+        ]);
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Validate IP address is from Mercadopago
+ */
+function validate_mercadopago_ip($ip) {
+    // Official Mercadopago IP ranges
+    // Source: https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications/webhooks
+    $allowed_ranges = [
+        '209.225.49.0/24',
+        '216.33.197.0/24',
+        '216.33.196.0/24',
+        '52.67.0.0/16',      // AWS South America (São Paulo)
+        '54.94.0.0/16',      // AWS South America (São Paulo)
+        '54.232.0.0/16',     // AWS South America (São Paulo)
+    ];
+
+    foreach ($allowed_ranges as $range) {
+        if (ip_in_range($ip, $range)) {
+            return true;
+        }
+    }
+
+    log_webhook('IP not in Mercadopago whitelist', ['ip' => $ip]);
+    return false;
+}
+
+/**
+ * Check if IP is in CIDR range
+ */
+function ip_in_range($ip, $range) {
+    if (strpos($range, '/') === false) {
+        $range .= '/32';
+    }
+
+    list($subnet, $bits) = explode('/', $range);
+
+    $ip_long = ip2long($ip);
+    $subnet_long = ip2long($subnet);
+    $mask = -1 << (32 - (int)$bits);
+    $subnet_long &= $mask;
+
+    return ($ip_long & $mask) == $subnet_long;
+}
+
+/**
+ * Rate limiting to prevent DoS attacks
+ */
+function check_rate_limit($max_requests = 100, $window_seconds = 60) {
+    $rate_limit_file = __DIR__ . '/data/webhook_rate_limit.json';
+    $current_time = time();
+
+    // Load rate limit data
+    $rate_data = file_exists($rate_limit_file) ?
+        json_decode(file_get_contents($rate_limit_file), true) : [];
+
+    // Clean old entries
+    $rate_data = array_filter($rate_data, function($timestamp) use ($current_time, $window_seconds) {
+        return $timestamp > ($current_time - $window_seconds);
+    });
+
+    // Check if limit exceeded
+    if (count($rate_data) >= $max_requests) {
+        log_webhook('Rate limit exceeded', [
+            'requests_in_window' => count($rate_data),
+            'max_requests' => $max_requests,
+            'window_seconds' => $window_seconds
+        ]);
+        return false;
+    }
+
+    // Add current request
+    $rate_data[] = $current_time;
+
+    // Save rate limit data
+    file_put_contents($rate_limit_file, json_encode(array_values($rate_data)));
+
+    return true;
+}
+
+/**
+ * Get all headers (case-insensitive)
+ */
+function get_request_headers() {
+    $headers = [];
+    foreach ($_SERVER as $name => $value) {
+        if (substr($name, 0, 5) == 'HTTP_') {
+            $header_name = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
+            $headers[$header_name] = $value;
+            // Also store lowercase version for case-insensitive access
+            $headers[strtolower($header_name)] = $value;
+        }
+    }
+    return $headers;
+}
+
 // Handle GET requests (Mercadopago validation)
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     log_webhook('GET request received - Mercadopago validation', ['query' => $_GET]);
@@ -47,11 +237,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
+// Get all request headers
+$headers = get_request_headers();
+
+// Get client IP
+$client_ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '';
+if (strpos($client_ip, ',') !== false) {
+    $client_ip = trim(explode(',', $client_ip)[0]);
+}
+
 log_webhook('Webhook received', [
     'method' => $_SERVER['REQUEST_METHOD'],
     'input' => $input,
     'parsed_data' => $data,
-    'query' => $_GET
+    'query' => $_GET,
+    'client_ip' => $client_ip,
+    'has_signature' => !empty($headers['x-signature'] ?? '')
 ]);
 
 // Validate webhook
@@ -63,16 +264,76 @@ if (!$data || !isset($data['type'])) {
 
 // Get payment config
 $payment_config = read_json(__DIR__ . '/config/payment.json');
-$sandbox_mode = $payment_config['mercadopago']['sandbox_mode'] ?? true;
+$sandbox_mode = $payment_config['mercadopago']['mode'] ?? 'sandbox';
+$sandbox_mode = ($sandbox_mode === 'sandbox');
+
 $access_token = $sandbox_mode ?
     $payment_config['mercadopago']['access_token_sandbox'] :
     $payment_config['mercadopago']['access_token_prod'];
+
+$webhook_secret = $sandbox_mode ?
+    ($payment_config['mercadopago']['webhook_secret_sandbox'] ?? '') :
+    ($payment_config['mercadopago']['webhook_secret_prod'] ?? '');
+
+$security_config = $payment_config['mercadopago']['webhook_security'] ?? [
+    'validate_signature' => true,
+    'validate_timestamp' => true,
+    'validate_ip' => true,
+    'max_timestamp_age_minutes' => 5
+];
 
 if (empty($access_token)) {
     log_webhook('No access token configured');
     http_response_code(500);
     exit('Not configured');
 }
+
+// ========== SECURITY VALIDATIONS ==========
+
+// 1. Rate Limiting (always check to prevent DoS)
+if (!check_rate_limit(100, 60)) {
+    http_response_code(429);
+    exit('Too many requests');
+}
+
+// 2. IP Validation (if enabled)
+if ($security_config['validate_ip'] ?? true) {
+    if (!validate_mercadopago_ip($client_ip)) {
+        log_webhook('IP validation failed - rejecting webhook', ['ip' => $client_ip]);
+        http_response_code(403);
+        exit('Forbidden');
+    }
+}
+
+// 3. X-Signature Validation (if enabled and secret is configured)
+if (($security_config['validate_signature'] ?? true) && !empty($webhook_secret)) {
+    if (!validate_mercadopago_signature($data, $headers, $webhook_secret)) {
+        log_webhook('Signature validation failed - rejecting webhook');
+        http_response_code(401);
+        exit('Unauthorized');
+    }
+    log_webhook('Signature validation passed');
+} elseif (($security_config['validate_signature'] ?? true) && empty($webhook_secret)) {
+    log_webhook('WARNING: Signature validation enabled but webhook secret not configured!', [
+        'sandbox_mode' => $sandbox_mode
+    ]);
+}
+
+// 4. Timestamp Validation (if enabled)
+if ($security_config['validate_timestamp'] ?? true) {
+    $signature_header = $headers['x-signature'] ?? '';
+    if (!empty($signature_header)) {
+        $max_age = $security_config['max_timestamp_age_minutes'] ?? 5;
+        if (!validate_timestamp($signature_header, $max_age)) {
+            log_webhook('Timestamp validation failed - possible replay attack');
+            http_response_code(401);
+            exit('Unauthorized');
+        }
+        log_webhook('Timestamp validation passed');
+    }
+}
+
+log_webhook('All security validations passed - processing webhook');
 
 // Handle payment notification
 if ($data['type'] === 'payment') {

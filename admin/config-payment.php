@@ -23,12 +23,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_payment'])) {
         $config = [
             'mercadopago' => [
                 'enabled' => isset($_POST['mp_enabled']),
-                'sandbox_mode' => isset($_POST['mp_sandbox']),
+                'mode' => isset($_POST['mp_sandbox']) ? 'sandbox' : 'production',
                 'access_token_sandbox' => sanitize_input($_POST['mp_token_sandbox'] ?? ''),
                 'access_token_prod' => sanitize_input($_POST['mp_token_prod'] ?? ''),
                 'public_key_sandbox' => sanitize_input($_POST['mp_public_sandbox'] ?? ''),
                 'public_key_prod' => sanitize_input($_POST['mp_public_prod'] ?? ''),
-                'webhook_secret' => sanitize_input($_POST['mp_webhook_secret'] ?? '')
+                'webhook_secret_sandbox' => sanitize_input($_POST['mp_webhook_secret_sandbox'] ?? ''),
+                'webhook_secret_prod' => sanitize_input($_POST['mp_webhook_secret_prod'] ?? ''),
+                'webhook_url' => sanitize_input($_POST['mp_webhook_url'] ?? ''),
+                'webhook_security' => [
+                    'validate_signature' => isset($_POST['mp_validate_signature']),
+                    'validate_timestamp' => isset($_POST['mp_validate_timestamp']),
+                    'validate_ip' => isset($_POST['mp_validate_ip']),
+                    'max_timestamp_age_minutes' => (int)($_POST['mp_max_timestamp_age'] ?? 5)
+                ]
             ],
             'presencial' => [
                 'enabled' => isset($_POST['presencial_enabled']),
@@ -168,12 +176,33 @@ $webhook_url = $protocol . $_SERVER['HTTP_HOST'] . '/webhook.php';
                     <div class="help-text">Public key de producción</div>
                 </div>
 
+                <hr style="margin: 30px 0; border: none; border-top: 2px solid #e0e0e0;">
+
+                <h3 style="font-size: 16px; margin-bottom: 15px; color: #2c3e50;">🔒 Seguridad del Webhook</h3>
+
+                <div class="alert-box" style="background: #e7f3ff; border-left-color: #2196F3;">
+                    <strong>🔐 Secret Key del Webhook</strong>
+                    <p>Para obtener tu Secret Key:</p>
+                    <p>1. Ve a <a href="https://www.mercadopago.com.ar/developers/panel" target="_blank">Mercadopago Developers</a></p>
+                    <p>2. Selecciona tu aplicación → Webhooks</p>
+                    <p>3. Haz clic en "Revelar Secret Key" y cópiala aquí</p>
+                    <p><strong>⚠️ Esta clave es CRÍTICA para prevenir fraude. Sin ella, tu webhook es vulnerable.</strong></p>
+                </div>
+
                 <div class="form-group">
-                    <label>Webhook Secret (opcional)</label>
-                    <input type="password" name="mp_webhook_secret"
-                           value="<?php echo htmlspecialchars($payment_config['mercadopago']['webhook_secret'] ?? ''); ?>"
-                           placeholder="tu-secreto-para-webhook">
-                    <div class="help-text">Secreto para validar webhooks (opcional, aumenta seguridad)</div>
+                    <label>Webhook Secret - Sandbox (Testing)</label>
+                    <input type="password" name="mp_webhook_secret_sandbox"
+                           value="<?php echo htmlspecialchars($payment_config['mercadopago']['webhook_secret_sandbox'] ?? ''); ?>"
+                           placeholder="secret_key_de_sandbox">
+                    <div class="help-text">Secret key de tu aplicación de prueba en Mercadopago</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Webhook Secret - Producción</label>
+                    <input type="password" name="mp_webhook_secret_prod"
+                           value="<?php echo htmlspecialchars($payment_config['mercadopago']['webhook_secret_prod'] ?? ''); ?>"
+                           placeholder="secret_key_de_produccion">
+                    <div class="help-text">Secret key de tu aplicación de producción en Mercadopago</div>
                 </div>
 
                 <div class="form-group">
@@ -181,6 +210,42 @@ $webhook_url = $protocol . $_SERVER['HTTP_HOST'] . '/webhook.php';
                     <div class="webhook-url"><?php echo htmlspecialchars($webhook_url); ?></div>
                     <button type="button" class="copy-btn" onclick="copyWebhookUrl()">📋 Copiar URL</button>
                     <div class="help-text">Configurá esta URL en tu panel de Mercadopago → Tu aplicación → Webhooks</div>
+                </div>
+
+                <hr style="margin: 30px 0; border: none; border-top: 2px solid #e0e0e0;">
+
+                <h3 style="font-size: 16px; margin-bottom: 15px; color: #2c3e50;">⚙️ Opciones de Seguridad Avanzadas</h3>
+
+                <div class="form-group">
+                    <label class="checkbox-label" style="background: #e8f5e9;">
+                        <input type="checkbox" name="mp_validate_signature" <?php echo ($payment_config['mercadopago']['webhook_security']['validate_signature'] ?? true) ? 'checked' : ''; ?>>
+                        <span><strong>Validar X-Signature</strong> (Muy recomendado)</span>
+                    </label>
+                    <div class="help-text">Valida que la notificación realmente proviene de Mercadopago usando criptografía. <strong>Previene fraude.</strong></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label" style="background: #fff3e0;">
+                        <input type="checkbox" name="mp_validate_timestamp" <?php echo ($payment_config['mercadopago']['webhook_security']['validate_timestamp'] ?? true) ? 'checked' : ''; ?>>
+                        <span><strong>Validar Timestamp</strong> (Recomendado)</span>
+                    </label>
+                    <div class="help-text">Previene ataques de "replay" - rechaza notificaciones antiguas que alguien podría reenviar.</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Edad máxima del timestamp (minutos)</label>
+                    <input type="number" name="mp_max_timestamp_age" min="1" max="60"
+                           value="<?php echo (int)($payment_config['mercadopago']['webhook_security']['max_timestamp_age_minutes'] ?? 5); ?>"
+                           style="width: 100px;">
+                    <div class="help-text">Las notificaciones más antiguas que este tiempo serán rechazadas (recomendado: 5 minutos)</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label" style="background: #e3f2fd;">
+                        <input type="checkbox" name="mp_validate_ip" <?php echo ($payment_config['mercadopago']['webhook_security']['validate_ip'] ?? true) ? 'checked' : ''; ?>>
+                        <span><strong>Validar IP de Mercadopago</strong> (Opcional)</span>
+                    </label>
+                    <div class="help-text">Solo acepta notificaciones desde IPs oficiales de Mercadopago. Capa adicional de seguridad.</div>
                 </div>
             </div>
 

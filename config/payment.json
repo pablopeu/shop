@@ -4,7 +4,15 @@
     "mode": "sandbox",
     "access_token_sandbox": "",
     "access_token_prod": "",
-    "webhook_url": ""
+    "webhook_secret_sandbox": "",
+    "webhook_secret_prod": "",
+    "webhook_url": "",
+    "webhook_security": {
+      "validate_signature": true,
+      "validate_timestamp": true,
+      "validate_ip": true,
+      "max_timestamp_age_minutes": 5
+    }
   },
   "presencial": {
     "enabled": true,
