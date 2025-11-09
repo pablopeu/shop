@@ -9,12 +9,7 @@
     "port": 587,
     "username": "",
     "password": "",
-    "encryption": "tls",
-    "auth_method": "password"
-  },
-  "oauth2_credentials": {
-    "client_id": "",
-    "client_secret": ""
+    "encryption": "tls"
   },
   "notifications": {
     "customer": {

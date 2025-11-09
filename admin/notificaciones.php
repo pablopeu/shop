@@ -8,7 +8,6 @@ require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/email.php';
 require_once __DIR__ . '/../includes/telegram.php';
-require_once __DIR__ . '/../includes/encryption.php';
 
 // Start session
 session_start();
@@ -18,19 +17,6 @@ require_admin();
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/../config/site.json');
-
-// Helper function to detect HTTPS correctly (including proxies and ngrok)
-function is_https() {
-    return (
-        (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ||
-        (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
-        (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') ||
-        (strpos($_SERVER['HTTP_HOST'], 'ngrok') !== false) // ngrok always uses HTTPS
-    );
-}
-
-$protocol = is_https() ? 'https' : 'http';
-$base_url = $protocol . '://' . $_SERVER['HTTP_HOST'];
 
 // Page title for header
 $page_title = '🔔 Configuración de Notificaciones';
@@ -95,17 +81,6 @@ $telegram_config = file_exists($telegram_config_file)
     ? read_json($telegram_config_file)
     : $default_telegram_config;
 
-// Decrypt sensitive fields for display in form
-if (isset($email_config['smtp']['password']) && is_encrypted($email_config['smtp']['password'])) {
-    $email_config['smtp']['password'] = decrypt_data($email_config['smtp']['password']);
-}
-if (isset($email_config['oauth2_credentials']['client_id']) && is_encrypted($email_config['oauth2_credentials']['client_id'])) {
-    $email_config['oauth2_credentials']['client_id'] = decrypt_data($email_config['oauth2_credentials']['client_id']);
-}
-if (isset($email_config['oauth2_credentials']['client_secret']) && is_encrypted($email_config['oauth2_credentials']['client_secret'])) {
-    $email_config['oauth2_credentials']['client_secret'] = decrypt_data($email_config['oauth2_credentials']['client_secret']);
-}
-
 // Handle messages
 $message = '';
 $error = '';
@@ -116,9 +91,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Save Email Configuration
     if (isset($_POST['save_email'])) {
-        // Load existing config to preserve OAuth2 tokens
-        $existing_config = file_exists($email_config_file) ? read_json($email_config_file) : [];
-
         $email_config = [
             'enabled' => isset($_POST['email_enabled']),
             'method' => sanitize_input($_POST['email_method'] ?? 'mail'),
@@ -129,13 +101,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'host' => sanitize_input($_POST['smtp_host'] ?? ''),
                 'port' => (int)($_POST['smtp_port'] ?? 587),
                 'username' => sanitize_input($_POST['smtp_username'] ?? ''),
-                'password' => !empty($_POST['smtp_password']) ? encrypt_data(sanitize_input($_POST['smtp_password'])) : ($existing_config['smtp']['password'] ?? ''),
-                'encryption' => sanitize_input($_POST['smtp_encryption'] ?? 'tls'),
-                'auth_method' => sanitize_input($_POST['smtp_auth_method'] ?? 'password')
-            ],
-            'oauth2_credentials' => [
-                'client_id' => !empty($_POST['oauth2_client_id']) ? encrypt_data(sanitize_input($_POST['oauth2_client_id'])) : ($existing_config['oauth2_credentials']['client_id'] ?? ''),
-                'client_secret' => !empty($_POST['oauth2_client_secret']) ? encrypt_data(sanitize_input($_POST['oauth2_client_secret'])) : ($existing_config['oauth2_credentials']['client_secret'] ?? '')
+                'password' => sanitize_input($_POST['smtp_password'] ?? ''),
+                'encryption' => sanitize_input($_POST['smtp_encryption'] ?? 'tls')
             ],
             'notifications' => [
                 'customer' => [
@@ -155,27 +122,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]
         ];
 
-        // Preserve existing OAuth2 tokens
-        if (isset($existing_config['oauth2'])) {
-            $email_config['oauth2'] = $existing_config['oauth2'];
-        }
-
         if (write_json($email_config_file, $email_config)) {
             $message = '✅ Configuración de email guardada exitosamente';
         } else {
             $error = '❌ Error al guardar la configuración de email';
-        }
-    }
-
-    // Revoke OAuth2 Authorization
-    if (isset($_POST['revoke_oauth2'])) {
-        $config = read_json($email_config_file);
-        unset($config['oauth2']);
-        if (write_json($email_config_file, $config)) {
-            $message = '✅ Autorización OAuth2 revocada exitosamente';
-            log_admin_action('oauth2_revoked', $_SESSION['username']);
-        } else {
-            $error = '❌ Error al revocar OAuth2';
         }
     }
 
@@ -507,126 +457,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flex: 1;
             margin-bottom: 0;
         }
-
-        /* Modal Styles */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 9998;
-            animation: fadeIn 0.3s;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            max-width: 700px;
-            max-height: 90vh;
-            overflow-y: auto;
-            z-index: 9999;
-            animation: slideIn 0.3s;
-        }
-
-        .modal.show {
-            display: block;
-        }
-
-        .modal-overlay.show {
-            display: block;
-        }
-
-        .modal-header {
-            background: #f8d7da;
-            border-bottom: 3px solid #dc3545;
-            padding: 20px 25px;
-            border-radius: 12px 12px 0 0;
-        }
-
-        .modal-header h2 {
-            margin: 0;
-            color: #721c24;
-            font-size: 20px;
-        }
-
-        .modal-body {
-            padding: 25px;
-            color: #2c3e50;
-        }
-
-        .modal-body h3 {
-            font-size: 16px;
-            margin: 20px 0 10px;
-            color: #2c3e50;
-        }
-
-        .modal-body ol {
-            padding-left: 20px;
-        }
-
-        .modal-body ol li {
-            margin-bottom: 12px;
-            line-height: 1.6;
-        }
-
-        .modal-code-box {
-            background: #f4f4f4;
-            padding: 10px 15px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            margin: 8px 0;
-            overflow-x: auto;
-            border: 1px solid #ddd;
-        }
-
-        .modal-footer {
-            padding: 15px 25px;
-            background: #f8f9fa;
-            border-top: 1px solid #e0e0e0;
-            text-align: right;
-            border-radius: 0 0 12px 12px;
-        }
-
-        .modal-close-btn {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .modal-close-btn:hover {
-            background: #0056b3;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translate(-50%, -60%);
-            }
-            to {
-                opacity: 1;
-                transform: translate(-50%, -50%);
-            }
-        }
     </style>
 </head>
 <body>
@@ -749,88 +579,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <option value="tls" <?php echo $email_config['smtp']['encryption'] === 'tls' ? 'selected' : ''; ?>>TLS</option>
                                     <option value="ssl" <?php echo $email_config['smtp']['encryption'] === 'ssl' ? 'selected' : ''; ?>>SSL</option>
                                 </select>
-                            </div>
-
-                            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e0e0e0;">
-
-                            <div class="form-group">
-                                <label for="smtp_auth_method">Método de Autenticación</label>
-                                <select id="smtp_auth_method" name="smtp_auth_method">
-                                    <option value="password" <?php echo ($email_config['smtp']['auth_method'] ?? 'password') === 'password' ? 'selected' : ''; ?>>
-                                        App Password (Menos seguro)
-                                    </option>
-                                    <option value="oauth2" <?php echo ($email_config['smtp']['auth_method'] ?? 'password') === 'oauth2' ? 'selected' : ''; ?>>
-                                        OAuth2 (Más seguro - Recomendado)
-                                    </option>
-                                </select>
-                                <small>OAuth2 es más seguro ya que no almacena contraseñas y los tokens son revocables</small>
-                            </div>
-
-                            <!-- OAuth2 Section -->
-                            <div id="oauth2_section" style="display: <?php echo ($email_config['smtp']['auth_method'] ?? 'password') === 'oauth2' ? 'block' : 'none'; ?>;">
-                                <div class="info-box" style="background: #e7f3ff; border-left: 4px solid #007bff; padding: 12px; margin: 15px 0; border-radius: 4px; font-size: 13px;">
-                                    <strong>🔐 Configuración OAuth2 para Gmail:</strong><br>
-                                    1. Ve a <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a><br>
-                                    2. Crea un proyecto nuevo o selecciona uno existente<br>
-                                    3. Habilita "Gmail API" en APIs & Services<br>
-                                    4. Ve a "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"<br>
-                                    5. Tipo: "Web application"<br>
-                                    6. Authorized JavaScript origins: <code><?php echo $base_url; ?></code><br>
-                                    7. Authorized redirect URIs: <code><?php echo $base_url . "/admin/oauth2-callback.php"; ?></code><br>
-                                    8. Copia el Client ID y Client Secret en los campos de abajo
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="oauth2_client_id">Client ID</label>
-                                    <input type="text" id="oauth2_client_id" name="oauth2_client_id"
-                                           value="<?php echo htmlspecialchars($email_config['oauth2_credentials']['client_id'] ?? ''); ?>"
-                                           placeholder="123456789-abc123.apps.googleusercontent.com">
-                                    <small>Tu OAuth 2.0 Client ID de Google Cloud Console</small>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="oauth2_client_secret">Client Secret</label>
-                                    <input type="password" id="oauth2_client_secret" name="oauth2_client_secret"
-                                           value="<?php echo htmlspecialchars($email_config['oauth2_credentials']['client_secret'] ?? ''); ?>"
-                                           placeholder="GOCSPX-...">
-                                    <small>Tu OAuth 2.0 Client Secret de Google Cloud Console</small>
-                                </div>
-
-                                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 4px; font-size: 13px;">
-                                    ⚠️ <strong>Importante:</strong> Guarda la configuración después de ingresar Client ID y Client Secret, luego haz click en "Autorizar con Google"
-                                </div>
-
-                                <?php if (isset($email_config['oauth2']['access_token'])): ?>
-                                    <div class="success-box" style="background: #d4edda; border-left: 4px solid #28a745; padding: 12px; margin: 15px 0; border-radius: 4px;">
-                                        ✅ <strong>OAuth2 Autorizado</strong><br>
-                                        Email: <strong><?php echo htmlspecialchars($email_config['smtp']['username'] ?? ''); ?></strong><br>
-                                        Token expira: <?php
-                                            if (isset($email_config['oauth2']['expires_at'])) {
-                                                $expires = $email_config['oauth2']['expires_at'] - time();
-                                                if ($expires > 0) {
-                                                    echo "en " . floor($expires / 60) . " minutos";
-                                                } else {
-                                                    echo "<span style='color: #dc3545;'>Token expirado (se refrescará automáticamente)</span>";
-                                                }
-                                            }
-                                        ?>
-                                        <form method="POST" style="margin-top: 10px; display: inline;">
-                                            <input type="hidden" name="csrf_token" value="<?= generate_csrf_token() ?>">
-                                            <button type="submit" name="revoke_oauth2" class="btn-danger" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                                🗑️ Revocar Autorización
-                                            </button>
-                                        </form>
-                                    </div>
-                                <?php else: ?>
-                                    <div class="warning-box" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 4px;">
-                                        ⚠️ <strong>OAuth2 no autorizado</strong><br>
-                                        Debes autorizar tu cuenta de Gmail antes de poder enviar emails con OAuth2.
-                                    </div>
-
-                                    <button type="button" id="authorize_oauth2_btn" class="btn-primary" style="padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                                        🔑 Autorizar con Google
-                                    </button>
-                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -1040,142 +788,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        function toggleOAuth2Section() {
-            const authMethod = document.getElementById('smtp_auth_method');
-            const oauth2Section = document.getElementById('oauth2_section');
-
-            if (!authMethod || !oauth2Section) return;
-
-            if (authMethod.value === 'oauth2') {
-                oauth2Section.style.display = 'block';
-            } else {
-                oauth2Section.style.display = 'none';
-            }
-        }
-
-        // OAuth2 Authorization - Auto-save and redirect
-        function authorizeOAuth2() {
-            const username = document.getElementById('smtp_username');
-            const clientId = document.getElementById('oauth2_client_id');
-            const clientSecret = document.getElementById('oauth2_client_secret');
-
-            // Validations
-            if (!username || !username.value) {
-                alert('Por favor ingresa tu email de Gmail primero en el campo "Usuario SMTP"');
-                return;
-            }
-
-            if (!clientId || !clientId.value) {
-                alert('Por favor ingresa tu Client ID primero');
-                return;
-            }
-
-            if (!clientSecret || !clientSecret.value) {
-                alert('Por favor ingresa tu Client Secret primero');
-                return;
-            }
-
-            // Auto-save configuration before authorizing
-            const form = clientId.closest('form');
-            const formData = new FormData(form);
-            formData.append('save_email', '1');
-
-            // Save via AJAX
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.text())
-            .then(() => {
-                // After saving, redirect to OAuth2 flow
-                window.location.href = `/admin/oauth2-start.php?email=${encodeURIComponent(username.value)}`;
-            })
-            .catch(error => {
-                console.error('Error saving configuration:', error);
-                alert('Error al guardar la configuración. Por favor, guarda manualmente primero.');
-            });
-        }
-
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             toggleSmtpFields();
-            toggleOAuth2Section();
-
-            // Add event listeners
-            const emailMethod = document.getElementById('email_method');
-            if (emailMethod) {
-                emailMethod.addEventListener('change', toggleSmtpFields);
-            }
-
-            const authMethod = document.getElementById('smtp_auth_method');
-            if (authMethod) {
-                authMethod.addEventListener('change', toggleOAuth2Section);
-            }
-
-            const authorizeBtn = document.getElementById('authorize_oauth2_btn');
-            if (authorizeBtn) {
-                authorizeBtn.addEventListener('click', authorizeOAuth2);
-            }
-
-            // Check if we need to show OAuth2 error modal
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('oauth2_error') === 'missing_credentials') {
-                showOAuth2ErrorModal();
-                // Clean URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
         });
-
-        // Modal functions
-        function showOAuth2ErrorModal() {
-            document.getElementById('oauth2-error-modal-overlay').classList.add('show');
-            document.getElementById('oauth2-error-modal').classList.add('show');
-        }
-
-        function closeOAuth2ErrorModal() {
-            document.getElementById('oauth2-error-modal-overlay').classList.remove('show');
-            document.getElementById('oauth2-error-modal').classList.remove('show');
-        }
     </script>
-
-    <!-- OAuth2 Error Modal -->
-    <div id="oauth2-error-modal-overlay" class="modal-overlay" onclick="closeOAuth2ErrorModal()"></div>
-    <div id="oauth2-error-modal" class="modal">
-        <div class="modal-header">
-            <h2>❌ Configuración OAuth2 Faltante</h2>
-        </div>
-        <div class="modal-body">
-            <p><strong>Para usar OAuth2, debes configurar primero tu Client ID y Client Secret desde el panel de notificaciones.</strong></p>
-
-            <h3>Pasos para configurar:</h3>
-            <ol>
-                <li>Ve a <a href="https://console.cloud.google.com/" target="_blank" style="color: #007bff;">Google Cloud Console</a></li>
-                <li>Crea un proyecto nuevo o selecciona uno existente</li>
-                <li>Habilita <strong>"Gmail API"</strong> en APIs & Services</li>
-                <li>Ve a <strong>"Credentials"</strong> → <strong>"Create Credentials"</strong> → <strong>"OAuth 2.0 Client IDs"</strong></li>
-                <li>Tipo de aplicación: <strong>"Web application"</strong></li>
-                <li>
-                    <strong>Authorized JavaScript origins:</strong>
-                    <div class="modal-code-box"><?php echo $base_url; ?></div>
-                </li>
-                <li>
-                    <strong>Authorized redirect URIs:</strong>
-                    <div class="modal-code-box"><?php echo $base_url . "/admin/oauth2-callback.php"; ?></div>
-                </li>
-                <li>Copia el <strong>Client ID</strong> y <strong>Client Secret</strong></li>
-                <li>En esta página, busca la sección <strong>"OAuth2"</strong> más arriba</li>
-                <li>Pega tu Client ID y Client Secret en los campos correspondientes</li>
-                <li>Haz click en <strong>"Guardar Configuración de Email"</strong></li>
-                <li>Luego haz click en <strong>"Autorizar con Google"</strong></li>
-            </ol>
-
-            <p style="margin-top: 20px; padding: 12px; background: #e7f3ff; border-left: 4px solid #007bff; border-radius: 4px;">
-                <strong>💡 Tip:</strong> Las credenciales se guardan encriptadas con AES-256 para tu seguridad.
-            </p>
-        </div>
-        <div class="modal-footer">
-            <button onclick="closeOAuth2ErrorModal()" class="modal-close-btn">Entendido</button>
-        </div>
-    </div>
 </body>
 </html>
