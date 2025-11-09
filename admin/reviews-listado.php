@@ -11,6 +11,7 @@ session_start();
 require_admin();
 
 $site_config = read_json(__DIR__ . '/../config/site.json');
+$page_title = 'Gestión de Reviews';
 $message = '';
 $error = '';
 
@@ -87,8 +88,6 @@ $user = get_logged_user();
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
         .main-content { margin-left: 260px; padding: 15px 20px; }
-        .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .content-header h1 { font-size: 22px; color: #2c3e50; }
         .message { padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; }
         .message.success { background: #d4edda; border-left: 4px solid #28a745; color: #155724; }
         .message.error { background: #f8d7da; border-left: 4px solid #dc3545; color: #721c24; }
@@ -130,10 +129,7 @@ $user = get_logged_user();
 <body>
     <?php include __DIR__ . '/includes/sidebar.php'; ?>
     <div class="main-content">
-        <div class="content-header">
-            <h1>⭐ Gestión de Reviews</h1>
-            <a href="/" class="btn btn-secondary" target="_blank">Ver sitio público</a>
-        </div>
+        <?php include __DIR__ . '/includes/header.php'; ?>
 
         <?php if ($message): ?>
             <div class="message success"><?php echo htmlspecialchars($message); ?></div>

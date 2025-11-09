@@ -37,6 +37,16 @@ $theme_config = read_json(__DIR__ . '/config/theme.json');
 
 $active_theme = $theme_config['active_theme'] ?? 'minimal';
 
+// Get payment status from URL if provided
+$payment_status = $_GET['payment_status'] ?? null;
+$payment_status_detail = $_GET['payment_status_detail'] ?? '';
+$payment_message = null;
+
+// Get specific message for non-approved payments
+if ($payment_status && $payment_status !== 'approved') {
+    $payment_message = get_payment_message($payment_status, $payment_status_detail);
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -52,11 +62,41 @@ $active_theme = $theme_config['active_theme'] ?? 'minimal';
     <link rel="stylesheet" href="/includes/mobile-menu.css">
 </head>
 <body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
+            <nav class="nav">
+                <a href="/">🏠 Volver al inicio</a>
+            </nav>
+        </div>
+    </header>
+
     <div class="success-container">
+        <?php if ($payment_message): ?>
+        <div class="success-icon"><?php echo $payment_message['icon']; ?></div>
+
+        <h1><?php echo htmlspecialchars($payment_message['title']); ?></h1>
+        <p class="subtitle"><?php echo htmlspecialchars($payment_message['message']); ?></p>
+
+        <?php if (!empty($payment_message['suggestions'])): ?>
+        <div class="info-box" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; margin: 20px 0; text-align: left; border-radius: 8px;">
+            <h3 style="color: #856404; margin-bottom: 10px;">ℹ️ Información importante:</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <?php foreach ($payment_message['suggestions'] as $suggestion): ?>
+                <li style="margin: 5px 0;"><?php echo htmlspecialchars($suggestion); ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <?php endif; ?>
+
+        <p class="subtitle">Detalles de tu pedido, <?php echo htmlspecialchars($order['customer_name']); ?>:</p>
+        <?php else: ?>
         <div class="success-icon">✅</div>
 
         <h1>¡Pedido Confirmado!</h1>
         <p class="subtitle">Gracias por tu compra, <?php echo htmlspecialchars($order['customer_name']); ?></p>
+        <?php endif; ?>
 
         <div class="order-info">
             <div class="order-row">

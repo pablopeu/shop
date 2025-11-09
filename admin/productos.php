@@ -15,6 +15,7 @@ require_admin();
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/../config/site.json');
+$page_title = 'Productos';
 $currency_config = read_json(__DIR__ . '/../config/currency.json');
 
 // Handle actions
@@ -212,18 +213,6 @@ $csrf_token = generate_csrf_token();
         /* Main Content */
         .main-content {
             padding: 30px;
-        }
-
-        .content-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .content-header h1 {
-            font-size: 28px;
-            color: #2c3e50;
         }
 
         /* Messages */
@@ -505,10 +494,7 @@ $csrf_token = generate_csrf_token();
 
         <!-- Main Content -->
         <div class="main-content">
-            <div class="content-header">
-                <h1>Gestión de Productos</h1>
-                <a href="/" class="btn btn-secondary" target="_blank">Ver sitio público</a>
-            </div>
+            <?php include __DIR__ . '/includes/header.php'; ?>
 
             <?php if ($message): ?>
                 <div class="message success"><?php echo htmlspecialchars($message); ?></div>

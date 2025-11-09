@@ -44,6 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_theme'])) {
 
 // Get current configuration
 $theme_config = read_json(__DIR__ . '/../config/theme.json');
+$site_config = read_json(__DIR__ . '/../config/site.json');
+$page_title = 'Configuración de Themes';
 $active_theme = $theme_config['active_theme'] ?? 'minimal';
 
 // Get all available themes
@@ -74,15 +76,6 @@ $user = get_logged_user();
             margin-left: 260px;
             padding: 30px;
             max-width: 1200px;
-        }
-
-        .content-header {
-            margin-bottom: 30px;
-        }
-
-        .content-header h1 {
-            font-size: 28px;
-            color: #2c3e50;
         }
 
         .message {
@@ -315,9 +308,7 @@ $user = get_logged_user();
     <?php include __DIR__ . '/includes/sidebar.php'; ?>
 
     <div class="main-content">
-        <div class="content-header">
-            <h1>⚡ Configuración de Themes</h1>
-        </div>
+        <?php include __DIR__ . '/includes/header.php'; ?>
 
         <?php if ($message): ?>
             <div class="message"><?php echo htmlspecialchars($message); ?></div>

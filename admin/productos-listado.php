@@ -15,11 +15,19 @@ require_admin();
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/../config/site.json');
+$page_title = 'Gestión de Productos';
 $currency_config = read_json(__DIR__ . '/../config/currency.json');
 
 // Handle actions
 $message = '';
 $error = '';
+
+// Check for messages in URL
+if (isset($_GET['msg'])) {
+    if ($_GET['msg'] === 'product_updated') {
+        $message = 'Producto actualizado exitosamente';
+    }
+}
 
 // Delete product
 if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
@@ -84,18 +92,6 @@ $user = get_logged_user();
         .main-content {
             margin-left: 260px;
             padding: 15px 20px;
-        }
-
-        .content-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .content-header h1 {
-            font-size: 22px;
-            color: #2c3e50;
         }
 
         /* Messages */
@@ -323,13 +319,7 @@ $user = get_logged_user();
 
     <!-- Main Content -->
     <div class="main-content">
-            <div class="content-header">
-                <h1>Listado de Productos</h1>
-                <div>
-                    <a href="/admin/productos-nuevo.php" class="btn btn-primary">➕ Agregar Producto</a>
-                    <a href="/" class="btn btn-secondary" target="_blank">Ver sitio público</a>
-                </div>
-            </div>
+            <?php include __DIR__ . '/includes/header.php'; ?>
 
             <?php if ($message): ?>
                 <div class="message success"><?php echo htmlspecialchars($message); ?></div>

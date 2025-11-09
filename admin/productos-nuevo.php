@@ -16,6 +16,7 @@ require_admin();
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/../config/site.json');
+$page_title = 'Nuevo Producto';
 
 // Handle form submission
 $message = '';
@@ -135,18 +136,6 @@ $user = get_logged_user();
             margin-left: 260px;
             padding: 20px;
             max-width: 1200px;
-        }
-
-        .content-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .content-header h1 {
-            font-size: 24px;
-            color: #2c3e50;
         }
 
         /* Messages */
@@ -427,15 +416,7 @@ $user = get_logged_user();
 
     <!-- Main Content -->
     <div class="main-content">
-        <div class="content-header">
-            <h1>➕ Agregar Nuevo Producto</h1>
-            <div>
-                <a href="/admin/productos-listado.php" class="btn btn-secondary" id="backBtn">← Volver al listado</a>
-                <span id="unsavedWarning" style="display: none; color: #dc3545; font-weight: 600; font-size: 14px;">
-                    ⚠ Hay cambios sin guardar
-                </span>
-            </div>
-        </div>
+        <?php include __DIR__ . '/includes/header.php'; ?>
 
         <?php if ($message): ?>
             <div class="message success"><?php echo htmlspecialchars($message); ?></div>

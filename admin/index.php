@@ -81,34 +81,6 @@ $user = get_logged_user();
             padding: 20px;
         }
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .header h1 {
-            font-size: 24px;
-            color: #2c3e50;
-        }
-
-        .header-actions a {
-            display: inline-block;
-            padding: 10px 20px;
-            background: white;
-            color: #3498db;
-            text-decoration: none;
-            border-radius: 6px;
-            border: 2px solid #3498db;
-            transition: all 0.3s;
-        }
-
-        .header-actions a:hover {
-            background: #3498db;
-            color: white;
-        }
-
         /* Stats Cards */
         .stats-grid {
             display: grid;
@@ -273,17 +245,13 @@ $user = get_logged_user();
     <?php
     // Get site config for sidebar
     $site_config = read_json(__DIR__ . '/../config/site.json');
+    $page_title = 'Dashboard';
     include __DIR__ . '/includes/sidebar.php';
     ?>
 
     <!-- Main Content -->
     <main class="main-content">
-        <div class="header">
-            <h1>Dashboard</h1>
-            <div class="header-actions">
-                <a href="/" target="_blank">👁️ Ver Sitio Público</a>
-            </div>
-        </div>
+        <?php include __DIR__ . '/includes/header.php'; ?>
 
         <!-- Stats Grid -->
         <div class="stats-grid">

@@ -16,6 +16,9 @@ require_admin();
 // Get configurations
 $site_config = read_json(__DIR__ . '/../config/site.json');
 
+// Page title for header
+$page_title = 'Gestión de Ventas';
+
 // Handle actions
 $message = '';
 $error = '';
@@ -59,16 +62,71 @@ if (isset($_GET['action']) && $_GET['action'] === 'cancel' && isset($_GET['id'])
     }
 }
 
+// Handle bulk actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
+    $action = $_POST['bulk_action'];
+    $selected_orders = $_POST['selected_orders'] ?? [];
+
+    if (!empty($selected_orders)) {
+        $success_count = 0;
+        foreach ($selected_orders as $order_id) {
+            if ($action === 'archive') {
+                if (archive_order($order_id)) {
+                    $success_count++;
+                }
+            } elseif ($action === 'cancel') {
+                if (cancel_order($order_id, 'Cancelado en masa por admin', $_SESSION['username'])) {
+                    $success_count++;
+                }
+            } elseif (in_array($action, ['pending', 'confirmed', 'shipped', 'delivered'])) {
+                if (update_order_status($order_id, $action, $_SESSION['username'])) {
+                    $success_count++;
+                }
+            }
+        }
+
+        $message = "$success_count orden(es) procesada(s) exitosamente";
+    } else {
+        $error = 'No se seleccionaron órdenes';
+    }
+}
+
 // Filter orders
 $filter_status = $_GET['filter'] ?? 'all';
+$search_query = $_GET['search'] ?? '';
+$date_from = $_GET['date_from'] ?? '';
+$date_to = $_GET['date_to'] ?? '';
 $all_orders = get_all_orders();
 
-// Apply filter
+// Apply status filter
 if ($filter_status === 'all') {
     $orders = $all_orders;
 } else {
     $orders = array_filter($all_orders, function($order) use ($filter_status) {
         return $order['status'] === $filter_status;
+    });
+}
+
+// Apply search filter (order number or customer name/email)
+if (!empty($search_query)) {
+    $orders = array_filter($orders, function($order) use ($search_query) {
+        $search_lower = mb_strtolower($search_query);
+        return stripos($order['order_number'], $search_query) !== false ||
+               stripos(mb_strtolower($order['customer_name'] ?? ''), $search_lower) !== false ||
+               stripos(mb_strtolower($order['customer_email'] ?? ''), $search_lower) !== false;
+    });
+}
+
+// Apply date filter
+if (!empty($date_from)) {
+    $orders = array_filter($orders, function($order) use ($date_from) {
+        return strtotime($order['date']) >= strtotime($date_from . ' 00:00:00');
+    });
+}
+
+if (!empty($date_to)) {
+    $orders = array_filter($orders, function($order) use ($date_to) {
+        return strtotime($order['date']) <= strtotime($date_to . ' 23:59:59');
     });
 }
 
@@ -129,18 +187,6 @@ $status_labels = [
         .main-content {
             margin-left: 260px;
             padding: 15px 20px;
-        }
-
-        .content-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .content-header h1 {
-            font-size: 22px;
-            color: #2c3e50;
         }
 
         /* Messages */
@@ -398,6 +444,100 @@ $status_labels = [
                 margin-left: 0;
             }
         }
+
+        /* Confirmation Modal */
+        .confirm-modal-content {
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .confirm-modal-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .confirm-modal-icon.warning {
+            color: #ffc107;
+        }
+
+        .confirm-modal-icon.danger {
+            color: #dc3545;
+        }
+
+        .confirm-modal-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .confirm-modal-description {
+            font-size: 15px;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .confirm-modal-details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .confirm-modal-details ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .confirm-modal-details li {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .confirm-modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn-cancel {
+            background: #6c757d;
+            color: white;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #5a6268;
+        }
+
+        .modal-btn-confirm {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .modal-btn-confirm:hover {
+            background: #45a049;
+        }
+
+        .modal-btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .modal-btn-danger:hover {
+            background: #c82333;
+        }
     </style>
 </head>
 <body>
@@ -406,10 +546,7 @@ $status_labels = [
 
     <!-- Main Content -->
     <div class="main-content">
-            <div class="content-header">
-                <h1>Gestión de Ventas</h1>
-                <a href="/" class="btn btn-secondary" target="_blank">Ver sitio público</a>
-            </div>
+        <?php include __DIR__ . '/includes/header.php'; ?>
 
             <?php if ($message): ?>
                 <div class="message success"><?php echo htmlspecialchars($message); ?></div>
@@ -462,10 +599,65 @@ $status_labels = [
                     </a>
                 </div>
 
+                <!-- Advanced Filters -->
+                <div class="card">
+                    <div class="card-header">Filtros Avanzados</div>
+                    <form method="GET" action="" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; align-items: end;">
+                        <input type="hidden" name="filter" value="<?php echo htmlspecialchars($filter_status); ?>">
+
+                        <div class="form-group" style="margin: 0;">
+                            <label for="search" style="font-size: 13px; margin-bottom: 5px; display: block;">Buscar (Nro pedido, cliente, email)</label>
+                            <input type="text" id="search" name="search" placeholder="Ej: 1001 o Juan Perez"
+                                   value="<?php echo htmlspecialchars($search_query); ?>"
+                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
+                        </div>
+
+                        <div class="form-group" style="margin: 0;">
+                            <label for="date_from" style="font-size: 13px; margin-bottom: 5px; display: block;">Desde</label>
+                            <input type="date" id="date_from" name="date_from"
+                                   value="<?php echo htmlspecialchars($date_from); ?>"
+                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
+                        </div>
+
+                        <div class="form-group" style="margin: 0;">
+                            <label for="date_to" style="font-size: 13px; margin-bottom: 5px; display: block;">Hasta</label>
+                            <input type="date" id="date_to" name="date_to"
+                                   value="<?php echo htmlspecialchars($date_to); ?>"
+                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
+                        </div>
+
+                        <div style="display: flex; gap: 8px;">
+                            <button type="submit" class="btn btn-primary btn-sm">Aplicar Filtros</button>
+                            <a href="?" class="btn btn-secondary btn-sm">Limpiar</a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Bulk Actions -->
+                <form method="POST" id="bulkForm">
+                    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+                        <select name="bulk_action" id="bulkAction" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="">Seleccionar acción...</option>
+                            <option value="pending">Marcar como Pendiente</option>
+                            <option value="confirmed">Marcar como Confirmada</option>
+                            <option value="shipped">Marcar como Enviada</option>
+                            <option value="delivered">Marcar como Entregada</option>
+                            <option value="cancel">Cancelar</option>
+                            <option value="archive">Archivar</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm" onclick="return confirmBulkAction()">Aplicar a Seleccionadas</button>
+                        <a href="archivo-ventas.php" class="btn btn-secondary btn-sm">Ver Archivo</a>
+                        <span id="selectedCount" style="color: #666; font-size: 13px;"></span>
+                    </div>
+
                 <!-- Orders Table -->
                 <table class="orders-table">
                     <thead>
                         <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes(this)">
+                            </th>
                             <th>Pedido #</th>
                             <th>Cliente</th>
                             <th>Fecha</th>
@@ -478,13 +670,19 @@ $status_labels = [
                     <tbody>
                         <?php if (empty($orders)): ?>
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                                <td colspan="8" style="text-align: center; padding: 40px; color: #999;">
                                     No hay órdenes<?php echo $filter_status !== 'all' ? ' con este estado' : ''; ?>.
                                 </td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($orders as $order): ?>
                                 <tr>
+                                    <td>
+                                        <input type="checkbox" name="selected_orders[]"
+                                               value="<?php echo htmlspecialchars($order['id']); ?>"
+                                               class="order-checkbox"
+                                               onchange="updateSelectedCount()">
+                                    </td>
                                     <td>
                                         <strong><?php echo htmlspecialchars($order['order_number']); ?></strong>
                                     </td>
@@ -516,12 +714,12 @@ $status_labels = [
                                     </td>
                                     <td>
                                         <div class="actions">
-                                            <button onclick="viewOrder('<?php echo $order['id']; ?>')"
+                                            <button type="button" onclick="viewOrder('<?php echo $order['id']; ?>')"
                                                     class="btn btn-primary btn-sm">
                                                 👁️ Ver
                                             </button>
                                             <?php if ($order['status'] !== 'cancelled'): ?>
-                                                <button onclick="showCancelModal('<?php echo $order['id']; ?>', '<?php echo $order['order_number']; ?>')"
+                                                <button type="button" onclick="showCancelModal('<?php echo $order['id']; ?>', '<?php echo $order['order_number']; ?>')"
                                                         class="btn btn-danger btn-sm">
                                                     ❌ Cancelar
                                                 </button>
@@ -533,6 +731,7 @@ $status_labels = [
                         <?php endif; ?>
                     </tbody>
                 </table>
+                </form>
             </div>
         </div>
     </div>
@@ -576,6 +775,24 @@ $status_labels = [
         </div>
     </div>
 
+    <!-- Bulk Action Confirmation Modal -->
+    <div id="confirmBulkModal" class="modal">
+        <div class="modal-content confirm-modal-content">
+            <div class="confirm-modal-icon" id="confirmIcon">⚠️</div>
+            <h2 class="confirm-modal-title" id="confirmTitle">Confirmar Acción</h2>
+            <p class="confirm-modal-description" id="confirmDescription"></p>
+            <div class="confirm-modal-details" id="confirmDetails"></div>
+            <div class="confirm-modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeConfirmModal()">
+                    Cancelar
+                </button>
+                <button class="modal-btn" id="confirmButton" onclick="executeBulkAction()">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const orders = <?php echo json_encode($orders); ?>;
         const csrfToken = '<?php echo $csrf_token; ?>';
@@ -593,6 +810,170 @@ $status_labels = [
                        ${order.customer_email || ''}<br>
                        ${order.customer_phone || ''}</p>
                 </div>
+
+                <div class="form-group">
+                    <label><strong>Método de Pago:</strong></label>
+                    <p>${order.payment_method === 'presencial' ? '💵 Pago Presencial' : '💳 Mercadopago'}</p>
+                </div>
+
+                ${order.mercadopago_data ? `
+                <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea;">
+                    <label><strong>📊 Detalles de Mercadopago:</strong></label>
+                    <div style="margin-top: 10px; font-size: 13px;">
+                        ${order.mercadopago_data.payment_id ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Payment ID:</span>
+                            <span style="font-family: monospace;">${order.mercadopago_data.payment_id}</span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.status ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Estado:</span>
+                            <span>
+                                <span style="padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; color: white;
+                                      background: ${order.mercadopago_data.status === 'approved' ? '#4CAF50' :
+                                                     order.mercadopago_data.status === 'pending' || order.mercadopago_data.status === 'in_process' ? '#FFA726' : '#f44336'};">
+                                    ${order.mercadopago_data.status.toUpperCase()}
+                                </span>
+                                ${order.mercadopago_data.status_detail ? `<span style="color: #999; font-size: 11px; margin-left: 8px;">(${order.mercadopago_data.status_detail})</span>` : ''}
+                            </span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.transaction_amount ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Monto:</span>
+                            <span><strong>${order.mercadopago_data.currency_id || 'ARS'} $${parseFloat(order.mercadopago_data.transaction_amount).toFixed(2)}</strong></span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.payment_method_id ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Método:</span>
+                            <span>${order.mercadopago_data.payment_type_id || 'N/A'} - ${order.mercadopago_data.payment_method_id}</span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.installments && order.mercadopago_data.installments > 1 ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Cuotas:</span>
+                            <span>${order.mercadopago_data.installments}x</span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.card_last_four_digits ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Tarjeta:</span>
+                            <span>**** **** **** ${order.mercadopago_data.card_last_four_digits}</span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.date_created ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Fecha creación:</span>
+                            <span>${new Date(order.mercadopago_data.date_created).toLocaleString('es-AR')}</span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.date_approved ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Fecha aprobación:</span>
+                            <span style="color: #4CAF50; font-weight: 600;">${new Date(order.mercadopago_data.date_approved).toLocaleString('es-AR')}</span>
+                        </div>
+                        ` : ''}
+                        ${order.mercadopago_data.payer_email ? `
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0;">
+                            <span style="color: #666; font-weight: 600;">Email pagador:</span>
+                            <span>${order.mercadopago_data.payer_email}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ${order.mercadopago_data.payment_id ? `
+                    <a href="/admin/verificar-pago-mp.php?payment_id=${order.mercadopago_data.payment_id}"
+                       target="_blank"
+                       style="display: inline-block; margin-top: 12px; padding: 6px 12px; background: #667eea; color: white;
+                              text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                        🔍 Ver detalles completos en MP
+                    </a>
+                    ` : ''}
+                </div>
+                ` : ''}
+
+                ${order.payment_error ? `
+                <div class="form-group" style="background: #fff3cd; padding: 15px; border-radius: 6px; border-left: 4px solid #ff9800;">
+                    <label><strong>⚠️ Error de Pago:</strong></label>
+                    <div style="margin-top: 10px; font-size: 13px;">
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Mensaje:</span>
+                            <span style="color: #d32f2f; font-family: monospace; font-size: 12px;">${order.payment_error.message}</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="color: #666; font-weight: 600;">Fecha del error:</span>
+                            <span>${new Date(order.payment_error.date).toLocaleString('es-AR')}</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0;">
+                            <span style="color: #666; font-weight: 600;">Modo:</span>
+                            <span>${order.payment_error.sandbox_mode ? 'Sandbox (prueba)' : 'Producción'}</span>
+                        </div>
+                    </div>
+                    <small style="display: block; margin-top: 10px; color: #856404;">
+                        💡 Este error indica un problema técnico al procesar el pago (error de API, problemas de conexión, etc.)
+                    </small>
+                </div>
+                ` : ''}
+
+                ${order.chargebacks && order.chargebacks.length > 0 ? `
+                <div class="form-group" style="background: #ffebee; padding: 15px; border-radius: 6px; border-left: 4px solid #f44336;">
+                    <label><strong>🚨 Contracargos (Chargebacks):</strong></label>
+                    <div style="margin-top: 10px;">
+                        ${order.chargebacks.map((cb, index) => `
+                            <div style="background: white; padding: 12px; border-radius: 4px; margin-bottom: ${index < order.chargebacks.length - 1 ? '10px' : '0'}; border: 1px solid #ffcdd2;">
+                                <div style="font-size: 13px;">
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f5f5f5;">
+                                        <span style="color: #666; font-weight: 600;">Chargeback ID:</span>
+                                        <span style="font-family: monospace; font-size: 12px;">${cb.chargeback_id}</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f5f5f5;">
+                                        <span style="color: #666; font-weight: 600;">Acción:</span>
+                                        <span>
+                                            <span style="padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; color: white;
+                                                  background: ${cb.action === 'created' ? '#ff9800' : cb.action === 'lost' ? '#f44336' : cb.action === 'won' ? '#4CAF50' : '#999'};">
+                                                ${cb.action ? cb.action.toUpperCase() : 'UNKNOWN'}
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f5f5f5;">
+                                        <span style="color: #666; font-weight: 600;">Payment ID:</span>
+                                        <span style="font-family: monospace; font-size: 12px;">${cb.payment_id}</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 8px; padding: 6px 0;">
+                                        <span style="color: #666; font-weight: 600;">Fecha:</span>
+                                        <span>${new Date(cb.date).toLocaleString('es-AR')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <small style="display: block; margin-top: 12px; color: #c62828; font-weight: 600;">
+                        ⚠️ Un contracargo indica que el comprador disputó el pago con su banco.
+                        ${order.chargebacks.some(cb => cb.action === 'created' || cb.action === 'lost') ? 'El stock fue restaurado automáticamente.' : ''}
+                    </small>
+                </div>
+                ` : ''}
+
+                ${order.payment_link ? `
+                <div class="form-group" style="background: #e3f2fd; padding: 15px; border-radius: 6px; border-left: 4px solid #2196F3;">
+                    <label><strong>🔗 Link de Pago de Mercadopago:</strong></label>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
+                        <input type="text" value="${order.payment_link}" readonly
+                               style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; font-family: monospace; background: white;">
+                        <button type="button" onclick="copyPaymentLink('${order.payment_link}')"
+                                style="padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
+                            📋 Copiar
+                        </button>
+                    </div>
+                    <small style="color: #666; display: block; margin-top: 8px;">
+                        ${order.payment_status === 'approved' ? '✅ Pago aprobado' :
+                          order.payment_status === 'pending' ? '⏳ Pago pendiente' :
+                          order.payment_status === 'rejected' ? '❌ Pago rechazado' :
+                          '📝 Esperando pago'}
+                    </small>
+                </div>
+                ` : ''}
 
                 ${order.shipping_address ? `
                 <div class="form-group">
@@ -679,6 +1060,14 @@ $status_labels = [
             document.getElementById('cancelModal').classList.remove('active');
         }
 
+        function copyPaymentLink(link) {
+            navigator.clipboard.writeText(link).then(() => {
+                alert('✅ Link de pago copiado al portapapeles');
+            }).catch(() => {
+                prompt('Copia este link:', link);
+            });
+        }
+
         function formatPrice(price, currency) {
             const symbols = { 'ARS': '$', 'USD': 'U$D' };
             return (symbols[currency] || currency) + ' ' + price.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
@@ -696,6 +1085,186 @@ $status_labels = [
                 closeCancelModal();
             }
         });
+
+        // Checkbox management
+        function toggleAllCheckboxes(source) {
+            const checkboxes = document.querySelectorAll('.order-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = source.checked;
+            });
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+            const count = checkboxes.length;
+            const countElement = document.getElementById('selectedCount');
+
+            if (count > 0) {
+                countElement.textContent = `${count} orden(es) seleccionada(s)`;
+                countElement.style.fontWeight = 'bold';
+                countElement.style.color = '#4CAF50';
+            } else {
+                countElement.textContent = '';
+            }
+
+            // Update "select all" checkbox state
+            const allCheckboxes = document.querySelectorAll('.order-checkbox');
+            const selectAllCheckbox = document.getElementById('selectAll');
+            selectAllCheckbox.checked = allCheckboxes.length > 0 && count === allCheckboxes.length;
+        }
+
+        function confirmBulkAction() {
+            const action = document.getElementById('bulkAction').value;
+            const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+
+            if (!action) {
+                showNotification('Por favor selecciona una acción', 'warning');
+                return false;
+            }
+
+            if (checkboxes.length === 0) {
+                showNotification('Por favor selecciona al menos una orden', 'warning');
+                return false;
+            }
+
+            // Show confirmation modal
+            showBulkActionModal(action, checkboxes.length);
+            return false; // Prevent form submission, will be handled by modal
+        }
+
+        function showBulkActionModal(action, count) {
+            const modal = document.getElementById('confirmBulkModal');
+            const icon = document.getElementById('confirmIcon');
+            const title = document.getElementById('confirmTitle');
+            const description = document.getElementById('confirmDescription');
+            const details = document.getElementById('confirmDetails');
+            const confirmBtn = document.getElementById('confirmButton');
+
+            const actionConfig = {
+                'pending': {
+                    icon: '⏳',
+                    iconClass: 'warning',
+                    title: 'Marcar como Pendiente',
+                    description: 'Las siguientes órdenes cambiarán su estado a "Pendiente":',
+                    effects: ['El estado de las órdenes será actualizado', 'No se realizarán cambios en el stock'],
+                    btnClass: 'modal-btn-confirm',
+                    btnText: 'Marcar como Pendiente'
+                },
+                'confirmed': {
+                    icon: '✅',
+                    iconClass: 'warning',
+                    title: 'Marcar como Confirmada',
+                    description: 'Las siguientes órdenes cambiarán su estado a "Confirmada":',
+                    effects: ['El estado de las órdenes será actualizado', 'Se considerarán confirmadas para reportes'],
+                    btnClass: 'modal-btn-confirm',
+                    btnText: 'Confirmar Órdenes'
+                },
+                'shipped': {
+                    icon: '🚚',
+                    iconClass: 'warning',
+                    title: 'Marcar como Enviada',
+                    description: 'Las siguientes órdenes cambiarán su estado a "Enviada":',
+                    effects: ['El estado de las órdenes será actualizado', 'Se marcarán como en tránsito'],
+                    btnClass: 'modal-btn-confirm',
+                    btnText: 'Marcar como Enviadas'
+                },
+                'delivered': {
+                    icon: '📦',
+                    iconClass: 'warning',
+                    title: 'Marcar como Entregada',
+                    description: 'Las siguientes órdenes cambiarán su estado a "Entregada":',
+                    effects: ['El estado de las órdenes será actualizado', 'Se marcarán como completadas'],
+                    btnClass: 'modal-btn-confirm',
+                    btnText: 'Marcar como Entregadas'
+                },
+                'cancel': {
+                    icon: '❌',
+                    iconClass: 'danger',
+                    title: 'Cancelar Órdenes',
+                    description: 'Esta acción cancelará las órdenes seleccionadas:',
+                    effects: ['Las órdenes serán marcadas como "Canceladas"', '⚠️ El stock de los productos será RESTAURADO', 'Esta acción no se puede deshacer fácilmente'],
+                    btnClass: 'modal-btn-danger',
+                    btnText: 'Cancelar Órdenes'
+                },
+                'archive': {
+                    icon: '📁',
+                    iconClass: 'warning',
+                    title: 'Archivar Órdenes',
+                    description: 'Las órdenes seleccionadas serán movidas al archivo:',
+                    effects: ['Las órdenes NO aparecerán en el listado principal', 'Podrán ser restauradas desde el Archivo de Ventas', 'No se realizarán cambios en el stock'],
+                    btnClass: 'modal-btn-confirm',
+                    btnText: 'Archivar Órdenes'
+                }
+            };
+
+            const config = actionConfig[action];
+
+            // Set icon
+            icon.textContent = config.icon;
+            icon.className = 'confirm-modal-icon ' + config.iconClass;
+
+            // Set title and description
+            title.textContent = config.title;
+            description.textContent = config.description;
+
+            // Set details
+            details.innerHTML = `
+                <strong>${count} orden(es) seleccionada(s)</strong>
+                <p style="margin: 10px 0; font-size: 13px; color: #666;">Esta acción afectará a:</p>
+                <ul>
+                    ${config.effects.map(effect => `<li>${effect}</li>`).join('')}
+                </ul>
+            `;
+
+            // Configure button
+            confirmBtn.className = 'modal-btn ' + config.btnClass;
+            confirmBtn.textContent = config.btnText;
+
+            // Show modal
+            modal.classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmBulkModal').classList.remove('active');
+        }
+
+        function executeBulkAction() {
+            // Close modal
+            closeConfirmModal();
+
+            // Submit form
+            document.getElementById('bulkForm').submit();
+        }
+
+        function showNotification(message, type = 'info') {
+            // Simple notification - could be enhanced with a toast library
+            const notification = document.createElement('div');
+            notification.className = 'message ' + (type === 'warning' ? 'error' : 'success');
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '10000';
+            notification.style.minWidth = '300px';
+            notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('confirmBulkModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeConfirmModal();
+            }
+        });
+
+        // Initialize selected count on page load
+        document.addEventListener('DOMContentLoaded', updateSelectedCount);
     </script>
 </body>
 </html>

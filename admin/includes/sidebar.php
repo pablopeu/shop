@@ -20,6 +20,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         position: fixed;
         height: 100vh;
         overflow-y: auto;
+        padding-bottom: 20px;
     }
 
     .sidebar-header {
@@ -111,42 +112,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
     .menu-arrow.rotated {
         transform: rotate(90deg);
     }
-
-    .sidebar-footer {
-        position: absolute;
-        bottom: 0;
-        width: 100%;
-        padding: 20px;
-        border-top: 1px solid rgba(255,255,255,0.1);
-        background: #2c3e50;
-    }
-
-    .sidebar-footer a {
-        color: #e74c3c;
-        text-decoration: none;
-        display: block;
-        padding: 10px;
-        text-align: center;
-        background: rgba(231, 76, 60, 0.1);
-        border-radius: 6px;
-        transition: background 0.3s;
-    }
-
-    .sidebar-footer a:hover {
-        background: rgba(231, 76, 60, 0.2);
-    }
-
-    .user-info {
-        background: rgba(52, 152, 219, 0.1);
-        padding: 10px 15px;
-        border-radius: 6px;
-        font-size: 13px;
-        margin-bottom: 10px;
-    }
-
-    .user-info strong {
-        color: white;
-    }
 </style>
 
 <aside class="sidebar">
@@ -188,36 +153,47 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         <!-- Ventas -->
         <li>
-            <a href="/admin/ventas.php" class="<?php echo $current_page === 'ventas.php' ? 'active' : ''; ?>">
-                💰 Ventas
-            </a>
-        </li>
-
-        <!-- Promociones -->
-        <li>
-            <div class="menu-item" onclick="toggleSubmenu('promociones')">
-                <span>🎯 Promociones</span>
-                <span class="menu-arrow" id="arrow-promociones">▶</span>
+            <div class="menu-item" onclick="toggleSubmenu('ventas')">
+                <span>💰 Ventas</span>
+                <span class="menu-arrow" id="arrow-ventas">▶</span>
             </div>
-            <ul class="submenu <?php echo in_array($current_page, ['promociones-listado.php', 'promociones-nuevo.php', 'promociones-editar.php']) ? 'open' : ''; ?>"
-                id="submenu-promociones">
-                <li><a href="/admin/promociones-listado.php" <?php echo $current_page === 'promociones-listado.php' ? 'class="active"' : ''; ?>>📋 Listado de Promociones</a></li>
-                <li><a href="/admin/promociones-nuevo.php" <?php echo $current_page === 'promociones-nuevo.php' ? 'class="active"' : ''; ?>>➕ Nueva Promoción</a></li>
+            <ul class="submenu <?php echo in_array($current_page, ['ventas.php', 'archivo-ventas.php', 'reviews-listado.php']) ? 'open' : ''; ?>"
+                id="submenu-ventas">
+                <li>
+                    <a href="/admin/ventas.php"
+                       class="<?php echo $current_page === 'ventas.php' ? 'active' : ''; ?>">
+                        📋 Gestión de Ventas
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/archivo-ventas.php"
+                       class="<?php echo $current_page === 'archivo-ventas.php' ? 'active' : ''; ?>">
+                        📦 Archivo de Ventas
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/reviews-listado.php"
+                       class="<?php echo $current_page === 'reviews-listado.php' ? 'active' : ''; ?>">
+                        ⭐ Reviews
+                    </a>
+                </li>
             </ul>
         </li>
 
-        <!-- Cupones -->
+        <!-- Promociones y Cupones -->
         <li>
-            <div class="menu-item" onclick="toggleSubmenu('cupones')">
-                <span>🎫 Cupones</span>
-                <span class="menu-arrow" id="arrow-cupones">▶</span>
+            <div class="menu-item" onclick="toggleSubmenu('promociones-cupones')">
+                <span>🎯 Promociones y Cupones</span>
+                <span class="menu-arrow" id="arrow-promociones-cupones">▶</span>
             </div>
-            <ul class="submenu <?php echo in_array($current_page, ['cupones-listado.php', 'cupones-nuevo.php', 'cupones-editar.php']) ? 'open' : ''; ?>"
-                id="submenu-cupones">
+            <ul class="submenu <?php echo in_array($current_page, ['promociones-listado.php', 'promociones-nuevo.php', 'promociones-editar.php', 'cupones-listado.php', 'cupones-nuevo.php', 'cupones-editar.php']) ? 'open' : ''; ?>"
+                id="submenu-promociones-cupones">
+                <li><a href="/admin/promociones-listado.php" <?php echo $current_page === 'promociones-listado.php' ? 'class="active"' : ''; ?>>📋 Listado de Promociones</a></li>
+                <li><a href="/admin/promociones-nuevo.php" <?php echo $current_page === 'promociones-nuevo.php' ? 'class="active"' : ''; ?>>➕ Nueva Promoción</a></li>
                 <li>
                     <a href="/admin/cupones-listado.php"
                        class="<?php echo $current_page === 'cupones-listado.php' ? 'active' : ''; ?>">
-                        📋 Listado de Cupones
+                        🎫 Listado de Cupones
                     </a>
                 </li>
                 <li>
@@ -229,10 +205,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </ul>
         </li>
 
-        <!-- Reviews -->
+        <!-- Notificaciones -->
         <li>
-            <a href="/admin/reviews-listado.php" class="<?php echo $current_page === 'reviews-listado.php' ? 'active' : ''; ?>">
-                ⭐ Reviews
+            <a href="/admin/notificaciones.php" class="<?php echo $current_page === 'notificaciones.php' ? 'active' : ''; ?>">
+                🔔 Notificaciones
             </a>
         </li>
 
@@ -242,30 +218,22 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <span>⚙️ Configuración</span>
                 <span class="menu-arrow" id="arrow-configuracion">▶</span>
             </div>
-            <ul class="submenu <?php echo in_array($current_page, ['config-sitio.php', 'config-moneda.php', 'config-hero.php', 'config-carrusel.php', 'config-productos-heading.php', 'config-dashboard.php', 'config-mantenimiento.php', 'config-themes.php', 'config-footer.php']) ? 'open' : ''; ?>"
+            <ul class="submenu <?php echo in_array($current_page, ['config-sitio.php', 'config-moneda.php', 'config-payment.php', 'config-hero.php', 'config-carrusel.php', 'config-productos-heading.php', 'config-dashboard.php', 'config-mantenimiento.php', 'config-themes.php', 'config-footer.php']) ? 'open' : ''; ?>"
                 id="submenu-configuracion">
                 <li><a href="/admin/config-sitio.php" <?php echo $current_page === 'config-sitio.php' ? 'class="active"' : ''; ?>>📄 Información del Sitio</a></li>
+                <li><a href="/admin/config-payment.php" <?php echo $current_page === 'config-payment.php' ? 'class="active"' : ''; ?>>💳 Medios de Pago</a></li>
                 <li><a href="/admin/config-moneda.php" <?php echo $current_page === 'config-moneda.php' ? 'class="active"' : ''; ?>>💱 Moneda y Cambio</a></li>
-                <li><a href="/admin/config-themes.php" <?php echo $current_page === 'config-themes.php' ? 'class="active"' : ''; ?>>🎨 Themes Visuales</a></li>
-                <li><a href="/admin/config-footer.php" <?php echo $current_page === 'config-footer.php' ? 'class="active"' : ''; ?>>🦶 Footer Personalizado</a></li>
+                <li><a href="/admin/config-mantenimiento.php" <?php echo $current_page === 'config-mantenimiento.php' ? 'class="active"' : ''; ?>>🚧 Mantenimiento</a></li>
+                <li style="margin-top: 10px; padding: 8px 20px; font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Ajustes Visuales</li>
+                <li><a href="/admin/config-themes.php" <?php echo $current_page === 'config-themes.php' ? 'class="active"' : ''; ?>>🎨 Themes</a></li>
                 <li><a href="/admin/config-hero.php" <?php echo $current_page === 'config-hero.php' ? 'class="active"' : ''; ?>>🖼️ Hero Principal</a></li>
                 <li><a href="/admin/config-carrusel.php" <?php echo $current_page === 'config-carrusel.php' ? 'class="active"' : ''; ?>>🎠 Carrusel</a></li>
-                <li><a href="/admin/config-productos-heading.php" <?php echo $current_page === 'config-productos-heading.php' ? 'class="active"' : ''; ?>>📝 Encabezado de Productos</a></li>
+                <li><a href="/admin/config-footer.php" <?php echo $current_page === 'config-footer.php' ? 'class="active"' : ''; ?>>🦶 Footer</a></li>
                 <li><a href="/admin/config-dashboard.php" <?php echo $current_page === 'config-dashboard.php' ? 'class="active"' : ''; ?>>📊 Dashboard</a></li>
-                <li><a href="/admin/config-mantenimiento.php" <?php echo $current_page === 'config-mantenimiento.php' ? 'class="active"' : ''; ?>>🚧 Mantenimiento</a></li>
+                <li><a href="/admin/config-productos-heading.php" <?php echo $current_page === 'config-productos-heading.php' ? 'class="active"' : ''; ?>>📝 Encabezado Productos</a></li>
             </ul>
         </li>
     </ul>
-
-    <div class="sidebar-footer">
-        <?php if (isset($user) && $user): ?>
-        <div class="user-info">
-            <strong><?php echo htmlspecialchars($user['username']); ?></strong><br>
-            <small><?php echo htmlspecialchars($user['email']); ?></small>
-        </div>
-        <?php endif; ?>
-        <a href="/admin/logout.php">🚪 Cerrar Sesión</a>
-    </div>
 </aside>
 
 <script>
