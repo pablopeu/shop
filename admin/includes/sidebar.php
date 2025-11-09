@@ -205,10 +205,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </ul>
         </li>
 
-        <!-- Notificaciones -->
+        <!-- Email y Notificaciones -->
         <li>
             <a href="/admin/notificaciones.php" class="<?php echo $current_page === 'notificaciones.php' ? 'active' : ''; ?>">
-                🔔 Notificaciones
+                🔔 Email y Notificaciones
             </a>
         </li>
 
@@ -224,13 +224,21 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <li><a href="/admin/config-payment.php" <?php echo $current_page === 'config-payment.php' ? 'class="active"' : ''; ?>>💳 Medios de Pago</a></li>
                 <li><a href="/admin/config-moneda.php" <?php echo $current_page === 'config-moneda.php' ? 'class="active"' : ''; ?>>💱 Moneda y Cambio</a></li>
                 <li><a href="/admin/config-mantenimiento.php" <?php echo $current_page === 'config-mantenimiento.php' ? 'class="active"' : ''; ?>>🚧 Mantenimiento</a></li>
-                <li style="margin-top: 10px; padding: 8px 20px; font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Ajustes Visuales</li>
-                <li><a href="/admin/config-themes.php" <?php echo $current_page === 'config-themes.php' ? 'class="active"' : ''; ?>>🎨 Themes</a></li>
-                <li><a href="/admin/config-hero.php" <?php echo $current_page === 'config-hero.php' ? 'class="active"' : ''; ?>>🖼️ Hero Principal</a></li>
-                <li><a href="/admin/config-carrusel.php" <?php echo $current_page === 'config-carrusel.php' ? 'class="active"' : ''; ?>>🎠 Carrusel</a></li>
-                <li><a href="/admin/config-footer.php" <?php echo $current_page === 'config-footer.php' ? 'class="active"' : ''; ?>>🦶 Footer</a></li>
-                <li><a href="/admin/config-dashboard.php" <?php echo $current_page === 'config-dashboard.php' ? 'class="active"' : ''; ?>>📊 Dashboard</a></li>
-                <li><a href="/admin/config-productos-heading.php" <?php echo $current_page === 'config-productos-heading.php' ? 'class="active"' : ''; ?>>📝 Encabezado Productos</a></li>
+                <li>
+                    <div class="menu-item submenu-nested" onclick="toggleSubmenu('ajustes-visuales')" style="padding-left: 45px; font-size: 14px;">
+                        <span>🎨 Ajustes Visuales</span>
+                        <span class="menu-arrow" id="arrow-ajustes-visuales">▶</span>
+                    </div>
+                    <ul class="submenu submenu-nested <?php echo in_array($current_page, ['config-themes.php', 'config-hero.php', 'config-carrusel.php', 'config-footer.php', 'config-dashboard.php', 'config-productos-heading.php']) ? 'open' : ''; ?>"
+                        id="submenu-ajustes-visuales" style="background: rgba(0,0,0,0.3);">
+                        <li><a href="/admin/config-themes.php" <?php echo $current_page === 'config-themes.php' ? 'class="active"' : ''; ?> style="padding-left: 65px;">🎨 Themes</a></li>
+                        <li><a href="/admin/config-hero.php" <?php echo $current_page === 'config-hero.php' ? 'class="active"' : ''; ?> style="padding-left: 65px;">🖼️ Hero Principal</a></li>
+                        <li><a href="/admin/config-carrusel.php" <?php echo $current_page === 'config-carrusel.php' ? 'class="active"' : ''; ?> style="padding-left: 65px;">🎠 Carrusel</a></li>
+                        <li><a href="/admin/config-footer.php" <?php echo $current_page === 'config-footer.php' ? 'class="active"' : ''; ?> style="padding-left: 65px;">🦶 Footer</a></li>
+                        <li><a href="/admin/config-dashboard.php" <?php echo $current_page === 'config-dashboard.php' ? 'class="active"' : ''; ?> style="padding-left: 65px;">📊 Dashboard</a></li>
+                        <li><a href="/admin/config-productos-heading.php" <?php echo $current_page === 'config-productos-heading.php' ? 'class="active"' : ''; ?> style="padding-left: 65px;">📝 Encabezado Productos</a></li>
+                    </ul>
+                </li>
             </ul>
         </li>
     </ul>

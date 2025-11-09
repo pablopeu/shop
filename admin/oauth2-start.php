@@ -10,13 +10,12 @@ require_once __DIR__ . '/../includes/email.php';
 session_start();
 require_admin();
 
-// Load client credentials
-$credentials = file_exists(__DIR__ . '/../config/credentials.php')
-    ? require __DIR__ . '/../config/credentials.php'
-    : [];
+// Load client credentials from email.json
+$config_file = __DIR__ . '/../config/email.json';
+$email_config = read_json($config_file);
 
-$client_id = $credentials['gmail_oauth2']['client_id'] ?? '';
-$client_secret = $credentials['gmail_oauth2']['client_secret'] ?? '';
+$client_id = $email_config['oauth2_credentials']['client_id'] ?? '';
+$client_secret = $email_config['oauth2_credentials']['client_secret'] ?? '';
 
 if (empty($client_id) || empty($client_secret)) {
     ?>
@@ -62,7 +61,7 @@ if (empty($client_id) || empty($client_secret)) {
     <body>
         <div class="error-box">
             <h2>❌ Configuración OAuth2 Faltante</h2>
-            <p>Para usar OAuth2, debes configurar las credenciales de Google Cloud en <code>config/credentials.php</code></p>
+            <p>Para usar OAuth2, debes configurar primero tu Client ID y Client Secret desde el panel de notificaciones.</p>
 
             <h3>Pasos para configurar:</h3>
             <ol>
@@ -71,16 +70,16 @@ if (empty($client_id) || empty($client_secret)) {
                 <li>Habilita "Gmail API" en APIs & Services</li>
                 <li>Ve a "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"</li>
                 <li>Tipo de aplicación: "Web application"</li>
+                <li>Authorized JavaScript origins:
+                    <div class="code-box"><?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST']; ?></div>
+                </li>
                 <li>Authorized redirect URIs:
                     <div class="code-box"><?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . "/admin/oauth2-callback.php"; ?></div>
                 </li>
                 <li>Copia el Client ID y Client Secret</li>
-                <li>Edita <code>config/credentials.php</code> y agrega:
-                    <div class="code-box">'gmail_oauth2' => [
-    'client_id' => 'TU_CLIENT_ID_AQUI',
-    'client_secret' => 'TU_CLIENT_SECRET_AQUI'
-],</div>
-                </li>
+                <li>Vuelve a <strong>Admin → Email y Notificaciones</strong></li>
+                <li>En la sección OAuth2, pega tu Client ID y Client Secret</li>
+                <li>Guarda la configuración y luego haz click en "Autorizar con Google"</li>
             </ol>
 
             <a href="/admin/notificaciones.php" class="btn">Volver a Notificaciones</a>

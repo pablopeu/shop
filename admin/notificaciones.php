@@ -108,6 +108,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'encryption' => sanitize_input($_POST['smtp_encryption'] ?? 'tls'),
                 'auth_method' => sanitize_input($_POST['smtp_auth_method'] ?? 'password')
             ],
+            'oauth2_credentials' => [
+                'client_id' => sanitize_input($_POST['oauth2_client_id'] ?? ''),
+                'client_secret' => sanitize_input($_POST['oauth2_client_secret'] ?? '')
+            ],
             'notifications' => [
                 'customer' => [
                     'order_created' => isset($_POST['email_customer_order_created']),
@@ -626,8 +630,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     3. Habilita "Gmail API" en APIs & Services<br>
                                     4. Ve a "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"<br>
                                     5. Tipo: "Web application"<br>
-                                    6. Authorized redirect URIs: <code><?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . "/admin/oauth2-callback.php"; ?></code><br>
-                                    7. Copia el Client ID y Client Secret a <code>config/credentials.php</code>
+                                    6. Authorized JavaScript origins: <code><?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST']; ?></code><br>
+                                    7. Authorized redirect URIs: <code><?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . "/admin/oauth2-callback.php"; ?></code><br>
+                                    8. Copia el Client ID y Client Secret en los campos de abajo
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="oauth2_client_id">Client ID</label>
+                                    <input type="text" id="oauth2_client_id" name="oauth2_client_id"
+                                           value="<?php echo htmlspecialchars($email_config['oauth2_credentials']['client_id'] ?? ''); ?>"
+                                           placeholder="123456789-abc123.apps.googleusercontent.com">
+                                    <small>Tu OAuth 2.0 Client ID de Google Cloud Console</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="oauth2_client_secret">Client Secret</label>
+                                    <input type="password" id="oauth2_client_secret" name="oauth2_client_secret"
+                                           value="<?php echo htmlspecialchars($email_config['oauth2_credentials']['client_secret'] ?? ''); ?>"
+                                           placeholder="GOCSPX-...">
+                                    <small>Tu OAuth 2.0 Client Secret de Google Cloud Console</small>
+                                </div>
+
+                                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 4px; font-size: 13px;">
+                                    ⚠️ <strong>Importante:</strong> Guarda la configuración después de ingresar Client ID y Client Secret, luego haz click en "Autorizar con Google"
                                 </div>
 
                                 <?php if (isset($email_config['oauth2']['access_token'])): ?>

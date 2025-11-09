@@ -18,18 +18,17 @@ $error = '';
 if (isset($_GET['code'])) {
     $code = $_GET['code'];
 
-    // Load client credentials
-    $credentials = file_exists(__DIR__ . '/../config/credentials.php')
-        ? require __DIR__ . '/../config/credentials.php'
-        : [];
+    // Load client credentials from email.json
+    $config_file = __DIR__ . '/../config/email.json';
+    $email_config = read_json($config_file);
 
-    $client_id = $credentials['gmail_oauth2']['client_id'] ?? '';
-    $client_secret = $credentials['gmail_oauth2']['client_secret'] ?? '';
+    $client_id = $email_config['oauth2_credentials']['client_id'] ?? '';
+    $client_secret = $email_config['oauth2_credentials']['client_secret'] ?? '';
     $redirect_uri = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") .
                     "://" . $_SERVER['HTTP_HOST'] . "/admin/oauth2-callback.php";
 
     if (empty($client_id) || empty($client_secret)) {
-        $error = 'Client ID y Client Secret no están configurados en credentials.php';
+        $error = 'Client ID y Client Secret no están configurados. Por favor, configúralos en Admin → Email y Notificaciones';
     } else {
         // Exchange code for tokens
         $tokens = exchange_oauth2_code($code, $client_id, $client_secret, $redirect_uri);
@@ -46,10 +45,6 @@ if (isset($_GET['code'])) {
                 'scope' => $tokens['scope'] ?? '',
                 'token_type' => $tokens['token_type'] ?? 'Bearer'
             ];
-
-            // Also store minimal client info for token refresh
-            $email_config['oauth2']['client_id'] = $client_id;
-            $email_config['oauth2']['client_secret'] = $client_secret;
 
             if (write_json($config_file, $email_config)) {
                 $message = '✅ Autorización OAuth2 exitosa! Los tokens han sido guardados.';

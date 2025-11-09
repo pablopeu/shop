@@ -12,6 +12,10 @@
     "encryption": "tls",
     "auth_method": "password"
   },
+  "oauth2_credentials": {
+    "client_id": "",
+    "client_secret": ""
+  },
   "notifications": {
     "customer": {
       "order_created": true,

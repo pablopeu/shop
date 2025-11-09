@@ -421,16 +421,12 @@ function get_valid_oauth2_token() {
         return null;
     }
 
-    // Load client credentials
-    $credentials = file_exists(__DIR__ . '/../config/credentials.php')
-        ? require __DIR__ . '/../config/credentials.php'
-        : [];
-
-    $client_id = $credentials['gmail_oauth2']['client_id'] ?? ($oauth2['client_id'] ?? '');
-    $client_secret = $credentials['gmail_oauth2']['client_secret'] ?? ($oauth2['client_secret'] ?? '');
+    // Load client credentials from email.json
+    $client_id = $config['oauth2_credentials']['client_id'] ?? '';
+    $client_secret = $config['oauth2_credentials']['client_secret'] ?? '';
 
     if (empty($client_id) || empty($client_secret)) {
-        error_log("OAuth2: Client credentials not configured");
+        error_log("OAuth2: Client credentials not configured in email.json");
         return null;
     }
 
