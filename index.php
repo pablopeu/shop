@@ -57,21 +57,21 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
     <?php render_theme_css($active_theme); ?>
 
     <!-- Carousel CSS -->
-    <link rel="stylesheet" href="/includes/carousel.css">
+    <link rel="stylesheet" href="<?php echo url('/includes/carousel.css'); ?>">
 
     <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
+    <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
+            <a href="<?php echo url('/'); ?>" class="logo"><?php render_site_logo($site_config); ?></a>
             <nav class="nav">
-                <a href="/">Inicio</a>
-                <a href="/buscar.php">Buscar</a>
-                <a href="/favoritos.php">Favoritos</a>
-                <a href="/track.php">📦 Rastrear</a>
+                <a href="<?php echo url('/'); ?>">Inicio</a>
+                <a href="<?php echo url('/buscar.php'); ?>">Buscar</a>
+                <a href="<?php echo url('/favoritos.php'); ?>">Favoritos</a>
+                <a href="<?php echo url('/track.php'); ?>">📦 Rastrear</a>
                 <a href="#" class="cart-link" onclick="openCartPanel(); return false;">
                     🛒 Carrito
                     <span class="cart-badge hidden" id="cart-count">0</span>

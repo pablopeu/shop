@@ -4,6 +4,9 @@
  * Sistema de funciones principales para la aplicación
  */
 
+// Load config first (includes BASE_PATH and url() function)
+require_once __DIR__ . '/../config.php';
+
 // Security headers
 function set_security_headers() {
     header('X-Frame-Options: DENY');
