@@ -22,10 +22,17 @@ if (file_exists($users_file)) {
     }
 }
 
-// Crear directorio si no existe
-$passwords_dir = __DIR__ . '/data/passwords';
-if (!is_dir($passwords_dir)) {
-    mkdir($passwords_dir, 0755, true);
+// Crear directorios necesarios si no existen
+$directories = [
+    __DIR__ . '/data/passwords',
+    __DIR__ . '/data/rate_limits',
+];
+
+foreach ($directories as $dir) {
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+        echo "✅ Directorio creado: " . basename($dir) . "\n";
+    }
 }
 
 // Datos del usuario por defecto
