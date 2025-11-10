@@ -434,9 +434,14 @@ function is_maintenance_mode() {
 
 /**
  * Redirect to URL
- * @param string $url URL to redirect to
+ * @param string $url URL to redirect to (automatically applies BASE_PATH to internal paths)
  */
 function redirect($url) {
+    // If it's an internal path (starts with /), apply url()
+    // External URLs (http://, https://) are left as-is
+    if (!empty($url) && $url[0] === '/' && strpos($url, '//') !== 0) {
+        $url = url($url);
+    }
     header("Location: $url");
     exit;
 }
