@@ -382,7 +382,7 @@ $user = get_logged_user();
                 <?php endif; ?>
 
                 <?php if ($dashboard_config['quick_actions']['config'] ?? true): ?>
-                <a href="<?php echo url('/admin/config.php'); ?>" class="action-btn">
+                <a href="<?php echo url('/admin/config-sitio.php'); ?>" class="action-btn">
                     <div class="icon">⚙️</div>
                     <div class="text">Configuración</div>
                 </a>
