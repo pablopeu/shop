@@ -191,8 +191,8 @@ function send_email_smtp($to, $subject, $html_body, $plain_body, $from_email, $f
         $errstr = '';
 
         if ($encryption === 'ssl') {
-            $host = 'ssl://' . $host;
-            $smtp = @fsockopen($host, $port, $errno, $errstr, 30);
+            $smtp_host = 'ssl://' . $host;
+            $smtp = @fsockopen($smtp_host, $port, $errno, $errstr, 30);
         } else {
             $smtp = @fsockopen($host, $port, $errno, $errstr, 30);
         }
@@ -204,6 +204,8 @@ function send_email_smtp($to, $subject, $html_body, $plain_body, $from_email, $f
 
         // Leer respuesta del servidor
         $response = fgets($smtp, 515);
+        error_log("SMTP: Initial response: $response");
+
         if (substr($response, 0, 3) != '220') {
             error_log("SMTP: Connection failed - Response: $response");
             fclose($smtp);
@@ -212,12 +214,18 @@ function send_email_smtp($to, $subject, $html_body, $plain_body, $from_email, $f
 
         // EHLO
         fputs($smtp, "EHLO " . ($_SERVER['HTTP_HOST'] ?? 'localhost') . "\r\n");
-        $response = fgets($smtp, 515);
+        $response = '';
+        while ($line = fgets($smtp, 515)) {
+            $response .= $line;
+            if (substr($line, 3, 1) === ' ') break;
+        }
+        error_log("SMTP: EHLO response: " . trim($response));
 
         // STARTTLS si es necesario
         if ($encryption === 'tls') {
             fputs($smtp, "STARTTLS\r\n");
             $response = fgets($smtp, 515);
+            error_log("SMTP: STARTTLS response: $response");
 
             if (substr($response, 0, 3) != '220') {
                 error_log("SMTP: STARTTLS failed - Response: $response");
@@ -235,12 +243,18 @@ function send_email_smtp($to, $subject, $html_body, $plain_body, $from_email, $f
 
             // EHLO nuevamente después de TLS
             fputs($smtp, "EHLO " . ($_SERVER['HTTP_HOST'] ?? 'localhost') . "\r\n");
-            $response = fgets($smtp, 515);
+            $response = '';
+            while ($line = fgets($smtp, 515)) {
+                $response .= $line;
+                if (substr($line, 3, 1) === ' ') break;
+            }
+            error_log("SMTP: EHLO after TLS response: " . trim($response));
         }
 
         // AUTH LOGIN
         fputs($smtp, "AUTH LOGIN\r\n");
         $response = fgets($smtp, 515);
+        error_log("SMTP: AUTH LOGIN response: $response");
 
         if (substr($response, 0, 3) != '334') {
             error_log("SMTP: AUTH LOGIN failed - Response: $response");
@@ -251,9 +265,10 @@ function send_email_smtp($to, $subject, $html_body, $plain_body, $from_email, $f
         // Enviar username
         fputs($smtp, base64_encode($username) . "\r\n");
         $response = fgets($smtp, 515);
+        error_log("SMTP: Username response: $response");
 
         if (substr($response, 0, 3) != '334') {
-            error_log("SMTP: Username authentication failed - Response: $response");
+            error_log("SMTP: Username authentication failed - Response: $response - Check username: $username");
             fclose($smtp);
             return false;
         }
@@ -261,9 +276,10 @@ function send_email_smtp($to, $subject, $html_body, $plain_body, $from_email, $f
         // Enviar password
         fputs($smtp, base64_encode($password) . "\r\n");
         $response = fgets($smtp, 515);
+        error_log("SMTP: Password response: $response");
 
         if (substr($response, 0, 3) != '235') {
-            error_log("SMTP: Password authentication failed - Response: $response");
+            error_log("SMTP: Password authentication failed - Response: $response - Check App Password is correct");
             fclose($smtp);
             return false;
         }

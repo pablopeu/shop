@@ -869,9 +869,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        function updatePortByEncryption() {
+            const encryption = document.getElementById('smtp_encryption').value;
+            const portField = document.getElementById('smtp_port');
+
+            // Solo actualizar si el usuario no ha cambiado manualmente a un puerto no estándar
+            const currentPort = parseInt(portField.value);
+            const standardPorts = [587, 465, 25, 2525];
+
+            // Si el puerto actual es estándar o está vacío, actualizarlo
+            if (!currentPort || standardPorts.includes(currentPort)) {
+                if (encryption === 'tls') {
+                    portField.value = 587;
+                } else if (encryption === 'ssl') {
+                    portField.value = 465;
+                }
+            }
+        }
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             toggleSmtpFields();
+
+            // Add event listener to encryption selector
+            const encryptionSelect = document.getElementById('smtp_encryption');
+            if (encryptionSelect) {
+                encryptionSelect.addEventListener('change', updatePortByEncryption);
+            }
         });
     </script>
 </body>
