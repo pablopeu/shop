@@ -354,5 +354,8 @@ $webhook_url = $protocol . $_SERVER['HTTP_HOST'] . '/webhook.php';
             });
         }
     </script>
+
+    <!-- Unsaved Changes Warning -->
+    <script src="/admin/includes/unsaved-changes-warning.js"></script>
 </body>
 </html>
