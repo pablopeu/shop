@@ -1,9 +1,12 @@
 {
     "primary": "ARS",
     "secondary": "USD",
-    "exchange_rate": 1500,
-    "exchange_rate_source": "manual",
-    "api_enabled": false,
+    "exchange_rate": 1415,
+    "exchange_rate_source": "api",
+    "api_enabled": true,
     "api_url": "https://api.bluelytics.com.ar/v2/latest",
-    "last_update": "2025-11-01T19:57:00Z"
+    "last_update": "2025-11-09T16:13:53Z",
+    "manual_override": false,
+    "api_blue_rate": 1415,
+    "api_oficial_rate": 1455
 }
