@@ -11,9 +11,10 @@
  */
 
 require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/auth.php';
 
 // Verificar si el usuario ya existe
-$users_file = __DIR__ . '/data/passwords/users.json';
+$users_file = get_users_file_path();
 
 if (file_exists($users_file)) {
     $users_data = read_json($users_file);

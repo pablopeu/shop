@@ -27,6 +27,14 @@ $current_path = file_exists($credentials_path_file)
     ? trim(file_get_contents($credentials_path_file))
     : '/home/smtp_credentials.json';
 
+// Users path file
+$users_path_file = __DIR__ . '/../.users_path';
+
+// Get current users path
+$current_users_path = file_exists($users_path_file)
+    ? trim(file_get_contents($users_path_file))
+    : __DIR__ . '/../data/passwords/users.json';
+
 // Load current credentials
 $current_credentials = [
     'smtp' => [
@@ -167,6 +175,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = '✅ Contraseña actualizada exitosamente';
             } else {
                 $error = '❌ ' . $result['message'];
+            }
+        }
+    }
+
+    // Handle users location save
+    elseif (isset($_POST['save_users_location'])) {
+        $new_users_path = sanitize_input($_POST['users_path'] ?? '');
+
+        if (empty($new_users_path)) {
+            $error = '❌ El path no puede estar vacío';
+        } elseif (!is_outside_webroot($new_users_path)) {
+            $error = '❌ El path debe estar FUERA del directorio público (public_html, www, htdocs, etc.)';
+        } else {
+            $old_path = $current_users_path;
+            $actions_performed = [];
+
+            // Ensure directory exists
+            $dir = dirname($new_users_path);
+            if (!file_exists($dir)) {
+                if (!@mkdir($dir, 0755, true)) {
+                    $error = '❌ No se pudo crear el directorio: ' . $dir . ' (verifica permisos)';
+                } else {
+                    $actions_performed[] = 'Directorio creado';
+                }
+            }
+
+            // Verify directory is writable
+            if (empty($error) && !is_writable($dir)) {
+                $error = '❌ El directorio no es escribible: ' . $dir . ' (verifica permisos)';
+            }
+
+            if (empty($error)) {
+                // Copy existing users file to new location
+                if (file_exists($old_path)) {
+                    $users_content = file_get_contents($old_path);
+                    if (file_put_contents($new_users_path, $users_content) !== false) {
+                        $actions_performed[] = 'Archivo de usuarios movido';
+
+                        // Set restrictive permissions
+                        @chmod($new_users_path, 0600);
+                        $actions_performed[] = 'Permisos establecidos (600)';
+
+                        // Save path reference
+                        file_put_contents($users_path_file, $new_users_path);
+                        $current_users_path = $new_users_path;
+
+                        // Optionally delete old file (only if it was in the default location)
+                        if (strpos($old_path, 'data/passwords/') !== false) {
+                            @unlink($old_path);
+                            $actions_performed[] = 'Archivo anterior eliminado';
+                        }
+
+                        $action_details = implode(' • ', $actions_performed);
+                        $message = '✅ Ubicación de usuarios guardada exitosamente en: ' . $new_users_path . '<br><small>' . $action_details . '</small>';
+                        log_admin_action('users_location_updated', $_SESSION['username']);
+                    } else {
+                        $error = '❌ Error al escribir el archivo de usuarios (verifica permisos del directorio)';
+                    }
+                } else {
+                    $error = '❌ No se encontró el archivo de usuarios actual en: ' . $old_path;
+                }
             }
         }
     }
@@ -498,6 +567,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <button type="submit" name="change_password" class="btn btn-primary">
                     🔐 Cambiar Contraseña
+                </button>
+            </form>
+        </div>
+
+        <!-- Users Location Section -->
+        <div class="card">
+            <div class="card-header">
+                <h2>👥 Ubicación de Usuarios Administradores</h2>
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Importante - Seguridad:</strong><br>
+                Los datos de usuarios administradores (credenciales, contraseñas hasheadas) deben almacenarse en un archivo JSON <strong>fuera del directorio público</strong> del sitio web.<br>
+                Esto garantiza que NO sean accesibles desde internet.
+            </div>
+
+            <form method="POST">
+                <div class="form-group">
+                    <label for="users_path">Path del archivo de usuarios</label>
+                    <input type="text" id="users_path" name="users_path"
+                           value="<?php echo htmlspecialchars($current_users_path); ?>"
+                           placeholder="/home/admin_users.json" required>
+                    <small>Ruta absoluta donde se guardarán los usuarios administradores (debe estar FUERA de public_html/www)</small>
+                </div>
+
+                <div class="info-box">
+                    <strong>📝 Ejemplos de paths seguros:</strong><br><br>
+                    <strong>Desarrollo local:</strong> <code>/home/admin_users.json</code><br>
+                    <strong>Hosting cPanel:</strong> <code>/home2/uv0023/admin_users.json</code> (fuera de public_html)<br>
+                    <strong>VPS:</strong> <code>/home/usuario/secure/users.json</code><br><br>
+                    <strong>❌ NUNCA uses:</strong> <code>/var/www/html/...</code>, <code>/public_html/...</code>, <code>/www/...</code>
+                </div>
+
+                <div class="warning-box" style="background: #ffe8e8; border-left-color: #dc3545;">
+                    <strong>⚠️ ATENCIÓN - Ubicación Actual:</strong><br>
+                    Tu archivo actual está en: <code><?php echo htmlspecialchars($current_users_path); ?></code><br>
+                    <?php if (!is_outside_webroot($current_users_path)): ?>
+                        <span style="color: #dc3545; font-weight: bold;">🚨 RIESGO: Este archivo está DENTRO del webroot y es potencialmente accesible desde internet.</span>
+                    <?php else: ?>
+                        <span style="color: #28a745; font-weight: bold;">✅ SEGURO: Este archivo está fuera del webroot.</span>
+                    <?php endif; ?>
+                </div>
+
+                <div class="info-box">
+                    <strong>🔒 Al guardar:</strong><br>
+                    1. Se creará automáticamente el directorio si no existe<br>
+                    2. Se copiará el archivo actual a la nueva ubicación<br>
+                    3. Se establecerán permisos restrictivos (600 - solo owner puede leer)<br>
+                    4. El archivo en la ubicación anterior será eliminado si está dentro de data/passwords/
+                </div>
+
+                <button type="submit" name="save_users_location" class="btn btn-primary">
+                    💾 Guardar Ubicación
                 </button>
             </form>
         </div>
