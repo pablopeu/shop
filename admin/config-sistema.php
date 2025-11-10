@@ -70,6 +70,7 @@ function is_outside_webroot($path) {
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Handle credentials save
     if (isset($_POST['save_credentials'])) {
         $new_path = sanitize_input($_POST['credentials_path'] ?? '');
 
@@ -143,6 +144,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $error = '❌ Error al escribir el archivo de credenciales (verifica permisos del directorio)';
                 }
+            }
+        }
+    }
+
+    // Handle password change
+    elseif (isset($_POST['change_password'])) {
+        $current_password = $_POST['current_password'] ?? '';
+        $new_password = $_POST['new_password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+
+        if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
+            $error = '❌ Todos los campos son requeridos';
+        } elseif ($new_password !== $confirm_password) {
+            $error = '❌ Las nuevas contraseñas no coinciden';
+        } elseif (strlen($new_password) < 8) {
+            $error = '❌ La nueva contraseña debe tener al menos 8 caracteres';
+        } else {
+            $result = change_admin_password($_SESSION['user_id'], $current_password, $new_password);
+
+            if ($result['success']) {
+                $message = '✅ Contraseña actualizada exitosamente';
+            } else {
+                $error = '❌ ' . $result['message'];
             }
         }
     }
@@ -428,6 +452,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <button type="submit" name="save_credentials" class="btn btn-primary">
                     💾 Guardar Credenciales
+                </button>
+            </form>
+        </div>
+
+        <!-- Password Change Section -->
+        <div class="card">
+            <div class="card-header">
+                <h2>🔑 Cambiar Contraseña de Administrador</h2>
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Importante - Seguridad:</strong><br>
+                Asegúrate de usar una contraseña segura con al menos 8 caracteres. Se recomienda usar una combinación de letras mayúsculas, minúsculas, números y símbolos.
+            </div>
+
+            <form method="POST">
+                <div class="form-group">
+                    <label for="current_password">Contraseña Actual</label>
+                    <input type="password" id="current_password" name="current_password"
+                           placeholder="Tu contraseña actual" required autocomplete="current-password">
+                    <small>Ingresa tu contraseña actual para confirmar tu identidad</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="new_password">Nueva Contraseña</label>
+                    <input type="password" id="new_password" name="new_password"
+                           placeholder="Mínimo 8 caracteres" required autocomplete="new-password">
+                    <small>Debe tener al menos 8 caracteres</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_password">Confirmar Nueva Contraseña</label>
+                    <input type="password" id="confirm_password" name="confirm_password"
+                           placeholder="Repite la nueva contraseña" required autocomplete="new-password">
+                    <small>Vuelve a ingresar la nueva contraseña para confirmar</small>
+                </div>
+
+                <div class="info-box">
+                    <strong>🔒 Al cambiar la contraseña:</strong><br>
+                    1. Deberás usar la nueva contraseña en tu próximo inicio de sesión<br>
+                    2. Se registrará un log de este cambio por seguridad<br>
+                    3. Guarda tu nueva contraseña en un lugar seguro
+                </div>
+
+                <button type="submit" name="change_password" class="btn btn-primary">
+                    🔐 Cambiar Contraseña
                 </button>
             </form>
         </div>
