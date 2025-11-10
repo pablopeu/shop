@@ -382,7 +382,7 @@ $user = get_logged_user();
                             <?php foreach ($products as $product): ?>
                                 <tr>
                                     <td>
-                                        <img src="<?php echo htmlspecialchars($product['thumbnail']); ?>"
+                                        <img src="<?php echo htmlspecialchars(url($product['thumbnail'])); ?>"
                                              alt="<?php echo htmlspecialchars($product['name']); ?>"
                                              class="product-thumbnail">
                                     </td>
