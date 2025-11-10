@@ -22,7 +22,7 @@ $page_title = 'Editar Producto';
 $product_id = $_GET['id'] ?? '';
 
 if (empty($product_id)) {
-    header('Location: /admin/productos-listado.php');
+    header('Location: ' . url('/admin/productos-listado.php'));
     exit;
 }
 
@@ -30,7 +30,7 @@ if (empty($product_id)) {
 $product = get_product_by_id($product_id);
 
 if (!$product) {
-    header('Location: /admin/productos-listado.php?error=not_found');
+    header('Location: ' . url('/admin/productos-listado.php?error=not_found'));
     exit;
 }
 
@@ -55,7 +55,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_image' && isset($_GET[
 
         // Save
         if (update_product($product_id, $product)) {
-            header('Location: /admin/productos-editar.php?id=' . $product_id . '&msg=image_deleted');
+            header('Location: ' . url('/admin/productos-editar.php?id=' . $product_id . '&msg=image_deleted'));
             exit;
         }
     }
@@ -142,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
                 ]);
 
                 // Redirect to product listing
-                header('Location: /admin/productos-listado.php?msg=product_updated');
+                header('Location: ' . url('/admin/productos-listado.php?msg=product_updated'));
                 exit;
             } else {
                 $error = 'Error al actualizar el producto';
@@ -677,7 +677,7 @@ $user = get_logged_user();
                         <button type="submit" name="save_product" class="btn-save" id="saveBtn">
                             💾 Guardar Cambios
                         </button>
-                        <a href="/admin/productos-listado.php" class="btn btn-secondary">
+                        <a href="<?php echo url('/admin/productos-listado.php'); ?>" class="btn btn-secondary">
                             ❌ Cancelar
                         </a>
                     </div>

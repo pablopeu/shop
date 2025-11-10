@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($found_order) {
             // Redirect to tracking page with token
-            header("Location: /pedido.php?order={$found_order['id']}&token={$found_order['tracking_token']}");
+            header("Location: " . url("/pedido.php?order={$found_order['id']}&token={$found_order['tracking_token']}"));
             exit;
         } else {
             $error = 'No se encontró ningún pedido con esos datos';
@@ -66,9 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php render_theme_css($active_theme); ?>
 
     <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
-    <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
+    <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
     <div class="container">
@@ -126,14 +124,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="divider">o</div>
 
             <div class="link-section">
-                <a href="/" class="link-btn">
+                <a href="<?php echo url('/'); ?>" class="link-btn">
                     🏠 Volver al inicio
                 </a>
             </div>
         </div>
     </div>
     <!-- Mobile Menu -->
-    <script src="/includes/mobile-menu.js"></script>
+    <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
     <!-- Footer -->
     <footer class="footer">

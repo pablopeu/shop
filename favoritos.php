@@ -40,20 +40,18 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
     <?php render_theme_css($active_theme); ?>
 
     <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
-    <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
+    <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
+            <a href="<?php echo url('/'); ?>" class="logo"><?php render_site_logo($site_config); ?></a>
             <nav class="nav">
-                <a href="/">Inicio</a>
-                <a href="/buscar.php">Buscar</a>
-                <a href="/favoritos.php">Favoritos (<span id="favorites-count">0</span>)</a>
-                <a href="/carrito.php">Carrito (<span id="cart-count">0</span>)</a>
+                <a href="<?php echo url('/'); ?>">Inicio</a>
+                <a href="<?php echo url('/buscar.php'); ?>">Buscar</a>
+                <a href="<?php echo url('/favoritos.php'); ?>">Favoritos (<span id="favorites-count">0</span>)</a>
+                <a href="<?php echo url('/carrito.php'); ?>">Carrito (<span id="cart-count">0</span>)</a>
             </nav>
         </div>
     </header>
@@ -72,7 +70,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                 <h2>💔</h2>
                 <h3>No tienes favoritos aún</h3>
                 <p>Agrega productos a tu lista de favoritos para verlos aquí</p>
-                <a href="/" class="btn btn-primary btn-large">Explorar Productos</a>
+                <a href="<?php echo url('/'); ?>" class="btn btn-primary btn-large">Explorar Productos</a>
             </div>
         </div>
     </div>
@@ -129,7 +127,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                     <h2>💔</h2>
                     <h3>No tienes favoritos aún</h3>
                     <p>Agrega productos a tu lista de favoritos para verlos aquí</p>
-                    <a href="/" class="btn btn-primary btn-large">Explorar Productos</a>
+                    <a href="<?php echo url('/'); ?>" class="btn btn-primary btn-large">Explorar Productos</a>
                 </div>
             `;
         }
@@ -312,9 +310,9 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
     </script>
 
     <!-- Cart Validator -->
-    <script src="/includes/cart-validator.js"></script>
+    <script src="<?php echo url('/includes/cart-validator.js'); ?>"></script>
     <!-- Mobile Menu -->
-    <script src="/includes/mobile-menu.js"></script>
+    <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
     <!-- Footer -->
     <footer class="footer">

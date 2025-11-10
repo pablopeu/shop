@@ -55,20 +55,18 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
     <?php render_theme_css($active_theme); ?>
 
     <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
-    <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
+    <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
+            <a href="<?php echo url('/'); ?>" class="logo"><?php render_site_logo($site_config); ?></a>
             <nav class="nav">
-                <a href="/">Inicio</a>
-                <a href="/buscar.php">Buscar</a>
-                <a href="/favoritos.php">Favoritos</a>
-                <a href="/carrito.php">Carrito (<span id="cart-count">0</span>)</a>
+                <a href="<?php echo url('/'); ?>">Inicio</a>
+                <a href="<?php echo url('/buscar.php'); ?>">Buscar</a>
+                <a href="<?php echo url('/favoritos.php'); ?>">Favoritos</a>
+                <a href="<?php echo url('/carrito.php'); ?>">Carrito (<span id="cart-count">0</span>)</a>
             </nav>
         </div>
     </header>
@@ -90,7 +88,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
                     <div class="empty-cart">
                         <h2>Tu carrito está vacío</h2>
                         <p>Agrega productos para comenzar tu compra</p>
-                        <a href="/" class="btn">Ir a la Tienda</a>
+                        <a href="<?php echo url('/'); ?>" class="btn">Ir a la Tienda</a>
                     </div>
                 </div>
             </div>
@@ -125,7 +123,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
                 <button class="checkout-btn" id="checkoutBtn" onclick="goToCheckout()">
                     Proceder al Checkout
                 </button>
-                <a href="/" class="continue-shopping">Continuar Comprando</a>
+                <a href="<?php echo url('/'); ?>" class="continue-shopping">Continuar Comprando</a>
             </div>
         </div>
     </div>
@@ -751,7 +749,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
         }
     </script>
     <!-- Mobile Menu -->
-    <script src="/includes/mobile-menu.js"></script>
+    <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
     <!-- Footer -->
     <footer class="footer">

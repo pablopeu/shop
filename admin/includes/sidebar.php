@@ -123,7 +123,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <ul class="sidebar-menu">
         <!-- Dashboard -->
         <li>
-            <a href="/admin/index.php" class="<?php echo $current_page === 'index.php' ? 'active' : ''; ?>">
+            <a href="<?php echo url('/admin/index.php'); ?>" class="<?php echo $current_page === 'index.php' ? 'active' : ''; ?>">
                 📊 Dashboard
             </a>
         </li>
@@ -137,13 +137,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <ul class="submenu <?php echo in_array($current_page, ['productos-listado.php', 'productos-nuevo.php', 'productos-editar.php']) ? 'open' : ''; ?>"
                 id="submenu-productos">
                 <li>
-                    <a href="/admin/productos-listado.php"
+                    <a href="<?php echo url('/admin/productos-listado.php'); ?>"
                        class="<?php echo $current_page === 'productos-listado.php' ? 'active' : ''; ?>">
                         📋 Listado de Productos
                     </a>
                 </li>
                 <li>
-                    <a href="/admin/productos-nuevo.php"
+                    <a href="<?php echo url('/admin/productos-nuevo.php'); ?>"
                        class="<?php echo $current_page === 'productos-nuevo.php' ? 'active' : ''; ?>">
                         ➕ Agregar Producto
                     </a>
@@ -160,19 +160,19 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <ul class="submenu <?php echo in_array($current_page, ['ventas.php', 'archivo-ventas.php', 'reviews-listado.php']) ? 'open' : ''; ?>"
                 id="submenu-ventas">
                 <li>
-                    <a href="/admin/ventas.php"
+                    <a href="<?php echo url('/admin/ventas.php'); ?>"
                        class="<?php echo $current_page === 'ventas.php' ? 'active' : ''; ?>">
                         📋 Gestión de Ventas
                     </a>
                 </li>
                 <li>
-                    <a href="/admin/archivo-ventas.php"
+                    <a href="<?php echo url('/admin/archivo-ventas.php'); ?>"
                        class="<?php echo $current_page === 'archivo-ventas.php' ? 'active' : ''; ?>">
                         📦 Archivo de Ventas
                     </a>
                 </li>
                 <li>
-                    <a href="/admin/reviews-listado.php"
+                    <a href="<?php echo url('/admin/reviews-listado.php'); ?>"
                        class="<?php echo $current_page === 'reviews-listado.php' ? 'active' : ''; ?>">
                         ⭐ Reviews
                     </a>
@@ -188,16 +188,16 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </div>
             <ul class="submenu <?php echo in_array($current_page, ['promociones-listado.php', 'promociones-nuevo.php', 'promociones-editar.php', 'cupones-listado.php', 'cupones-nuevo.php', 'cupones-editar.php']) ? 'open' : ''; ?>"
                 id="submenu-promociones-cupones">
-                <li><a href="/admin/promociones-listado.php" <?php echo $current_page === 'promociones-listado.php' ? 'class="active"' : ''; ?>>📋 Listado de Promociones</a></li>
-                <li><a href="/admin/promociones-nuevo.php" <?php echo $current_page === 'promociones-nuevo.php' ? 'class="active"' : ''; ?>>➕ Nueva Promoción</a></li>
+                <li><a href="<?php echo url('/admin/promociones-listado.php'); ?>" <?php echo $current_page === 'promociones-listado.php' ? 'class="active"' : ''; ?>>📋 Listado de Promociones</a></li>
+                <li><a href="<?php echo url('/admin/promociones-nuevo.php'); ?>" <?php echo $current_page === 'promociones-nuevo.php' ? 'class="active"' : ''; ?>>➕ Nueva Promoción</a></li>
                 <li>
-                    <a href="/admin/cupones-listado.php"
+                    <a href="<?php echo url('/admin/cupones-listado.php'); ?>"
                        class="<?php echo $current_page === 'cupones-listado.php' ? 'active' : ''; ?>">
                         🎫 Listado de Cupones
                     </a>
                 </li>
                 <li>
-                    <a href="/admin/cupones-nuevo.php"
+                    <a href="<?php echo url('/admin/cupones-nuevo.php'); ?>"
                        class="<?php echo $current_page === 'cupones-nuevo.php' ? 'active' : ''; ?>">
                         ➕ Nuevo Cupón
                     </a>
@@ -214,13 +214,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <ul class="submenu <?php echo in_array($current_page, ['notificaciones.php', 'secretos-path.php']) ? 'open' : ''; ?>"
                 id="submenu-notificaciones">
                 <li>
-                    <a href="/admin/notificaciones.php"
+                    <a href="<?php echo url('/admin/notificaciones.php'); ?>"
                        class="<?php echo $current_page === 'notificaciones.php' ? 'active' : ''; ?>">
                         ⚙️ Configuración
                     </a>
                 </li>
                 <li>
-                    <a href="/admin/secretos-path.php"
+                    <a href="<?php echo url('/admin/secretos-path.php'); ?>"
                        class="<?php echo $current_page === 'secretos-path.php' ? 'active' : ''; ?>">
                         🔐 Ubicación de Secretos
                     </a>
@@ -237,13 +237,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <ul class="submenu <?php echo in_array($current_page, ['config-payment.php', 'payment-secretos-path.php']) ? 'open' : ''; ?>"
                 id="submenu-payment">
                 <li>
-                    <a href="/admin/config-payment.php"
+                    <a href="<?php echo url('/admin/config-payment.php'); ?>"
                        class="<?php echo $current_page === 'config-payment.php' ? 'active' : ''; ?>">
                         ⚙️ Configuración
                     </a>
                 </li>
                 <li>
-                    <a href="/admin/payment-secretos-path.php"
+                    <a href="<?php echo url('/admin/payment-secretos-path.php'); ?>"
                        class="<?php echo $current_page === 'payment-secretos-path.php' ? 'active' : ''; ?>">
                         🔐 Ubicación de Secretos
                     </a>
@@ -259,16 +259,16 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </div>
             <ul class="submenu <?php echo in_array($current_page, ['config-sitio.php', 'config-moneda.php', 'config-hero.php', 'config-carrusel.php', 'config-productos-heading.php', 'config-dashboard.php', 'config-mantenimiento.php', 'config-themes.php', 'config-footer.php']) ? 'open' : ''; ?>"
                 id="submenu-configuracion">
-                <li><a href="/admin/config-sitio.php" <?php echo $current_page === 'config-sitio.php' ? 'class="active"' : ''; ?>>📄 Información del Sitio</a></li>
-                <li><a href="/admin/config-moneda.php" <?php echo $current_page === 'config-moneda.php' ? 'class="active"' : ''; ?>>💱 Moneda y Cambio</a></li>
-                <li><a href="/admin/config-mantenimiento.php" <?php echo $current_page === 'config-mantenimiento.php' ? 'class="active"' : ''; ?>>🚧 Mantenimiento</a></li>
+                <li><a href="<?php echo url('/admin/config-sitio.php'); ?>" <?php echo $current_page === 'config-sitio.php' ? 'class="active"' : ''; ?>>📄 Información del Sitio</a></li>
+                <li><a href="<?php echo url('/admin/config-moneda.php'); ?>" <?php echo $current_page === 'config-moneda.php' ? 'class="active"' : ''; ?>>💱 Moneda y Cambio</a></li>
+                <li><a href="<?php echo url('/admin/config-mantenimiento.php'); ?>" <?php echo $current_page === 'config-mantenimiento.php' ? 'class="active"' : ''; ?>>🚧 Mantenimiento</a></li>
                 <li style="margin-top: 10px; padding: 8px 20px; font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Ajustes Visuales</li>
-                <li><a href="/admin/config-themes.php" <?php echo $current_page === 'config-themes.php' ? 'class="active"' : ''; ?>>🎨 Themes</a></li>
-                <li><a href="/admin/config-hero.php" <?php echo $current_page === 'config-hero.php' ? 'class="active"' : ''; ?>>🖼️ Hero Principal</a></li>
-                <li><a href="/admin/config-carrusel.php" <?php echo $current_page === 'config-carrusel.php' ? 'class="active"' : ''; ?>>🎠 Carrusel</a></li>
-                <li><a href="/admin/config-footer.php" <?php echo $current_page === 'config-footer.php' ? 'class="active"' : ''; ?>>🦶 Footer</a></li>
-                <li><a href="/admin/config-dashboard.php" <?php echo $current_page === 'config-dashboard.php' ? 'class="active"' : ''; ?>>📊 Dashboard</a></li>
-                <li><a href="/admin/config-productos-heading.php" <?php echo $current_page === 'config-productos-heading.php' ? 'class="active"' : ''; ?>>📝 Encabezado Productos</a></li>
+                <li><a href="<?php echo url('/admin/config-themes.php'); ?>" <?php echo $current_page === 'config-themes.php' ? 'class="active"' : ''; ?>>🎨 Themes</a></li>
+                <li><a href="<?php echo url('/admin/config-hero.php'); ?>" <?php echo $current_page === 'config-hero.php' ? 'class="active"' : ''; ?>>🖼️ Hero Principal</a></li>
+                <li><a href="<?php echo url('/admin/config-carrusel.php'); ?>" <?php echo $current_page === 'config-carrusel.php' ? 'class="active"' : ''; ?>>🎠 Carrusel</a></li>
+                <li><a href="<?php echo url('/admin/config-footer.php'); ?>" <?php echo $current_page === 'config-footer.php' ? 'class="active"' : ''; ?>>🦶 Footer</a></li>
+                <li><a href="<?php echo url('/admin/config-dashboard.php'); ?>" <?php echo $current_page === 'config-dashboard.php' ? 'class="active"' : ''; ?>>📊 Dashboard</a></li>
+                <li><a href="<?php echo url('/admin/config-productos-heading.php'); ?>" <?php echo $current_page === 'config-productos-heading.php' ? 'class="active"' : ''; ?>>📝 Encabezado Productos</a></li>
             </ul>
         </li>
     </ul>
@@ -302,4 +302,4 @@ $current_page = basename($_SERVER['PHP_SELF']);
 </script>
 
 <!-- Session Monitor - Auto-redirects if session expires -->
-<script src="/admin/includes/session-monitor.js"></script>
+<script src="<?php echo url('/admin/includes/session-monitor.js'); ?>"></script>

@@ -30,7 +30,7 @@ $product = get_product_by_slug($slug);
 
 if (!$product) {
     http_response_code(404);
-    echo '<!DOCTYPE html><html><head><title>Producto no encontrado</title></head><body><h1>Producto no encontrado</h1><a href="/">Volver al inicio</a>
+    echo '<!DOCTYPE html><html><head><title>Producto no encontrado</title></head><body><h1>Producto no encontrado</h1><a href="' . url('/') . '">Volver al inicio</a>
     <!-- Footer -->
     <footer class="footer">
         <?php render_footer($site_config, $footer_config); ?>
@@ -154,25 +154,25 @@ write_json($visits_file, $visits_data);
 
 
     <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
+    <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
+            <a href="<?php echo url('/'); ?>" class="logo"><?php render_site_logo($site_config); ?></a>
             <nav class="nav">
-                <a href="/">Inicio</a>
-                <a href="/buscar.php">Buscar</a>
-                <a href="/favoritos.php">Favoritos</a>
-                <a href="/carrito.php">Carrito (<span id="cart-count">0</span>)</a>
+                <a href="<?php echo url('/'); ?>">Inicio</a>
+                <a href="<?php echo url('/buscar.php'); ?>">Buscar</a>
+                <a href="<?php echo url('/favoritos.php'); ?>">Favoritos</a>
+                <a href="<?php echo url('/carrito.php'); ?>">Carrito (<span id="cart-count">0</span>)</a>
             </nav>
         </div>
     </header>
 
     <!-- Breadcrumb -->
     <div class="breadcrumb">
-        <a href="/">Inicio</a> / <?php echo htmlspecialchars($product['name']); ?>
+        <a href="<?php echo url('/'); ?>">Inicio</a> / <?php echo htmlspecialchars($product['name']); ?>
     </div>
 
     <!-- Product -->
@@ -590,10 +590,10 @@ write_json($visits_file, $visits_data);
     </script>
 
     <!-- Cart Validator -->
-    <script src="/includes/cart-validator.js"></script>
+    <script src="<?php echo url('/includes/cart-validator.js'); ?>"></script>
 
     <!-- Mobile Menu -->
-    <script src="/includes/mobile-menu.js"></script>
+    <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
     <!-- Footer -->
     <footer class="footer">

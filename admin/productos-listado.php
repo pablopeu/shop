@@ -375,7 +375,7 @@ $user = get_logged_user();
                             <tr>
                                 <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
                                     No hay productos.
-                                    <a href="/admin/productos-nuevo.php" style="color: #4CAF50;">Crear tu primer producto</a>
+                                    <a href="<?php echo url('/admin/productos-nuevo.php'); ?>" style="color: #4CAF50;">Crear tu primer producto</a>
                                 </td>
                             </tr>
                         <?php else: ?>
@@ -406,7 +406,7 @@ $user = get_logged_user();
                                     <td>
                                         <div class="actions" id="actions-<?php echo $product['id']; ?>">
                                             <div class="delete-actions">
-                                                <a href="/admin/productos-editar.php?id=<?php echo urlencode($product['id']); ?>"
+                                                <a href="<?php echo url('/admin/productos-editar.php?id=' . urlencode($product['id'])); ?>"
                                                    class="btn btn-primary btn-sm">✏️ Editar</a>
                                                 <a href="?action=toggle&id=<?php echo urlencode($product['id']); ?>"
                                                    class="btn btn-secondary btn-sm"

@@ -16,13 +16,13 @@ $page_title = 'Editar Cupón';
 $coupon_id = $_GET['id'] ?? '';
 
 if (empty($coupon_id)) {
-    header('Location: /admin/cupones-listado.php');
+    header('Location: ' . url('/admin/cupones-listado.php'));
     exit;
 }
 
 $coupon = get_coupon_by_id($coupon_id);
 if (!$coupon) {
-    header('Location: /admin/cupones-listado.php?error=not_found');
+    header('Location: ' . url('/admin/cupones-listado.php?error=not_found'));
     exit;
 }
 

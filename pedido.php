@@ -86,15 +86,13 @@ $status_config = [
     <?php render_theme_css($active_theme); ?>
 
     <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
-    <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
+    <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
     <!-- Header -->
     <div class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
+            <a href="<?php echo url('/'); ?>" class="logo"><?php render_site_logo($site_config); ?></a>
         </div>
     </div>
 
@@ -108,7 +106,7 @@ $status_config = [
                 <p style="color: #666; margin-top: 10px;">
                     Por favor verifica el link de seguimiento que recibiste por email.
                 </p>
-                <a href="/" class="btn btn-primary">Volver al inicio</a>
+                <a href="<?php echo url('/'); ?>" class="btn btn-primary">Volver al inicio</a>
             </div>
 
         <?php else: ?>
@@ -371,7 +369,7 @@ $status_config = [
     </div>
 
     <!-- Mobile Menu -->
-    <script src="/includes/mobile-menu.js"></script>
+    <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
     <!-- Footer -->
     <footer class="footer">
