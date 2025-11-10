@@ -135,7 +135,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
             $error = 'Debe haber al menos una imagen';
         } else {
             // Update product
-            if (update_product($product_id, $product_data)) {
+            $update_result = update_product($product_id, $product_data);
+            if ($update_result['success']) {
                 log_admin_action('product_updated', $_SESSION['username'], [
                     'product_id' => $product_id,
                     'name' => $product_data['name']
@@ -145,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
                 header('Location: ' . url('/admin/productos-listado.php?msg=product_updated'));
                 exit;
             } else {
-                $error = 'Error al actualizar el producto';
+                $error = $update_result['message'] ?? 'Error al actualizar el producto';
             }
         }
     }

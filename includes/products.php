@@ -293,17 +293,28 @@ function update_product($product_id, $data) {
         }
     }
 
-    // Update SEO
-    if (isset($data['seo_title'])) {
-        $product['seo']['title'] = sanitize_input($data['seo_title']);
-    }
-
-    if (isset($data['seo_description'])) {
-        $product['seo']['description'] = sanitize_input($data['seo_description']);
-    }
-
-    if (isset($data['seo_keywords'])) {
-        $product['seo']['keywords'] = sanitize_input($data['seo_keywords']);
+    // Update SEO (support both nested and flat structure)
+    if (isset($data['seo']) && is_array($data['seo'])) {
+        if (isset($data['seo']['title'])) {
+            $product['seo']['title'] = sanitize_input($data['seo']['title']);
+        }
+        if (isset($data['seo']['description'])) {
+            $product['seo']['description'] = sanitize_input($data['seo']['description']);
+        }
+        if (isset($data['seo']['keywords'])) {
+            $product['seo']['keywords'] = sanitize_input($data['seo']['keywords']);
+        }
+    } else {
+        // Fallback to flat structure
+        if (isset($data['seo_title'])) {
+            $product['seo']['title'] = sanitize_input($data['seo_title']);
+        }
+        if (isset($data['seo_description'])) {
+            $product['seo']['description'] = sanitize_input($data['seo_description']);
+        }
+        if (isset($data['seo_keywords'])) {
+            $product['seo']['keywords'] = sanitize_input($data['seo_keywords']);
+        }
     }
 
     $product['updated_at'] = get_timestamp();

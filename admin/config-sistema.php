@@ -25,7 +25,7 @@ $credentials_path_file = __DIR__ . '/../.credentials_path';
 // Get current credentials path
 $current_path = file_exists($credentials_path_file)
     ? trim(file_get_contents($credentials_path_file))
-    : '/home/smtp_credentials.json';
+    : '/home/notification_credentials.json';
 
 // Users path file
 $users_path_file = __DIR__ . '/../.users_path';
@@ -426,24 +426,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="warning-box">
                 <strong>⚠️ Importante - Seguridad:</strong><br>
-                Las credenciales (contraseñas SMTP, tokens de Telegram) se guardan en un archivo JSON <strong>fuera del directorio público</strong> del sitio web.<br>
-                Esto garantiza que NO sean accesibles desde internet.
+                Las credenciales (contraseñas SMTP, tokens de Telegram, etc.) se guardan en un archivo JSON <strong>fuera del directorio público</strong> del sitio web.<br>
+                Esto garantiza que NO sean accesibles desde internet.<br><br>
+                <strong>📄 Archivo de Notificaciones:</strong> Este archivo contiene credenciales para SMTP (email) y Telegram (bot).
             </div>
 
             <form method="POST">
                 <div class="form-group">
-                    <label for="credentials_path">Path del archivo de credenciales</label>
+                    <label for="credentials_path">Path del archivo de credenciales de notificaciones</label>
                     <input type="text" id="credentials_path" name="credentials_path"
                            value="<?php echo htmlspecialchars($current_path); ?>"
-                           placeholder="/home/smtp_credentials.json" required>
-                    <small>Ruta absoluta donde se guardarán las credenciales (debe estar FUERA de public_html/www)</small>
+                           placeholder="/home/notification_credentials.json" required>
+                    <small>Ruta absoluta donde se guardarán las credenciales de SMTP y Telegram (debe estar FUERA de public_html/www)</small>
                 </div>
 
                 <div class="info-box">
                     <strong>📝 Ejemplos de paths seguros:</strong><br><br>
-                    <strong>Desarrollo local:</strong> <code>/home/smtp_credentials.json</code><br>
-                    <strong>Hosting cPanel:</strong> <code>/home2/uv0023/smtp_credentials.json</code> (fuera de public_html)<br>
-                    <strong>VPS:</strong> <code>/home/usuario/credentials.json</code><br><br>
+                    <strong>Desarrollo local:</strong> <code>/home/notification_credentials.json</code><br>
+                    <strong>Hosting cPanel:</strong> <code>/home2/uv0023/notification_credentials.json</code> (fuera de public_html)<br>
+                    <strong>VPS:</strong> <code>/home/usuario/credentials/notifications.json</code><br><br>
                     <strong>❌ NUNCA uses:</strong> <code>/var/www/html/...</code>, <code>/public_html/...</code>, <code>/www/...</code>
                 </div>
 
@@ -510,6 +511,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                placeholder="123456789">
                         <small>ID del chat/canal donde recibirás mensajes</small>
                     </div>
+                </div>
+
+                <div class="warning-box" style="background: #ffe8e8; border-left-color: #dc3545;">
+                    <strong>⚠️ ATENCIÓN - Ubicación Actual:</strong><br>
+                    Tu archivo actual está en: <code><?php echo htmlspecialchars($current_path); ?></code><br>
+                    <?php if (!is_outside_webroot($current_path)): ?>
+                        <span style="color: #dc3545; font-weight: bold;">🚨 RIESGO: Este archivo está DENTRO del webroot y es potencialmente accesible desde internet.</span>
+                    <?php else: ?>
+                        <span style="color: #28a745; font-weight: bold;">✅ SEGURO: Este archivo está fuera del webroot.</span>
+                    <?php endif; ?>
                 </div>
 
                 <div class="info-box">

@@ -183,7 +183,7 @@ $user = get_logged_user();
                     <?php if (!empty($site_config['logo']['path'])): ?>
                         <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
                             <div style="display: flex; align-items: center; gap: 15px;">
-                                <img src="<?php echo htmlspecialchars($site_config['logo']['path']); ?>"
+                                <img src="<?php echo htmlspecialchars(url($site_config['logo']['path'])); ?>"
                                      alt="Logo actual"
                                      style="max-width: 170px; max-height: 85px; border: 1px solid #ddd; border-radius: 4px;">
                                 <div>
