@@ -197,6 +197,12 @@ class ProductionTester {
 
         $order = $result['order'];
         $this->test_orders[] = $order['id'];
+
+        // Enviar notificaciones (igual que checkout.php)
+        send_order_confirmation_email($order);
+        send_admin_new_order_email($order);
+        send_telegram_new_order($order);
+
         $this->logOperation('COMPRA_PRESENCIAL', $order);
 
         return "Orden #{$order['order_number']} creada - Producto: {$product['name']} - Total: \${$order['total']}";
@@ -270,6 +276,12 @@ class ProductionTester {
 
         $order = $result['order'];
         $this->test_orders[] = $order['id'];
+
+        // Enviar notificaciones (igual que checkout.php)
+        send_order_confirmation_email($order);
+        send_admin_new_order_email($order);
+        send_telegram_new_order($order);
+
         $this->logOperation('COMPRA_CON_CUPON', $order);
 
         return "Orden #{$order['order_number']} con cupón {$coupon['code']} - Descuento: \${$discount} - Total: \${$total}";
@@ -389,6 +401,12 @@ class ProductionTester {
 
         $order = $result['order'];
         $this->test_orders[] = $order['id'];
+
+        // Enviar notificaciones (igual que checkout.php)
+        send_order_confirmation_email($order);
+        send_admin_new_order_email($order);
+        send_telegram_new_order($order);
+
         $this->logOperation('COMPRA_MULTIPLE', $order);
 
         $product_names = implode(', ', array_column($items, 'name'));
