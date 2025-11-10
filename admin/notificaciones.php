@@ -24,6 +24,12 @@ $page_title = '🔔 Configuración de Notificaciones';
 // File paths
 $email_config_file = __DIR__ . '/../config/email.json';
 $telegram_config_file = __DIR__ . '/../config/telegram.json';
+$credentials_path_file = __DIR__ . '/../.credentials_path';
+
+// Get current credentials from secure file
+$credentials = get_secure_credentials();
+$smtp_credentials = $credentials['smtp'] ?? ['host' => 'smtp.gmail.com', 'port' => 587, 'username' => '', 'password' => '', 'encryption' => 'tls'];
+$telegram_credentials = $credentials['telegram'] ?? ['bot_token' => '', 'chat_id' => ''];
 
 // Default configurations
 $default_email_config = [
@@ -106,8 +112,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]
         ];
 
+        // Save SMTP credentials to secure file
+        $new_smtp_credentials = [
+            'host' => sanitize_input($_POST['smtp_host'] ?? 'smtp.gmail.com'),
+            'port' => (int)($_POST['smtp_port'] ?? 587),
+            'username' => sanitize_input($_POST['smtp_username'] ?? ''),
+            'password' => sanitize_input($_POST['smtp_password'] ?? ''),
+            'encryption' => sanitize_input($_POST['smtp_encryption'] ?? 'tls')
+        ];
+
+        $all_credentials = array_merge($credentials, [
+            'smtp' => $new_smtp_credentials
+        ]);
+
+        // Get credentials path
+        $credentials_path = file_exists($credentials_path_file)
+            ? trim(file_get_contents($credentials_path_file))
+            : '/home/smtp_credentials.json';
+
+        // Save credentials
+        $json_content = json_encode($all_credentials, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        if (file_put_contents($credentials_path, $json_content) !== false) {
+            @chmod($credentials_path, 0600);
+            $smtp_credentials = $new_smtp_credentials;
+        }
+
         if (write_json($email_config_file, $email_config)) {
-            $message = '✅ Configuración de email guardada exitosamente';
+            $message = '✅ Configuración de email y credenciales SMTP guardadas exitosamente';
         } else {
             $error = '❌ Error al guardar la configuración de email';
         }
@@ -128,8 +159,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]
         ];
 
+        // Save Telegram credentials to secure file
+        $new_telegram_credentials = [
+            'bot_token' => sanitize_input($_POST['telegram_bot_token'] ?? ''),
+            'chat_id' => sanitize_input($_POST['telegram_chat_id'] ?? '')
+        ];
+
+        $all_credentials = array_merge($credentials, [
+            'telegram' => $new_telegram_credentials
+        ]);
+
+        // Get credentials path
+        $credentials_path = file_exists($credentials_path_file)
+            ? trim(file_get_contents($credentials_path_file))
+            : '/home/smtp_credentials.json';
+
+        // Save credentials
+        $json_content = json_encode($all_credentials, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        if (file_put_contents($credentials_path, $json_content) !== false) {
+            @chmod($credentials_path, 0600);
+            $telegram_credentials = $new_telegram_credentials;
+        }
+
         if (write_json($telegram_config_file, $telegram_config)) {
-            $message = '✅ Configuración de Telegram guardada exitosamente';
+            $message = '✅ Configuración de Telegram y credenciales guardadas exitosamente';
         } else {
             $error = '❌ Error al guardar la configuración de Telegram';
         }
@@ -179,6 +232,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
 
         write_json($telegram_config_file, $telegram_config);
+
+        // Auto-save Telegram credentials before testing
+        $new_telegram_credentials = [
+            'bot_token' => sanitize_input($_POST['telegram_bot_token'] ?? ''),
+            'chat_id' => sanitize_input($_POST['telegram_chat_id'] ?? '')
+        ];
+
+        $all_credentials = array_merge($credentials, [
+            'telegram' => $new_telegram_credentials
+        ]);
+
+        // Get credentials path
+        $credentials_path = file_exists($credentials_path_file)
+            ? trim(file_get_contents($credentials_path_file))
+            : '/home/smtp_credentials.json';
+
+        // Save credentials
+        $json_content = json_encode($all_credentials, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        if (file_put_contents($credentials_path, $json_content) !== false) {
+            @chmod($credentials_path, 0600);
+            $telegram_credentials = $new_telegram_credentials;
+        }
 
         // Now test
         $result = send_telegram_test();
@@ -542,14 +617,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <small>Recibirás notificaciones de órdenes, chargebacks, etc.</small>
                     </div>
 
-                    <!-- SMTP Settings Info -->
+                    <!-- SMTP Settings -->
                     <div class="smtp-fields <?php echo $email_config['method'] === 'smtp' ? 'show' : ''; ?>" id="smtp-fields">
                         <div class="form-section">
-                            <div class="info-box" style="background: #e7f3ff; border-left: 4px solid #007bff; padding: 15px; margin: 0; border-radius: 4px;">
-                                <strong>🔐 Credenciales SMTP (Seguras)</strong><br><br>
-                                Las credenciales SMTP (host, puerto, usuario, contraseña) se configuran de forma segura en:<br>
-                                <strong><a href="/admin/config-sistema.php" style="color: #007bff;">⚙️ Configuración → Configuración del Sistema</a></strong><br><br>
-                                Allí se guardan en un archivo JSON <strong>fuera del directorio público</strong> para máxima seguridad.
+                            <h3>🔐 Credenciales SMTP</h3>
+
+                            <div class="info-box" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin-bottom: 15px; border-radius: 4px; font-size: 12px;">
+                                <strong>🔒 Seguridad:</strong> Las credenciales se guardan en un archivo fuera del directorio público.
+                                <a href="/admin/secretos-path.php" style="color: #856404; text-decoration: underline;">Configurar ubicación →</a>
+                            </div>
+
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label for="smtp_host">Host SMTP</label>
+                                    <input type="text" id="smtp_host" name="smtp_host"
+                                           value="<?php echo htmlspecialchars($smtp_credentials['host']); ?>"
+                                           placeholder="smtp.gmail.com">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="smtp_port">Puerto</label>
+                                    <input type="number" id="smtp_port" name="smtp_port"
+                                           value="<?php echo $smtp_credentials['port']; ?>"
+                                           placeholder="587">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="smtp_username">Usuario SMTP (tu email de Gmail)</label>
+                                <input type="text" id="smtp_username" name="smtp_username"
+                                       value="<?php echo htmlspecialchars($smtp_credentials['username']); ?>"
+                                       placeholder="tu-email@gmail.com">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="smtp_password">Contraseña SMTP (App Password)</label>
+                                <input type="password" id="smtp_password" name="smtp_password"
+                                       value="<?php echo htmlspecialchars($smtp_credentials['password']); ?>"
+                                       placeholder="••••••••••••••••">
+                                <small>Para Gmail, usa una <a href="https://myaccount.google.com/apppasswords" target="_blank">App Password</a> en lugar de tu contraseña normal</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="smtp_encryption">Encriptación</label>
+                                <select id="smtp_encryption" name="smtp_encryption">
+                                    <option value="tls" <?php echo $smtp_credentials['encryption'] === 'tls' ? 'selected' : ''; ?>>TLS (recomendado para puerto 587)</option>
+                                    <option value="ssl" <?php echo $smtp_credentials['encryption'] === 'ssl' ? 'selected' : ''; ?>>SSL (para puerto 465)</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -652,12 +766,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label for="telegram_enabled">Activar notificaciones por Telegram</label>
                     </div>
 
-                    <!-- Bot Configuration Info -->
-                    <div class="info-box" style="background: #e7f3ff; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                        <strong>🔐 Credenciales de Telegram (Seguras)</strong><br><br>
-                        Las credenciales de Telegram (bot_token y chat_id) se configuran de forma segura en:<br>
-                        <strong><a href="/admin/config-sistema.php" style="color: #007bff;">⚙️ Configuración → Configuración del Sistema</a></strong><br><br>
-                        Allí se guardan en un archivo JSON <strong>fuera del directorio público</strong> para máxima seguridad.
+                    <!-- Bot Configuration -->
+                    <div class="form-section">
+                        <h3>🔐 Credenciales de Telegram</h3>
+
+                        <div class="info-box" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin-bottom: 15px; border-radius: 4px; font-size: 12px;">
+                            <strong>🔒 Seguridad:</strong> Las credenciales se guardan en un archivo fuera del directorio público.
+                            <a href="/admin/secretos-path.php" style="color: #856404; text-decoration: underline;">Configurar ubicación →</a>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="telegram_bot_token">Bot Token</label>
+                            <input type="text" id="telegram_bot_token" name="telegram_bot_token"
+                                   value="<?php echo htmlspecialchars($telegram_credentials['bot_token']); ?>"
+                                   placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+                            <small>Obtén tu token de <a href="https://t.me/BotFather" target="_blank">@BotFather</a></small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="telegram_chat_id">Chat ID</label>
+                            <input type="text" id="telegram_chat_id" name="telegram_chat_id"
+                                   value="<?php echo htmlspecialchars($telegram_credentials['chat_id']); ?>"
+                                   placeholder="123456789">
+                            <small>ID del chat/canal donde recibirás mensajes</small>
+                        </div>
                     </div>
 
                     <!-- Notifications -->
