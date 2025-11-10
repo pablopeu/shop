@@ -131,7 +131,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                     <div class="product-card">
                         <div class="product-image" onclick="window.location.href='<?php echo url('/producto.php?slug=' . urlencode($product['slug'])); ?>'">
                             <?php if (!empty($product['thumbnail'])): ?>
-                                <img src="<?php echo htmlspecialchars($product['thumbnail']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                                <img src="<?php echo htmlspecialchars(url($product['thumbnail'])); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" style="width: 100%; height: 100%; object-fit: cover;">
                             <?php else: ?>
                                 Sin imagen
                             <?php endif; ?>

@@ -571,7 +571,7 @@ $user = get_logged_user();
                                 <?php foreach ($product_images as $index => $image_url): ?>
                                     <div class="image-item" data-index="<?php echo $index; ?>">
                                         <span class="drag-handle">⋮⋮</span>
-                                        <img src="<?php echo htmlspecialchars($image_url); ?>" alt="Imagen del producto">
+                                        <img src="<?php echo htmlspecialchars(url($image_url)); ?>" alt="Imagen del producto">
                                         <?php if ($index === 0): ?>
                                             <span class="image-badge">PRINCIPAL</span>
                                         <?php endif; ?>

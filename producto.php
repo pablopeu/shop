@@ -188,7 +188,7 @@ write_json($visits_file, $visits_data);
                             $first_img_url = is_array($product['images'][0]) ? ($product['images'][0]['url'] ?? '') : $product['images'][0];
                             $first_img_alt = is_array($product['images'][0]) ? ($product['images'][0]['alt'] ?? $product['name']) : $product['name'];
                             ?>
-                            <img src="<?php echo htmlspecialchars($first_img_url); ?>"
+                            <img src="<?php echo htmlspecialchars(url($first_img_url)); ?>"
                                  alt="<?php echo htmlspecialchars($first_img_alt); ?>"
                                  class="main-image"
                                  id="mainImage">
@@ -215,7 +215,7 @@ write_json($visits_file, $visits_data);
                             ?>
                             <div class="thumbnail <?php echo $index === 0 ? 'active' : ''; ?>"
                                  onclick="selectImage(<?php echo $index; ?>)">
-                                <img src="<?php echo htmlspecialchars($img_url); ?>"
+                                <img src="<?php echo htmlspecialchars(url($img_url)); ?>"
                                      alt="<?php echo htmlspecialchars($img_alt); ?>">
                             </div>
                         <?php endforeach; ?>
@@ -375,13 +375,16 @@ write_json($visits_file, $visits_data);
     <div class="toast" id="toast"></div>
 
     <script>
+        // Base path for subdirectory support
+        const basePath = '<?php echo BASE_PATH; ?>';
+
         // Product images data - normalize to consistent format
         const rawImages = <?php echo json_encode($product['images'] ?? []); ?>;
         const productImages = rawImages.map(img => {
             if (typeof img === 'string') {
-                return { url: img, alt: '<?php echo htmlspecialchars($product['name']); ?>' };
+                return { url: basePath + img, alt: '<?php echo htmlspecialchars($product['name']); ?>' };
             }
-            return img;
+            return { ...img, url: basePath + img.url };
         });
         let currentImageIndex = 0;
 
