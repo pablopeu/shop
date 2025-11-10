@@ -205,10 +205,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </ul>
         </li>
 
-        <!-- Notificaciones -->
+        <!-- Email y Notificaciones -->
         <li>
             <a href="/admin/notificaciones.php" class="<?php echo $current_page === 'notificaciones.php' ? 'active' : ''; ?>">
-                🔔 Notificaciones
+                🔔 Email y Notificaciones
             </a>
         </li>
 

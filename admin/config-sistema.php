@@ -1,7 +1,7 @@
 <?php
 /**
  * Admin - System Configuration
- * Configure system-level settings like credentials path
+ * Configure and manage secure credentials
  */
 
 require_once __DIR__ . '/../includes/functions.php';
@@ -27,41 +27,99 @@ $current_path = file_exists($credentials_path_file)
     ? trim(file_get_contents($credentials_path_file))
     : '/home/smtp_credentials.json';
 
+// Load current credentials
+$current_credentials = [
+    'smtp' => [
+        'host' => 'smtp.gmail.com',
+        'port' => 587,
+        'username' => '',
+        'password' => '',
+        'encryption' => 'tls'
+    ],
+    'telegram' => [
+        'bot_token' => '',
+        'chat_id' => ''
+    ]
+];
+
+if (file_exists($current_path)) {
+    $loaded = @json_decode(file_get_contents($current_path), true);
+    if ($loaded && json_last_error() === JSON_ERROR_NONE) {
+        $current_credentials = array_merge($current_credentials, $loaded);
+    }
+}
+
 // Handle messages
 $message = '';
 $error = '';
 
+// Helper function to check if path is outside webroot
+function is_outside_webroot($path) {
+    $webroot_indicators = ['public_html', 'www', 'htdocs', 'web'];
+    $path_lower = strtolower($path);
+
+    // Check if path contains webroot indicators
+    foreach ($webroot_indicators as $indicator) {
+        if (strpos($path_lower, '/' . $indicator . '/') !== false) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['save_path'])) {
+    if (isset($_POST['save_credentials'])) {
         $new_path = sanitize_input($_POST['credentials_path'] ?? '');
 
         if (empty($new_path)) {
             $error = '❌ El path no puede estar vacío';
+        } elseif (!is_outside_webroot($new_path)) {
+            $error = '❌ El path debe estar FUERA del directorio público (public_html, www, htdocs, etc.)';
         } else {
-            // Save the path
-            if (file_put_contents($credentials_path_file, $new_path) !== false) {
-                $message = '✅ Path de credenciales guardado exitosamente';
-                $current_path = $new_path;
-                log_admin_action('credentials_path_updated', $_SESSION['username']);
-            } else {
-                $error = '❌ Error al guardar el path';
-            }
-        }
-    }
+            // Prepare credentials data
+            $credentials = [
+                'smtp' => [
+                    'host' => sanitize_input($_POST['smtp_host'] ?? 'smtp.gmail.com'),
+                    'port' => (int)($_POST['smtp_port'] ?? 587),
+                    'username' => sanitize_input($_POST['smtp_username'] ?? ''),
+                    'password' => sanitize_input($_POST['smtp_password'] ?? ''),
+                    'encryption' => sanitize_input($_POST['smtp_encryption'] ?? 'tls')
+                ],
+                'telegram' => [
+                    'bot_token' => sanitize_input($_POST['telegram_bot_token'] ?? ''),
+                    'chat_id' => sanitize_input($_POST['telegram_chat_id'] ?? '')
+                ]
+            ];
 
-    if (isset($_POST['test_path'])) {
-        $test_path = sanitize_input($_POST['credentials_path'] ?? $current_path);
-
-        if (file_exists($test_path)) {
-            $credentials = @json_decode(file_get_contents($test_path), true);
-            if ($credentials && json_last_error() === JSON_ERROR_NONE) {
-                $message = '✅ El archivo existe y es un JSON válido';
-            } else {
-                $error = '❌ El archivo existe pero no es un JSON válido: ' . json_last_error_msg();
+            // Ensure directory exists
+            $dir = dirname($new_path);
+            if (!file_exists($dir)) {
+                if (!@mkdir($dir, 0755, true)) {
+                    $error = '❌ No se pudo crear el directorio: ' . $dir;
+                }
             }
-        } else {
-            $error = '❌ El archivo no existe en ese path';
+
+            if (empty($error)) {
+                // Save credentials JSON
+                $json_content = json_encode($credentials, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+                if (file_put_contents($new_path, $json_content) !== false) {
+                    // Set restrictive permissions
+                    @chmod($new_path, 0600);
+
+                    // Save path
+                    file_put_contents($credentials_path_file, $new_path);
+                    $current_path = $new_path;
+                    $current_credentials = $credentials;
+
+                    $message = '✅ Credenciales guardadas exitosamente en: ' . $new_path;
+                    log_admin_action('credentials_updated', $_SESSION['username']);
+                } else {
+                    $error = '❌ Error al guardar el archivo de credenciales';
+                }
+            }
         }
     }
 }
@@ -113,7 +171,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             padding: 25px;
-            max-width: 800px;
+            max-width: 900px;
+            margin-bottom: 20px;
         }
 
         .card-header {
@@ -141,16 +200,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 14px;
         }
 
-        .form-group input[type="text"] {
+        .form-group input[type="text"],
+        .form-group input[type="password"],
+        .form-group input[type="number"],
+        .form-group select {
             width: 100%;
             padding: 10px 15px;
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 14px;
-            font-family: 'Courier New', monospace;
+            font-family: inherit;
         }
 
-        .form-group input[type="text"]:focus {
+        .form-group input[type="text"]:focus,
+        .form-group input[type="password"]:focus,
+        .form-group input[type="number"]:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #3498db;
         }
@@ -203,24 +268,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
-        .btn-info {
-            background: #17a2b8;
-            color: white;
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
         }
 
-        .btn-info:hover {
-            background: #138496;
+        .form-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
         }
 
-        .code-block {
-            background: #f4f4f4;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 15px 0;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            overflow-x: auto;
+        .form-section h3 {
+            font-size: 16px;
+            color: #2c3e50;
+            margin-bottom: 15px;
         }
     </style>
 </head>
@@ -245,9 +309,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="warning-box">
                 <strong>⚠️ Importante - Seguridad:</strong><br>
-                Las credenciales SMTP y Telegram contienen información sensible (contraseñas, tokens).<br>
-                Para máxima seguridad, se guardan en un archivo JSON <strong>fuera del directorio público</strong> del sitio web.<br>
-                Este archivo NO debe ser accesible desde internet.
+                Las credenciales (contraseñas SMTP, tokens de Telegram) se guardan en un archivo JSON <strong>fuera del directorio público</strong> del sitio web.<br>
+                Esto garantiza que NO sean accesibles desde internet.
             </div>
 
             <form method="POST">
@@ -256,61 +319,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="text" id="credentials_path" name="credentials_path"
                            value="<?php echo htmlspecialchars($current_path); ?>"
                            placeholder="/home/smtp_credentials.json" required>
-                    <small>Ruta absoluta al archivo JSON que contiene las credenciales SMTP y Telegram</small>
+                    <small>Ruta absoluta donde se guardarán las credenciales (debe estar FUERA de public_html/www)</small>
                 </div>
 
                 <div class="info-box">
-                    <strong>📝 Ejemplos de paths según tu hosting:</strong><br><br>
-                    <strong>Servidor de desarrollo local:</strong><br>
-                    <code>/home/smtp_credentials.json</code><br><br>
-
-                    <strong>Hosting compartido (cPanel):</strong><br>
-                    <code>/home2/uv0023/smtp_credentials.json</code><br>
-                    <code>/home/tu_usuario/smtp_credentials.json</code><br><br>
-
-                    <strong>Nota:</strong> El archivo debe estar <strong>fuera</strong> de <code>public_html</code> o <code>www</code>
+                    <strong>📝 Ejemplos de paths seguros:</strong><br><br>
+                    <strong>Desarrollo local:</strong> <code>/home/smtp_credentials.json</code><br>
+                    <strong>Hosting cPanel:</strong> <code>/home2/uv0023/smtp_credentials.json</code> (fuera de public_html)<br>
+                    <strong>VPS:</strong> <code>/home/usuario/credentials.json</code><br><br>
+                    <strong>❌ NUNCA uses:</strong> <code>/var/www/html/...</code>, <code>/public_html/...</code>, <code>/www/...</code>
                 </div>
 
-                <div>
-                    <button type="submit" name="save_path" class="btn btn-primary">
-                        💾 Guardar Path
-                    </button>
-                    <button type="submit" name="test_path" class="btn btn-info">
-                        🧪 Probar Conexión
-                    </button>
+                <!-- SMTP Credentials -->
+                <div class="form-section">
+                    <h3>📧 Credenciales SMTP (Gmail)</h3>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="smtp_host">Host SMTP</label>
+                            <input type="text" id="smtp_host" name="smtp_host"
+                                   value="<?php echo htmlspecialchars($current_credentials['smtp']['host']); ?>"
+                                   placeholder="smtp.gmail.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="smtp_port">Puerto</label>
+                            <input type="number" id="smtp_port" name="smtp_port"
+                                   value="<?php echo $current_credentials['smtp']['port']; ?>"
+                                   placeholder="587">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="smtp_username">Usuario SMTP (tu email de Gmail)</label>
+                        <input type="text" id="smtp_username" name="smtp_username"
+                               value="<?php echo htmlspecialchars($current_credentials['smtp']['username']); ?>"
+                               placeholder="tu-email@gmail.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="smtp_password">Contraseña SMTP (App Password)</label>
+                        <input type="password" id="smtp_password" name="smtp_password"
+                               value="<?php echo htmlspecialchars($current_credentials['smtp']['password']); ?>"
+                               placeholder="••••••••••••••••">
+                        <small>Para Gmail, usa una <a href="https://myaccount.google.com/apppasswords" target="_blank">App Password</a> en lugar de tu contraseña normal</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="smtp_encryption">Encriptación</label>
+                        <select id="smtp_encryption" name="smtp_encryption">
+                            <option value="tls" <?php echo $current_credentials['smtp']['encryption'] === 'tls' ? 'selected' : ''; ?>>TLS (recomendado para puerto 587)</option>
+                            <option value="ssl" <?php echo $current_credentials['smtp']['encryption'] === 'ssl' ? 'selected' : ''; ?>>SSL (para puerto 465)</option>
+                        </select>
+                    </div>
                 </div>
+
+                <!-- Telegram Credentials -->
+                <div class="form-section">
+                    <h3>📱 Credenciales de Telegram</h3>
+
+                    <div class="form-group">
+                        <label for="telegram_bot_token">Bot Token</label>
+                        <input type="text" id="telegram_bot_token" name="telegram_bot_token"
+                               value="<?php echo htmlspecialchars($current_credentials['telegram']['bot_token']); ?>"
+                               placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+                        <small>Obtén tu token de <a href="https://t.me/BotFather" target="_blank">@BotFather</a></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telegram_chat_id">Chat ID</label>
+                        <input type="text" id="telegram_chat_id" name="telegram_chat_id"
+                               value="<?php echo htmlspecialchars($current_credentials['telegram']['chat_id']); ?>"
+                               placeholder="123456789">
+                        <small>ID del chat/canal donde recibirás mensajes</small>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <strong>🔒 Al guardar:</strong><br>
+                    1. Se creará automáticamente el archivo JSON en el path especificado<br>
+                    2. Se establecerán permisos restrictivos (600 - solo owner puede leer)<br>
+                    3. Las credenciales estarán protegidas fuera del alcance web
+                </div>
+
+                <button type="submit" name="save_credentials" class="btn btn-primary">
+                    💾 Guardar Credenciales
+                </button>
             </form>
-
-            <div class="info-box" style="margin-top: 30px;">
-                <strong>🔧 Instrucciones de configuración:</strong><br><br>
-
-                <strong>1. Crear el archivo de credenciales:</strong><br>
-                Copia el archivo de ejemplo a la ubicación segura:<br>
-                <div class="code-block">cp smtp_credentials.json.example <?php echo htmlspecialchars($current_path); ?></div>
-
-                <strong>2. Editar las credenciales:</strong><br>
-                Edita el archivo y completa tus datos reales:<br>
-                <div class="code-block">nano <?php echo htmlspecialchars($current_path); ?></div>
-
-                <strong>3. Establecer permisos correctos:</strong><br>
-                <div class="code-block">chmod 600 <?php echo htmlspecialchars($current_path); ?></div>
-
-                <br>
-                <strong>Estructura del archivo JSON:</strong>
-                <div class="code-block">{
-  "smtp": {
-    "host": "smtp.gmail.com",
-    "port": 587,
-    "username": "tu-email@gmail.com",
-    "password": "tu-app-password-de-16-caracteres",
-    "encryption": "tls"
-  },
-  "telegram": {
-    "bot_token": "123456789:ABC...",
-    "chat_id": "123456789"
-  }
-}</div>
-            </div>
         </div>
     </div>
 </body>

@@ -158,6 +158,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Test Telegram
     if (isset($_POST['test_telegram'])) {
+        // Auto-save telegram configuration before testing
+        $telegram_config = [
+            'enabled' => isset($_POST['telegram_enabled']),
+            'notifications' => [
+                'new_order' => isset($_POST['telegram_new_order']),
+                'payment_approved' => isset($_POST['telegram_payment_approved']),
+                'payment_rejected' => isset($_POST['telegram_payment_rejected']),
+                'chargeback_alert' => isset($_POST['telegram_chargeback_alert']),
+                'low_stock_alert' => isset($_POST['telegram_low_stock_alert']),
+                'high_value_order' => isset($_POST['telegram_high_value_order']),
+                'high_value_threshold' => (float)($_POST['high_value_threshold'] ?? 50000)
+            ]
+        ];
+
+        write_json($telegram_config_file, $telegram_config);
+
+        // Now test
         $result = send_telegram_test();
 
         if ($result) {
