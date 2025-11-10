@@ -79,12 +79,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = '❌ El path debe estar FUERA del directorio público (public_html, www, htdocs, etc.)';
         } else {
             // Prepare credentials data
+            // Remove spaces from SMTP password (Gmail App Passwords are shown with spaces: "abcd efgh ijkl mnop")
+            $smtp_password = sanitize_input($_POST['smtp_password'] ?? '');
+            $smtp_password = str_replace(' ', '', $smtp_password);
+
             $credentials = [
                 'smtp' => [
                     'host' => sanitize_input($_POST['smtp_host'] ?? 'smtp.gmail.com'),
                     'port' => (int)($_POST['smtp_port'] ?? 587),
                     'username' => sanitize_input($_POST['smtp_username'] ?? ''),
-                    'password' => sanitize_input($_POST['smtp_password'] ?? ''),
+                    'password' => $smtp_password,
                     'encryption' => sanitize_input($_POST['smtp_encryption'] ?? 'tls')
                 ],
                 'telegram' => [

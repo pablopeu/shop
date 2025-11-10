@@ -113,11 +113,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
 
         // Save SMTP credentials to secure file
+        // Remove spaces from password (Gmail App Passwords are shown with spaces: "abcd efgh ijkl mnop")
+        $smtp_password = sanitize_input($_POST['smtp_password'] ?? '');
+        $smtp_password = str_replace(' ', '', $smtp_password);
+
         $new_smtp_credentials = [
             'host' => sanitize_input($_POST['smtp_host'] ?? 'smtp.gmail.com'),
             'port' => (int)($_POST['smtp_port'] ?? 587),
             'username' => sanitize_input($_POST['smtp_username'] ?? ''),
-            'password' => sanitize_input($_POST['smtp_password'] ?? ''),
+            'password' => $smtp_password,
             'encryption' => sanitize_input($_POST['smtp_encryption'] ?? 'tls')
         ];
 
