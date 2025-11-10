@@ -258,6 +258,105 @@ function convert_currency($price, $from, $to) {
 }
 
 /**
+ * Get exchange rate from Bluelytics API
+ * @return array|null Returns array with 'blue' rate or null on failure
+ */
+function get_bluelytics_rate() {
+    $api_url = 'https://api.bluelytics.com.ar/v2/latest';
+
+    // Set timeout and user agent
+    $context = stream_context_create([
+        'http' => [
+            'timeout' => 5,
+            'user_agent' => 'Mozilla/5.0 (compatible; ShopBot/1.0)',
+            'ignore_errors' => true
+        ]
+    ]);
+
+    try {
+        $response = @file_get_contents($api_url, false, $context);
+
+        if ($response === false) {
+            error_log('Bluelytics API: Failed to fetch data');
+            return null;
+        }
+
+        $data = json_decode($response, true);
+
+        if (!$data || !isset($data['blue']['value_sell'])) {
+            error_log('Bluelytics API: Invalid response format');
+            return null;
+        }
+
+        return [
+            'blue' => $data['blue']['value_sell'],
+            'oficial' => $data['oficial']['value_sell'] ?? null,
+            'timestamp' => $data['last_update'] ?? date('Y-m-d\TH:i:s\Z')
+        ];
+
+    } catch (Exception $e) {
+        error_log('Bluelytics API Exception: ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Update exchange rate from API or manual override
+ * @param bool $force_update Force update even if recently updated
+ * @return bool Success
+ */
+function update_exchange_rate($force_update = false) {
+    $config_file = __DIR__ . '/../config/currency.json';
+    $config = read_json($config_file);
+
+    // If API is not enabled, don't update
+    if (!($config['api_enabled'] ?? false)) {
+        return false;
+    }
+
+    // Check if we need to update (only if more than 1 hour old)
+    if (!$force_update && isset($config['last_update'])) {
+        $last_update = strtotime($config['last_update']);
+        $now = time();
+        if ($now - $last_update < 3600) { // 1 hour
+            return false; // Too recent, skip update
+        }
+    }
+
+    // Get rate from API
+    $api_data = get_bluelytics_rate();
+
+    if ($api_data === null) {
+        return false; // API failed
+    }
+
+    // Update config only if no manual override is active
+    if (!($config['manual_override'] ?? false)) {
+        $config['exchange_rate'] = $api_data['blue'];
+        $config['exchange_rate_source'] = 'api';
+    }
+
+    // Always update API values for display
+    $config['api_blue_rate'] = $api_data['blue'];
+    $config['api_oficial_rate'] = $api_data['oficial'];
+    $config['last_update'] = date('Y-m-d\TH:i:s\Z');
+
+    return write_json($config_file, $config);
+}
+
+/**
+ * Get current exchange rate (updates from API if needed)
+ * @return float Current exchange rate
+ */
+function get_current_exchange_rate() {
+    // Try to update from API if enabled
+    update_exchange_rate();
+
+    $config = read_json(__DIR__ . '/../config/currency.json');
+    return $config['exchange_rate'] ?? 1000;
+}
+
+/**
  * Generate slug from string
  * @param string $string Input string
  * @return string URL-friendly slug
@@ -1034,4 +1133,55 @@ function get_payment_message($status, $status_detail = '') {
 
     // Default error message for unknown status
     return $messages;
+}
+
+/**
+ * Get payment credentials from external secure file
+ * Returns credentials stored outside webroot for security
+ *
+ * @return array Payment credentials array
+ */
+function get_payment_credentials() {
+    $credentials_path_file = __DIR__ . '/../.payment_credentials_path';
+
+    // Get path to credentials file
+    if (!file_exists($credentials_path_file)) {
+        error_log("Payment credentials path file not found. Using default path.");
+        $credentials_path = '/home/payment_credentials.json';
+    } else {
+        $credentials_path = trim(file_get_contents($credentials_path_file));
+    }
+
+    // Read credentials file
+    if (!file_exists($credentials_path)) {
+        error_log("Payment credentials file not found at: $credentials_path");
+        return [
+            'mercadopago' => [
+                'access_token_sandbox' => '',
+                'access_token_prod' => '',
+                'public_key_sandbox' => '',
+                'public_key_prod' => '',
+                'webhook_secret_sandbox' => '',
+                'webhook_secret_prod' => ''
+            ]
+        ];
+    }
+
+    $credentials = @json_decode(file_get_contents($credentials_path), true);
+
+    if (!$credentials || json_last_error() !== JSON_ERROR_NONE) {
+        error_log("Invalid JSON in payment credentials file: " . json_last_error_msg());
+        return [
+            'mercadopago' => [
+                'access_token_sandbox' => '',
+                'access_token_prod' => '',
+                'public_key_sandbox' => '',
+                'public_key_prod' => '',
+                'webhook_secret_sandbox' => '',
+                'webhook_secret_prod' => ''
+            ]
+        ];
+    }
+
+    return $credentials;
 }

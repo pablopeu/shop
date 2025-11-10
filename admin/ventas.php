@@ -793,6 +793,29 @@ $status_labels = [
         </div>
     </div>
 
+    <!-- Unsaved Changes Modal -->
+    <div id="unsavedChangesModal" class="modal" style="z-index: 10001;">
+        <div class="modal-content" style="max-width: 500px; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 48px; margin-bottom: 10px;">⚠️</div>
+                <h2 style="margin: 0; color: #333; font-size: 22px;">Cambios sin guardar</h2>
+            </div>
+            <p style="text-align: center; color: #666; margin-bottom: 25px; line-height: 1.5;">
+                Hay cambios sin guardar en este formulario. Si cierras ahora, perderás estos cambios.
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="confirmCloseModal()"
+                        style="padding: 12px 24px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                    Salir sin guardar
+                </button>
+                <button onclick="cancelCloseModal()"
+                        style="padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                    Quedarme para guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const orders = <?php echo json_encode($orders); ?>;
         const csrfToken = '<?php echo $csrf_token; ?>';
@@ -1044,10 +1067,117 @@ $status_labels = [
 
             document.getElementById('modalOrderContent').innerHTML = html;
             document.getElementById('orderModal').classList.add('active');
+
+            // Setup unsaved changes detection for modal forms
+            setupModalChangeDetection();
+        }
+
+        // Track unsaved changes in modal
+        let modalHasUnsavedChanges = false;
+        let modalOriginalValues = {};
+
+        function setupModalChangeDetection() {
+            const modalContent = document.getElementById('modalOrderContent');
+            const forms = modalContent.querySelectorAll('form');
+            const inputs = modalContent.querySelectorAll('input, select, textarea');
+            const saveButtons = modalContent.querySelectorAll('button[type="submit"]');
+
+            // Store original values
+            modalOriginalValues = {};
+            inputs.forEach(input => {
+                const key = input.name || input.id;
+                modalOriginalValues[key] = input.type === 'checkbox' ? input.checked : input.value;
+            });
+
+            // Reset state
+            modalHasUnsavedChanges = false;
+            saveButtons.forEach(btn => {
+                btn.style.background = '#27ae60';
+                btn.style.boxShadow = '0 2px 8px rgba(39, 174, 96, 0.3)';
+            });
+
+            // Detect changes
+            inputs.forEach(input => {
+                input.addEventListener('input', () => checkModalChanges(inputs, saveButtons));
+                input.addEventListener('change', () => checkModalChanges(inputs, saveButtons));
+            });
+
+            // Mark as saved when form is submitted
+            forms.forEach(form => {
+                form.addEventListener('submit', () => {
+                    modalHasUnsavedChanges = false;
+                });
+            });
+        }
+
+        function checkModalChanges(inputs, saveButtons) {
+            let hasChanges = false;
+            inputs.forEach(input => {
+                const key = input.name || input.id;
+                const currentValue = input.type === 'checkbox' ? input.checked : input.value;
+                if (currentValue !== modalOriginalValues[key]) {
+                    hasChanges = true;
+                }
+            });
+
+            modalHasUnsavedChanges = hasChanges;
+
+            // Update button colors
+            saveButtons.forEach(btn => {
+                if (hasChanges) {
+                    btn.style.background = '#e74c3c';
+                    btn.style.boxShadow = '0 2px 8px rgba(231, 76, 60, 0.3)';
+                } else {
+                    btn.style.background = '#27ae60';
+                    btn.style.boxShadow = '0 2px 8px rgba(39, 174, 96, 0.3)';
+                }
+            });
         }
 
         function closeModal() {
+            if (modalHasUnsavedChanges) {
+                // Show custom unsaved changes modal
+                document.getElementById('unsavedChangesModal').classList.add('active');
+            } else {
+                document.getElementById('orderModal').classList.remove('active');
+            }
+        }
+
+        function confirmCloseModal() {
+            // User confirmed to leave without saving
+            modalHasUnsavedChanges = false;
+            document.getElementById('unsavedChangesModal').classList.remove('active');
             document.getElementById('orderModal').classList.remove('active');
+        }
+
+        function cancelCloseModal() {
+            // User wants to stay and save
+            document.getElementById('unsavedChangesModal').classList.remove('active');
+
+            // Focus on the first save button in the modal
+            const modalContent = document.getElementById('modalOrderContent');
+            const saveButton = modalContent.querySelector('button[type="submit"]');
+
+            if (saveButton) {
+                // Scroll to the button
+                saveButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Wait for scroll to finish, then focus and add highlight
+                setTimeout(() => {
+                    const originalTransform = saveButton.style.transform || '';
+                    const originalBoxShadow = saveButton.style.boxShadow || '';
+
+                    saveButton.focus();
+                    saveButton.style.transform = 'scale(1.05)';
+                    saveButton.style.boxShadow = '0 0 0 4px rgba(102, 126, 234, 0.4)';
+
+                    // Remove highlight after 1 second
+                    setTimeout(() => {
+                        saveButton.style.transform = originalTransform;
+                        saveButton.style.boxShadow = originalBoxShadow;
+                    }, 1000);
+                }, 500);
+            }
         }
 
         function showCancelModal(orderId, orderNumber) {
@@ -1083,6 +1213,12 @@ $status_labels = [
         document.getElementById('cancelModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeCancelModal();
+            }
+        });
+
+        document.getElementById('unsavedChangesModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cancelCloseModal();
             }
         });
 

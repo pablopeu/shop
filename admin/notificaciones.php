@@ -24,6 +24,12 @@ $page_title = '🔔 Configuración de Notificaciones';
 // File paths
 $email_config_file = __DIR__ . '/../config/email.json';
 $telegram_config_file = __DIR__ . '/../config/telegram.json';
+$credentials_path_file = __DIR__ . '/../.credentials_path';
+
+// Get current credentials from secure file
+$credentials = get_secure_credentials();
+$smtp_credentials = $credentials['smtp'] ?? ['host' => 'smtp.gmail.com', 'port' => 587, 'username' => '', 'password' => '', 'encryption' => 'tls'];
+$telegram_credentials = $credentials['telegram'] ?? ['bot_token' => '', 'chat_id' => ''];
 
 // Default configurations
 $default_email_config = [
@@ -32,13 +38,6 @@ $default_email_config = [
     'from_email' => 'noreply@' . ($_SERVER['HTTP_HOST'] ?? 'tienda.com'),
     'from_name' => $site_config['site_name'] ?? 'Mi Tienda',
     'admin_email' => '',
-    'smtp' => [
-        'host' => 'smtp.gmail.com',
-        'port' => 587,
-        'username' => '',
-        'password' => '',
-        'encryption' => 'tls'
-    ],
     'notifications' => [
         'customer' => [
             'order_created' => true,
@@ -59,8 +58,6 @@ $default_email_config = [
 
 $default_telegram_config = [
     'enabled' => false,
-    'bot_token' => '',
-    'chat_id' => '',
     'notifications' => [
         'new_order' => true,
         'payment_approved' => true,
@@ -97,13 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'from_email' => sanitize_input($_POST['from_email'] ?? ''),
             'from_name' => sanitize_input($_POST['from_name'] ?? ''),
             'admin_email' => sanitize_input($_POST['admin_email'] ?? ''),
-            'smtp' => [
-                'host' => sanitize_input($_POST['smtp_host'] ?? ''),
-                'port' => (int)($_POST['smtp_port'] ?? 587),
-                'username' => sanitize_input($_POST['smtp_username'] ?? ''),
-                'password' => sanitize_input($_POST['smtp_password'] ?? ''),
-                'encryption' => sanitize_input($_POST['smtp_encryption'] ?? 'tls')
-            ],
             'notifications' => [
                 'customer' => [
                     'order_created' => isset($_POST['email_customer_order_created']),
@@ -122,8 +112,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]
         ];
 
+        // Save SMTP credentials to secure file
+        // Remove spaces from password (Gmail App Passwords are shown with spaces: "abcd efgh ijkl mnop")
+        $smtp_password = sanitize_input($_POST['smtp_password'] ?? '');
+        $smtp_password = str_replace(' ', '', $smtp_password);
+
+        $new_smtp_credentials = [
+            'host' => sanitize_input($_POST['smtp_host'] ?? 'smtp.gmail.com'),
+            'port' => (int)($_POST['smtp_port'] ?? 587),
+            'username' => sanitize_input($_POST['smtp_username'] ?? ''),
+            'password' => $smtp_password,
+            'encryption' => sanitize_input($_POST['smtp_encryption'] ?? 'tls')
+        ];
+
+        $all_credentials = array_merge($credentials, [
+            'smtp' => $new_smtp_credentials
+        ]);
+
+        // Get credentials path
+        $credentials_path = file_exists($credentials_path_file)
+            ? trim(file_get_contents($credentials_path_file))
+            : '/home/smtp_credentials.json';
+
+        // Save credentials
+        $json_content = json_encode($all_credentials, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        if (file_put_contents($credentials_path, $json_content) !== false) {
+            @chmod($credentials_path, 0600);
+            $smtp_credentials = $new_smtp_credentials;
+        }
+
         if (write_json($email_config_file, $email_config)) {
-            $message = '✅ Configuración de email guardada exitosamente';
+            $message = '✅ Configuración de email y credenciales SMTP guardadas exitosamente';
         } else {
             $error = '❌ Error al guardar la configuración de email';
         }
@@ -133,8 +152,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['save_telegram'])) {
         $telegram_config = [
             'enabled' => isset($_POST['telegram_enabled']),
-            'bot_token' => sanitize_input($_POST['bot_token'] ?? ''),
-            'chat_id' => sanitize_input($_POST['chat_id'] ?? ''),
             'notifications' => [
                 'new_order' => isset($_POST['telegram_new_order']),
                 'payment_approved' => isset($_POST['telegram_payment_approved']),
@@ -146,8 +163,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]
         ];
 
+        // Save Telegram credentials to secure file
+        $new_telegram_credentials = [
+            'bot_token' => sanitize_input($_POST['telegram_bot_token'] ?? ''),
+            'chat_id' => sanitize_input($_POST['telegram_chat_id'] ?? '')
+        ];
+
+        $all_credentials = array_merge($credentials, [
+            'telegram' => $new_telegram_credentials
+        ]);
+
+        // Get credentials path
+        $credentials_path = file_exists($credentials_path_file)
+            ? trim(file_get_contents($credentials_path_file))
+            : '/home/smtp_credentials.json';
+
+        // Save credentials
+        $json_content = json_encode($all_credentials, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        if (file_put_contents($credentials_path, $json_content) !== false) {
+            @chmod($credentials_path, 0600);
+            $telegram_credentials = $new_telegram_credentials;
+        }
+
         if (write_json($telegram_config_file, $telegram_config)) {
-            $message = '✅ Configuración de Telegram guardada exitosamente';
+            $message = '✅ Configuración de Telegram y credenciales guardadas exitosamente';
         } else {
             $error = '❌ Error al guardar la configuración de Telegram';
         }
@@ -167,7 +206,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($result) {
                 $test_result = '✅ Email de prueba enviado correctamente a ' . htmlspecialchars($test_email);
             } else {
-                $test_result = '❌ Error al enviar email de prueba. Revisa los logs del servidor.';
+                // Check which method was used to provide specific error message
+                $current_method = $email_config['method'] ?? 'mail';
+                if ($current_method === 'mail') {
+                    $test_result = '❌ Error al enviar email. PHP mail() requiere un MTA (sendmail/postfix) instalado. <strong>Recomendación:</strong> Cambia a SMTP o instala postfix: <code>sudo apt-get install postfix</code>';
+                } else {
+                    $test_result = '❌ Error al enviar email. Verifica tus credenciales SMTP en "Configuración del Sistema".';
+                }
             }
         } else {
             $test_result = '❌ Debes ingresar una dirección de email';
@@ -176,6 +221,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Test Telegram
     if (isset($_POST['test_telegram'])) {
+        // Auto-save telegram configuration before testing
+        $telegram_config = [
+            'enabled' => isset($_POST['telegram_enabled']),
+            'notifications' => [
+                'new_order' => isset($_POST['telegram_new_order']),
+                'payment_approved' => isset($_POST['telegram_payment_approved']),
+                'payment_rejected' => isset($_POST['telegram_payment_rejected']),
+                'chargeback_alert' => isset($_POST['telegram_chargeback_alert']),
+                'low_stock_alert' => isset($_POST['telegram_low_stock_alert']),
+                'high_value_order' => isset($_POST['telegram_high_value_order']),
+                'high_value_threshold' => (float)($_POST['high_value_threshold'] ?? 50000)
+            ]
+        ];
+
+        write_json($telegram_config_file, $telegram_config);
+
+        // Auto-save Telegram credentials before testing
+        $new_telegram_credentials = [
+            'bot_token' => sanitize_input($_POST['telegram_bot_token'] ?? ''),
+            'chat_id' => sanitize_input($_POST['telegram_chat_id'] ?? '')
+        ];
+
+        $all_credentials = array_merge($credentials, [
+            'telegram' => $new_telegram_credentials
+        ]);
+
+        // Get credentials path
+        $credentials_path = file_exists($credentials_path_file)
+            ? trim(file_get_contents($credentials_path_file))
+            : '/home/smtp_credentials.json';
+
+        // Save credentials
+        $json_content = json_encode($all_credentials, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        if (file_put_contents($credentials_path, $json_content) !== false) {
+            @chmod($credentials_path, 0600);
+            $telegram_credentials = $new_telegram_credentials;
+        }
+
+        // Now test
         $result = send_telegram_test();
 
         if ($result) {
@@ -540,44 +624,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!-- SMTP Settings -->
                     <div class="smtp-fields <?php echo $email_config['method'] === 'smtp' ? 'show' : ''; ?>" id="smtp-fields">
                         <div class="form-section">
-                            <h3>⚙️ Configuración SMTP</h3>
+                            <h3>🔐 Credenciales SMTP</h3>
+
+                            <div class="info-box" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin-bottom: 15px; border-radius: 4px; font-size: 12px;">
+                                <strong>🔒 Seguridad:</strong> Las credenciales se guardan en un archivo fuera del directorio público.
+                                <a href="/admin/secretos-path.php" style="color: #856404; text-decoration: underline;">Configurar ubicación →</a>
+                            </div>
 
                             <div class="grid-2">
                                 <div class="form-group">
                                     <label for="smtp_host">Host SMTP</label>
                                     <input type="text" id="smtp_host" name="smtp_host"
-                                           value="<?php echo htmlspecialchars($email_config['smtp']['host']); ?>"
+                                           value="<?php echo htmlspecialchars($smtp_credentials['host']); ?>"
                                            placeholder="smtp.gmail.com">
                                 </div>
 
                                 <div class="form-group">
                                     <label for="smtp_port">Puerto</label>
                                     <input type="number" id="smtp_port" name="smtp_port"
-                                           value="<?php echo $email_config['smtp']['port']; ?>"
+                                           value="<?php echo $smtp_credentials['port']; ?>"
                                            placeholder="587">
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label for="smtp_username">Usuario SMTP</label>
+                                <label for="smtp_username">Usuario SMTP (tu email de Gmail)</label>
                                 <input type="text" id="smtp_username" name="smtp_username"
-                                       value="<?php echo htmlspecialchars($email_config['smtp']['username']); ?>"
+                                       value="<?php echo htmlspecialchars($smtp_credentials['username']); ?>"
                                        placeholder="tu-email@gmail.com">
                             </div>
 
                             <div class="form-group">
-                                <label for="smtp_password">Contraseña SMTP</label>
+                                <label for="smtp_password">Contraseña SMTP (App Password)</label>
                                 <input type="password" id="smtp_password" name="smtp_password"
-                                       value="<?php echo htmlspecialchars($email_config['smtp']['password']); ?>"
-                                       placeholder="••••••••">
-                                <small>Para Gmail, usa una "App Password" en lugar de tu contraseña normal</small>
+                                       value="<?php echo htmlspecialchars($smtp_credentials['password']); ?>"
+                                       placeholder="••••••••••••••••">
+                                <small>Para Gmail, usa una <a href="https://myaccount.google.com/apppasswords" target="_blank">App Password</a> en lugar de tu contraseña normal</small>
                             </div>
 
                             <div class="form-group">
                                 <label for="smtp_encryption">Encriptación</label>
                                 <select id="smtp_encryption" name="smtp_encryption">
-                                    <option value="tls" <?php echo $email_config['smtp']['encryption'] === 'tls' ? 'selected' : ''; ?>>TLS</option>
-                                    <option value="ssl" <?php echo $email_config['smtp']['encryption'] === 'ssl' ? 'selected' : ''; ?>>SSL</option>
+                                    <option value="tls" <?php echo $smtp_credentials['encryption'] === 'tls' ? 'selected' : ''; ?>>TLS (recomendado para puerto 587)</option>
+                                    <option value="ssl" <?php echo $smtp_credentials['encryption'] === 'ssl' ? 'selected' : ''; ?>>SSL (para puerto 465)</option>
                                 </select>
                             </div>
                         </div>
@@ -682,33 +771,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
                     <!-- Bot Configuration -->
-                    <div class="form-group">
-                        <label for="bot_token">Bot Token</label>
-                        <input type="text" id="bot_token" name="bot_token"
-                               value="<?php echo htmlspecialchars($telegram_config['bot_token']); ?>"
-                               placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
-                        <small>Obtén tu token de <a href="https://t.me/BotFather" target="_blank">@BotFather</a></small>
-                    </div>
+                    <div class="form-section">
+                        <h3>🔐 Credenciales de Telegram</h3>
 
-                    <div class="form-group">
-                        <label for="chat_id">Chat ID</label>
-                        <input type="text" id="chat_id" name="chat_id"
-                               value="<?php echo htmlspecialchars($telegram_config['chat_id']); ?>"
-                               placeholder="123456789">
-                        <small>ID del chat/canal donde recibirás mensajes</small>
-                    </div>
+                        <div class="info-box" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin-bottom: 15px; border-radius: 4px; font-size: 12px;">
+                            <strong>🔒 Seguridad:</strong> Las credenciales se guardan en un archivo fuera del directorio público.
+                            <a href="/admin/secretos-path.php" style="color: #856404; text-decoration: underline;">Configurar ubicación →</a>
+                        </div>
 
-                    <!-- Info Box -->
-                    <div class="message info" style="margin: 20px 0; font-size: 13px;">
-                        <strong>ℹ️ Cómo obtener Bot Token y Chat ID:</strong><br><br>
-                        <strong>1. Bot Token:</strong><br>
-                        • Abre Telegram y busca <a href="https://t.me/BotFather" target="_blank" style="color: #0c5460;">@BotFather</a><br>
-                        • Envía <code>/newbot</code> y sigue las instrucciones<br>
-                        • Copia el token que te da<br><br>
-                        <strong>2. Chat ID:</strong><br>
-                        • Busca tu bot en Telegram y envía <code>/start</code><br>
-                        • Visita: <code>https://api.telegram.org/bot&lt;TU_TOKEN&gt;/getUpdates</code><br>
-                        • Busca el número en <code>"chat":{"id":123456789}</code>
+                        <div class="form-group">
+                            <label for="telegram_bot_token">Bot Token</label>
+                            <input type="text" id="telegram_bot_token" name="telegram_bot_token"
+                                   value="<?php echo htmlspecialchars($telegram_credentials['bot_token']); ?>"
+                                   placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+                            <small>Obtén tu token de <a href="https://t.me/BotFather" target="_blank">@BotFather</a></small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="telegram_chat_id">Chat ID</label>
+                            <input type="text" id="telegram_chat_id" name="telegram_chat_id"
+                                   value="<?php echo htmlspecialchars($telegram_credentials['chat_id']); ?>"
+                                   placeholder="123456789">
+                            <small>ID del chat/canal donde recibirás mensajes</small>
+                        </div>
                     </div>
 
                     <!-- Notifications -->
@@ -788,10 +873,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        function updatePortByEncryption() {
+            const encryption = document.getElementById('smtp_encryption').value;
+            const portField = document.getElementById('smtp_port');
+
+            // Solo actualizar si el usuario no ha cambiado manualmente a un puerto no estándar
+            const currentPort = parseInt(portField.value);
+            const standardPorts = [587, 465, 25, 2525];
+
+            // Si el puerto actual es estándar o está vacío, actualizarlo
+            if (!currentPort || standardPorts.includes(currentPort)) {
+                if (encryption === 'tls') {
+                    portField.value = 587;
+                } else if (encryption === 'ssl') {
+                    portField.value = 465;
+                }
+            }
+        }
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             toggleSmtpFields();
+
+            // Add event listener to encryption selector
+            const encryptionSelect = document.getElementById('smtp_encryption');
+            if (encryptionSelect) {
+                encryptionSelect.addEventListener('change', updatePortByEncryption);
+            }
         });
     </script>
+
+    <!-- Unsaved Changes Warning -->
+    <script src="/admin/includes/unsaved-changes-warning.js"></script>
 </body>
 </html>

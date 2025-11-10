@@ -20,16 +20,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_payment'])) {
     } else {
         $config_file = __DIR__ . '/../config/payment.json';
 
+        // Save configuration (without sensitive credentials)
         $config = [
             'mercadopago' => [
                 'enabled' => isset($_POST['mp_enabled']),
                 'mode' => isset($_POST['mp_sandbox']) ? 'sandbox' : 'production',
-                'access_token_sandbox' => sanitize_input($_POST['mp_token_sandbox'] ?? ''),
-                'access_token_prod' => sanitize_input($_POST['mp_token_prod'] ?? ''),
-                'public_key_sandbox' => sanitize_input($_POST['mp_public_sandbox'] ?? ''),
-                'public_key_prod' => sanitize_input($_POST['mp_public_prod'] ?? ''),
-                'webhook_secret_sandbox' => sanitize_input($_POST['mp_webhook_secret_sandbox'] ?? ''),
-                'webhook_secret_prod' => sanitize_input($_POST['mp_webhook_secret_prod'] ?? ''),
                 'webhook_url' => sanitize_input($_POST['mp_webhook_url'] ?? ''),
                 'webhook_security' => [
                     'validate_signature' => isset($_POST['mp_validate_signature']),
@@ -44,8 +39,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_payment'])) {
             ]
         ];
 
+        // Save credentials to secure file (outside webroot)
+        $payment_credentials = [
+            'mercadopago' => [
+                'access_token_sandbox' => sanitize_input($_POST['mp_token_sandbox'] ?? ''),
+                'access_token_prod' => sanitize_input($_POST['mp_token_prod'] ?? ''),
+                'public_key_sandbox' => sanitize_input($_POST['mp_public_sandbox'] ?? ''),
+                'public_key_prod' => sanitize_input($_POST['mp_public_prod'] ?? ''),
+                'webhook_secret_sandbox' => sanitize_input($_POST['mp_webhook_secret_sandbox'] ?? ''),
+                'webhook_secret_prod' => sanitize_input($_POST['mp_webhook_secret_prod'] ?? '')
+            ]
+        ];
+
+        // Get credentials path
+        $credentials_path_file = __DIR__ . '/../.payment_credentials_path';
+        $credentials_path = file_exists($credentials_path_file)
+            ? trim(file_get_contents($credentials_path_file))
+            : '/home/payment_credentials.json';
+
+        // Save credentials
+        $json_content = json_encode($payment_credentials, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        if (file_put_contents($credentials_path, $json_content) !== false) {
+            @chmod($credentials_path, 0600);
+        }
+
         if (write_json($config_file, $config)) {
-            $message = 'Configuración de pagos guardada exitosamente';
+            $message = 'Configuración de pagos y credenciales guardadas exitosamente';
             log_admin_action('payment_config_updated', $_SESSION['username']);
         } else {
             $error = 'Error al guardar la configuración';
@@ -54,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_payment'])) {
 }
 
 $payment_config = read_json(__DIR__ . '/../config/payment.json');
+$payment_credentials = get_payment_credentials();
 $site_config = read_json(__DIR__ . '/../config/site.json');
 $page_title = 'Configuración de Pagos';
 $csrf_token = generate_csrf_token();
@@ -138,16 +158,21 @@ $webhook_url = $protocol . $_SERVER['HTTP_HOST'] . '/webhook.php';
 
                 <div class="form-group">
                     <label class="checkbox-label">
-                        <input type="checkbox" name="mp_sandbox" <?php echo ($payment_config['mercadopago']['sandbox_mode'] ?? true) ? 'checked' : ''; ?>>
+                        <input type="checkbox" name="mp_sandbox" <?php echo ($payment_config['mercadopago']['mode'] ?? 'sandbox') === 'sandbox' ? 'checked' : ''; ?>>
                         <span>Modo Sandbox (testing)</span>
                     </label>
                     <div class="help-text">En modo sandbox, los pagos son simulados y no se cobran realmente.</div>
                 </div>
 
+                <div class="alert-box" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin-bottom: 15px; border-radius: 4px; font-size: 12px;">
+                    <strong>🔒 Seguridad:</strong> Las credenciales se guardan en un archivo fuera del directorio público.
+                    <a href="/admin/payment-secretos-path.php" style="color: #856404; text-decoration: underline;">Configurar ubicación →</a>
+                </div>
+
                 <div class="form-group">
                     <label>Access Token - Sandbox (Testing)</label>
                     <input type="password" name="mp_token_sandbox"
-                           value="<?php echo htmlspecialchars($payment_config['mercadopago']['access_token_sandbox'] ?? ''); ?>"
+                           value="<?php echo htmlspecialchars($payment_credentials['mercadopago']['access_token_sandbox'] ?? ''); ?>"
                            placeholder="TEST-XXXX-XXXX-XXXX">
                     <div class="help-text">Token de prueba para modo sandbox. Comienza con "TEST-"</div>
                 </div>
@@ -155,7 +180,7 @@ $webhook_url = $protocol . $_SERVER['HTTP_HOST'] . '/webhook.php';
                 <div class="form-group">
                     <label>Public Key - Sandbox</label>
                     <input type="text" name="mp_public_sandbox"
-                           value="<?php echo htmlspecialchars($payment_config['mercadopago']['public_key_sandbox'] ?? ''); ?>"
+                           value="<?php echo htmlspecialchars($payment_credentials['mercadopago']['public_key_sandbox'] ?? ''); ?>"
                            placeholder="TEST-XXXX-XXXX-XXXX">
                     <div class="help-text">Public key de prueba</div>
                 </div>
@@ -163,7 +188,7 @@ $webhook_url = $protocol . $_SERVER['HTTP_HOST'] . '/webhook.php';
                 <div class="form-group">
                     <label>Access Token - Producción</label>
                     <input type="password" name="mp_token_prod"
-                           value="<?php echo htmlspecialchars($payment_config['mercadopago']['access_token_prod'] ?? ''); ?>"
+                           value="<?php echo htmlspecialchars($payment_credentials['mercadopago']['access_token_prod'] ?? ''); ?>"
                            placeholder="APP_USR-XXXX-XXXX-XXXX">
                     <div class="help-text">Token de producción para cobros reales. Comienza con "APP_USR-"</div>
                 </div>
@@ -171,7 +196,7 @@ $webhook_url = $protocol . $_SERVER['HTTP_HOST'] . '/webhook.php';
                 <div class="form-group">
                     <label>Public Key - Producción</label>
                     <input type="text" name="mp_public_prod"
-                           value="<?php echo htmlspecialchars($payment_config['mercadopago']['public_key_prod'] ?? ''); ?>"
+                           value="<?php echo htmlspecialchars($payment_credentials['mercadopago']['public_key_prod'] ?? ''); ?>"
                            placeholder="APP_USR-XXXX-XXXX-XXXX">
                     <div class="help-text">Public key de producción</div>
                 </div>
@@ -192,7 +217,7 @@ $webhook_url = $protocol . $_SERVER['HTTP_HOST'] . '/webhook.php';
                 <div class="form-group">
                     <label>Webhook Secret - Sandbox (Testing)</label>
                     <input type="password" name="mp_webhook_secret_sandbox"
-                           value="<?php echo htmlspecialchars($payment_config['mercadopago']['webhook_secret_sandbox'] ?? ''); ?>"
+                           value="<?php echo htmlspecialchars($payment_credentials['mercadopago']['webhook_secret_sandbox'] ?? ''); ?>"
                            placeholder="secret_key_de_sandbox">
                     <div class="help-text">Secret key de tu aplicación de prueba en Mercadopago</div>
                 </div>
@@ -200,7 +225,7 @@ $webhook_url = $protocol . $_SERVER['HTTP_HOST'] . '/webhook.php';
                 <div class="form-group">
                     <label>Webhook Secret - Producción</label>
                     <input type="password" name="mp_webhook_secret_prod"
-                           value="<?php echo htmlspecialchars($payment_config['mercadopago']['webhook_secret_prod'] ?? ''); ?>"
+                           value="<?php echo htmlspecialchars($payment_credentials['mercadopago']['webhook_secret_prod'] ?? ''); ?>"
                            placeholder="secret_key_de_produccion">
                     <div class="help-text">Secret key de tu aplicación de producción en Mercadopago</div>
                 </div>
@@ -281,5 +306,8 @@ $webhook_url = $protocol . $_SERVER['HTTP_HOST'] . '/webhook.php';
             });
         }
     </script>
+
+    <!-- Unsaved Changes Warning -->
+    <script src="/admin/includes/unsaved-changes-warning.js"></script>
 </body>
 </html>

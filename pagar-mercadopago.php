@@ -34,14 +34,18 @@ if (!$order) {
     die('Orden no encontrada');
 }
 
-// Get payment config
+// Get payment config and credentials
 $payment_config = read_json(__DIR__ . '/config/payment.json');
+$payment_credentials = get_payment_credentials();
 $site_config = read_json(__DIR__ . '/config/site.json');
 
-$sandbox_mode = $payment_config['mercadopago']['sandbox_mode'] ?? true;
+// Determine mode: check if 'mode' exists, fallback to 'sandbox_mode' for backward compatibility
+$mode = $payment_config['mercadopago']['mode'] ?? ($payment_config['mercadopago']['sandbox_mode'] ?? true ? 'sandbox' : 'production');
+$sandbox_mode = ($mode === 'sandbox');
+
 $public_key = $sandbox_mode ?
-    $payment_config['mercadopago']['public_key_sandbox'] :
-    $payment_config['mercadopago']['public_key_prod'];
+    ($payment_credentials['mercadopago']['public_key_sandbox'] ?? '') :
+    ($payment_credentials['mercadopago']['public_key_prod'] ?? '');
 
 if (empty($public_key)) {
     die('Mercadopago no configurado. Contacte al administrador.');

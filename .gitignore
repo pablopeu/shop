@@ -2,6 +2,19 @@
 config/credentials.php
 config/*.key
 *.pem
+.credentials_path
+.payment_credentials_path
+
+# ===== ENVIRONMENT-SPECIFIC CONFIGURATION =====
+# These files contain environment-specific data that should not be shared between branches
+# Use the .example files as templates
+config/site.json
+config/footer.json
+config/email.json
+config/telegram.json
+config/payment.json
+config/currency.json
+data/products.json
 
 # ===== ENVIRONMENT-SPECIFIC CONFIGURATION =====
 # These files contain environment-specific data that should not be shared between branches
