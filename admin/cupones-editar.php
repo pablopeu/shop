@@ -218,5 +218,8 @@ $user = get_logged_user();
             document.getElementById('products_container').style.display = value === 'specific' ? 'block' : 'none';
         }
     </script>
+
+    <!-- Unsaved Changes Warning -->
+    <script src="/admin/includes/unsaved-changes-warning.js"></script>
 </body>
 </html>

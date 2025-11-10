@@ -1,10 +1,10 @@
 <?php
 /**
- * Admin - Add New Coupon
+ * Admin - Add New Promotion
  */
 
 require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/../includes/coupons.php';
+require_once __DIR__ . '/../includes/promotions.php';
 require_once __DIR__ . '/../includes/products.php';
 require_once __DIR__ . '/../includes/auth.php';
 
@@ -16,7 +16,7 @@ require_admin();
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/../config/site.json');
-$page_title = 'Nuevo Cupón';
+$page_title = 'Nueva Promoción';
 
 // Get all products for selection
 $all_products = get_all_products(false);
@@ -25,52 +25,50 @@ $all_products = get_all_products(false);
 $message = '';
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_coupon'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_promotion'])) {
 
     // Validate CSRF token
     if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
         $error = 'Token de seguridad inválido';
     } else {
         // Get form data
-        $coupon_data = [
-            'code' => sanitize_input($_POST['code'] ?? ''),
+        $promotion_data = [
+            'name' => sanitize_input($_POST['name'] ?? ''),
             'type' => sanitize_input($_POST['type'] ?? 'percentage'),
             'value' => floatval($_POST['value'] ?? 0),
-            'min_purchase' => floatval($_POST['min_purchase'] ?? 0),
-            'max_uses' => intval($_POST['max_uses'] ?? 0),
-            'one_per_user' => isset($_POST['one_per_user']) ? true : false,
+            'application' => sanitize_input($_POST['application'] ?? 'all'),
+            'products' => $_POST['products'] ?? [],
+            'condition_type' => sanitize_input($_POST['condition_type'] ?? 'any'),
+            'minimum_amount' => floatval($_POST['minimum_amount'] ?? 0),
+            'period_type' => sanitize_input($_POST['period_type'] ?? 'permanent'),
             'start_date' => sanitize_input($_POST['start_date'] ?? ''),
             'end_date' => sanitize_input($_POST['end_date'] ?? ''),
-            'applicable_to' => sanitize_input($_POST['applicable_to'] ?? 'all'),
-            'products' => $_POST['products'] ?? [],
-            'not_combinable' => isset($_POST['not_combinable']) ? true : false,
             'active' => isset($_POST['active']) ? true : false
         ];
 
         // Validate required fields
-        if (empty($coupon_data['code'])) {
-            $error = 'El código es requerido';
-        } elseif ($coupon_data['value'] <= 0) {
+        if (empty($promotion_data['name'])) {
+            $error = 'El nombre de la promoción es requerido';
+        } elseif ($promotion_data['value'] <= 0) {
             $error = 'El valor del descuento debe ser mayor a 0';
-        } elseif (empty($coupon_data['start_date']) || empty($coupon_data['end_date'])) {
-            $error = 'Las fechas de vigencia son requeridas';
-        } elseif (strtotime($coupon_data['end_date']) < strtotime($coupon_data['start_date'])) {
+        } elseif ($promotion_data['period_type'] === 'limited' && (empty($promotion_data['start_date']) || empty($promotion_data['end_date']))) {
+            $error = 'Las fechas de vigencia son requeridas para promociones con período limitado';
+        } elseif ($promotion_data['period_type'] === 'limited' && strtotime($promotion_data['end_date']) < strtotime($promotion_data['start_date'])) {
             $error = 'La fecha de fin debe ser posterior a la fecha de inicio';
         } else {
-            // Create new coupon
-            $result = create_coupon($coupon_data);
+            // Create new promotion
+            $result = create_promotion($promotion_data);
 
-            if (isset($result['success']) && $result['success']) {
-                $message = 'Cupón creado exitosamente';
-                log_admin_action('coupon_created', $_SESSION['username'], [
-                    'coupon_id' => $result['coupon']['id'],
-                    'code' => $coupon_data['code']
+            if ($result) {
+                $message = 'Promoción creada exitosamente';
+                log_admin_action('promotion_created', $_SESSION['username'], [
+                    'name' => $promotion_data['name']
                 ]);
 
                 // Redirect to list after 2 seconds
-                header("refresh:2;url=/admin/cupones-listado.php");
+                header("refresh:2;url=/admin/promociones-listado.php");
             } else {
-                $error = $result['error'] ?? 'Error al crear el cupón';
+                $error = 'Error al crear la promoción';
             }
         }
     }
@@ -88,7 +86,7 @@ $user = get_logged_user();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crear Cupón - Admin</title>
+    <title>Crear Promoción - Admin</title>
 
     <style>
         * {
@@ -302,27 +300,28 @@ $user = get_logged_user();
         <?php endif; ?>
 
         <div class="info-box">
-            <p><strong>ℹ️ Información:</strong></p>
-            <p>• El código del cupón se convertirá automáticamente a mayúsculas</p>
-            <p>• Los cupones con usos máximos = 0 se consideran ilimitados</p>
-            <p>• Los cupones expirados no podrán ser usados aunque estén activos</p>
+            <p><strong>Información:</strong></p>
+            <p>• Las promociones se aplican automáticamente al carrito cuando se cumplen las condiciones</p>
+            <p>• Las promociones con período limitado solo estarán activas durante las fechas especificadas</p>
+            <p>• Las promociones inactivas no aparecerán en el sitio aunque cumplan otros requisitos</p>
         </div>
 
-        <!-- Coupon Form -->
+        <!-- Promotion Form -->
         <div class="card">
             <form method="POST" action="">
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
 
-                <!-- Basic Information -->\n                <div class="section-divider">🎫 Información del Cupón</div>
+                <!-- Basic Information -->
+                <div class="section-divider">Información de la Promoción</div>
 
                 <div class="form-grid">
                     <div class="form-group full-width">
-                        <label for="code">
-                            Código del Cupón <span class="required">*</span>
+                        <label for="name">
+                            Nombre de la Promoción <span class="required">*</span>
                         </label>
-                        <input type="text" id="code" name="code" required
-                               placeholder="Ej: BIENVENIDO10" style="text-transform: uppercase;">
-                        <small style="color: #666;">El código que los clientes usarán. Ejemplo: VERANO2025, PRIMERACOMPRA</small>
+                        <input type="text" id="name" name="name" required
+                               placeholder="Ej: Descuento de Verano 2025">
+                        <small style="color: #666;">Un nombre descriptivo para identificar la promoción internamente</small>
                     </div>
 
                     <div class="form-group">
@@ -340,78 +339,19 @@ $user = get_logged_user();
                             Valor del Descuento <span class="required">*</span>
                         </label>
                         <input type="number" id="value" name="value" step="0.01" required
-                               placeholder="0.00">
-                        <small style="color: #666;">Ejemplo: 10 para 10% o $10 según el tipo</small>
+                               placeholder="0.00" min="0.01">
+                        <small style="color: #666;">Ejemplo: 15 para 15% o $1500 según el tipo</small>
                     </div>
                 </div>
 
-                <!-- Restrictions -->
-                <div class="section-divider">🔒 Restricciones</div>
-
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="min_purchase">
-                            Compra Mínima (ARS)
-                        </label>
-                        <input type="number" id="min_purchase" name="min_purchase" step="0.01"
-                               value="0" min="0">
-                        <small style="color: #666;">0 = sin mínimo requerido</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="max_uses">
-                            Usos Máximos
-                        </label>
-                        <input type="number" id="max_uses" name="max_uses"
-                               value="0" min="0">
-                        <small style="color: #666;">0 = ilimitado</small>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="one_per_user" name="one_per_user">
-                        <label for="one_per_user">
-                            Un solo uso por usuario (requiere login)
-                        </label>
-                    </div>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="not_combinable" name="not_combinable">
-                        <label for="not_combinable">
-                            No combinable con otros cupones
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Validity Period -->
-                <div class="section-divider">📅 Vigencia</div>
-
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="start_date">
-                            Fecha de Inicio <span class="required">*</span>
-                        </label>
-                        <input type="date" id="start_date" name="start_date" required
-                               value="<?php echo date('Y-m-d'); ?>">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="end_date">
-                            Fecha de Fin <span class="required">*</span>
-                        </label>
-                        <input type="date" id="end_date" name="end_date" required
-                               value="<?php echo date('Y-m-d', strtotime('+30 days')); ?>">
-                    </div>
-                </div>
-
-                <!-- Applicable Products -->
-                <div class="section-divider">🛍️ Productos Aplicables</div>
+                <!-- Product Application -->
+                <div class="section-divider">Aplicación de Productos</div>
 
                 <div class="form-group full-width">
-                    <label for="applicable_to">
+                    <label for="application">
                         Aplicar a:
                     </label>
-                    <select id="applicable_to" name="applicable_to" onchange="toggleProductsSelection(this.value)">
+                    <select id="application" name="application" onchange="toggleProductsSelection(this.value)">
                         <option value="all">Todos los productos</option>
                         <option value="specific">Productos específicos</option>
                     </select>
@@ -434,25 +374,82 @@ $user = get_logged_user();
                     </div>
                 </div>
 
+                <!-- Purchase Conditions -->
+                <div class="section-divider">Condiciones de Compra</div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="condition_type">
+                            Tipo de Condición
+                        </label>
+                        <select id="condition_type" name="condition_type" onchange="toggleMinimumAmount(this.value)">
+                            <option value="any">Sin mínimo (aplicar siempre)</option>
+                            <option value="minimum">Monto mínimo de compra</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="minimum_amount_container" style="display: none;">
+                        <label for="minimum_amount">
+                            Monto Mínimo (ARS)
+                        </label>
+                        <input type="number" id="minimum_amount" name="minimum_amount" step="0.01"
+                               value="0" min="0" placeholder="0.00">
+                        <small style="color: #666;">El carrito debe superar este monto para aplicar la promoción</small>
+                    </div>
+                </div>
+
+                <!-- Validity Period -->
+                <div class="section-divider">Vigencia</div>
+
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="period_type">
+                            Tipo de Período
+                        </label>
+                        <select id="period_type" name="period_type" onchange="togglePeriodDates(this.value)">
+                            <option value="permanent">Permanente (siempre activa)</option>
+                            <option value="limited">Período Limitado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="period_dates_container" class="form-grid" style="display: none;">
+                    <div class="form-group">
+                        <label for="start_date">
+                            Fecha de Inicio <span class="required">*</span>
+                        </label>
+                        <input type="date" id="start_date" name="start_date"
+                               value="<?php echo date('Y-m-d'); ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="end_date">
+                            Fecha de Fin <span class="required">*</span>
+                        </label>
+                        <input type="date" id="end_date" name="end_date"
+                               value="<?php echo date('Y-m-d', strtotime('+30 days')); ?>">
+                    </div>
+                </div>
+
                 <!-- Status -->
-                <div class="section-divider">⚙️ Estado</div>
+                <div class="section-divider">Estado</div>
 
                 <div class="form-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="active" name="active" checked>
                         <label for="active">
-                            Cupón Activo (disponible para uso)
+                            Promoción Activa (visible y disponible para usuarios)
                         </label>
                     </div>
                 </div>
 
                 <!-- Actions -->
                 <div style="display: flex; gap: 10px; margin-top: 30px;">
-                    <button type="submit" name="save_coupon" class="btn btn-primary">
-                        💾 Crear Cupón
+                    <button type="submit" name="save_promotion" class="btn btn-primary">
+                        Crear Promoción
                     </button>
-                    <a href="/admin/cupones-listado.php" class="btn btn-secondary">
-                        ❌ Cancelar
+                    <a href="/admin/promociones-listado.php" class="btn btn-secondary">
+                        Cancelar
                     </a>
                 </div>
             </form>
@@ -466,6 +463,31 @@ $user = get_logged_user();
                 container.style.display = 'block';
             } else {
                 container.style.display = 'none';
+            }
+        }
+
+        function toggleMinimumAmount(value) {
+            const container = document.getElementById('minimum_amount_container');
+            if (value === 'minimum') {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        function togglePeriodDates(value) {
+            const container = document.getElementById('period_dates_container');
+            const startDate = document.getElementById('start_date');
+            const endDate = document.getElementById('end_date');
+
+            if (value === 'limited') {
+                container.style.display = 'grid';
+                startDate.required = true;
+                endDate.required = true;
+            } else {
+                container.style.display = 'none';
+                startDate.required = false;
+                endDate.required = false;
             }
         }
     </script>
