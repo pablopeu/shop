@@ -1,0 +1,17 @@
+{
+  "name": "mercadopago-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for Mercadopago API integration",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "mercadopago": "^2.0.15"
+  },
+  "keywords": ["mcp", "mercadopago", "payments"],
+  "author": "",
+  "license": "MIT"
+}
