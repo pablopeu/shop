@@ -291,10 +291,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                 increment_coupon_usage($coupon_code);
             }
 
-            // Send order confirmation notifications
+            // Send order confirmation email to customer (always send)
             send_order_confirmation_email($order);
-            send_admin_new_order_email($order);
-            send_telegram_new_order($order);
+
+            // For presencial payment: send all notifications immediately
+            // For Mercadopago: notifications will be sent when payment is processed
+            if ($payment_method === 'presencial') {
+                send_admin_new_order_email($order);
+                send_telegram_new_order($order);
+            }
 
             // Clear cart and coupon
             unset($_SESSION['cart']);

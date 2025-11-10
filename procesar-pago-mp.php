@@ -152,8 +152,9 @@ try {
 
         // Send notifications (using updated order data)
         $updated_order = $orders_data['orders'][$order_index];
-        send_payment_approved_email($updated_order);
-        send_telegram_payment_approved($updated_order);
+        send_payment_approved_email($updated_order);  // To customer
+        send_admin_new_order_email($updated_order);   // To admin
+        send_telegram_payment_approved($updated_order); // To admin via Telegram
 
         $redirect_url = '/gracias.php?order=' . $order_id . '&token=' . $tracking_token;
     } elseif ($payment['status'] === 'in_process' ||
