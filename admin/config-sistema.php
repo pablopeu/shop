@@ -93,12 +93,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]
             ];
 
+            // Prepare feedback messages
+            $actions_performed = [];
+            $file_existed = file_exists($new_path);
+
             // Ensure directory exists
             $dir = dirname($new_path);
             if (!file_exists($dir)) {
                 if (!@mkdir($dir, 0755, true)) {
-                    $error = '❌ No se pudo crear el directorio: ' . $dir;
+                    $error = '❌ No se pudo crear el directorio: ' . $dir . ' (verifica permisos)';
+                } else {
+                    $actions_performed[] = 'Directorio creado';
                 }
+            }
+
+            // Verify directory is writable
+            if (empty($error) && !is_writable($dir)) {
+                $error = '❌ El directorio no es escribible: ' . $dir . ' (verifica permisos)';
             }
 
             if (empty($error)) {
@@ -106,18 +117,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $json_content = json_encode($credentials, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
                 if (file_put_contents($new_path, $json_content) !== false) {
-                    // Set restrictive permissions
-                    @chmod($new_path, 0600);
+                    // Track if file was created or updated
+                    if (!$file_existed) {
+                        $actions_performed[] = 'Archivo creado';
+                    } else {
+                        $actions_performed[] = 'Archivo actualizado';
+                    }
 
-                    // Save path
+                    // Set restrictive permissions (only owner can read/write)
+                    @chmod($new_path, 0600);
+                    $actions_performed[] = 'Permisos establecidos (600)';
+
+                    // Save path reference
                     file_put_contents($credentials_path_file, $new_path);
                     $current_path = $new_path;
                     $current_credentials = $credentials;
 
-                    $message = '✅ Credenciales guardadas exitosamente en: ' . $new_path;
+                    $action_details = implode(' • ', $actions_performed);
+                    $message = '✅ Credenciales guardadas exitosamente en: ' . $new_path . '<br><small>' . $action_details . '</small>';
                     log_admin_action('credentials_updated', $_SESSION['username']);
                 } else {
-                    $error = '❌ Error al guardar el archivo de credenciales';
+                    $error = '❌ Error al escribir el archivo de credenciales (verifica permisos del directorio)';
                 }
             }
         }
