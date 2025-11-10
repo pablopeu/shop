@@ -26,18 +26,22 @@ $error = '';
 if (isset($_GET['msg'])) {
     if ($_GET['msg'] === 'product_updated') {
         $message = 'Producto actualizado exitosamente';
+    } elseif ($_GET['msg'] === 'product_created') {
+        $message = 'Producto creado exitosamente';
+    } elseif ($_GET['msg'] === 'product_archived') {
+        $message = 'Producto archivado exitosamente';
     }
 }
 
-// Delete product
-if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
+// Archive product
+if (isset($_GET['action']) && $_GET['action'] === 'archive' && isset($_GET['id'])) {
     $product_id = $_GET['id'];
 
-    if (delete_product($product_id)) {
-        $message = 'Producto eliminado exitosamente';
-        log_admin_action('product_deleted', $_SESSION['username'], ['product_id' => $product_id]);
+    if (archive_product($product_id)) {
+        $message = 'Producto archivado exitosamente';
+        log_admin_action('product_archived', $_SESSION['username'], ['product_id' => $product_id]);
     } else {
-        $error = 'Error al eliminar el producto';
+        $error = 'Error al archivar el producto';
     }
 }
 
@@ -50,7 +54,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'toggle' && isset($_GET['id'])
         $new_status = !$product['active'];
         $updated = update_product($product_id, ['active' => $new_status]);
 
-        if ($updated) {
+        if ($updated['success']) {
             $message = $new_status ? 'Producto activado' : 'Producto desactivado';
             log_admin_action('product_toggled', $_SESSION['username'], [
                 'product_id' => $product_id,
@@ -60,8 +64,86 @@ if (isset($_GET['action']) && $_GET['action'] === 'toggle' && isset($_GET['id'])
     }
 }
 
+// Handle bulk actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
+    $action = $_POST['bulk_action'];
+    $selected_products = $_POST['selected_products'] ?? [];
+
+    if (!empty($selected_products)) {
+        $success_count = 0;
+        foreach ($selected_products as $product_id) {
+            if ($action === 'archive') {
+                if (archive_product($product_id)) {
+                    $success_count++;
+                }
+            } elseif ($action === 'activate') {
+                if (update_product($product_id, ['active' => true])) {
+                    $success_count++;
+                }
+            } elseif ($action === 'deactivate') {
+                if (update_product($product_id, ['active' => false])) {
+                    $success_count++;
+                }
+            }
+        }
+
+        $message = "$success_count producto(s) procesado(s) exitosamente";
+        log_admin_action('bulk_products_action', $_SESSION['username'], [
+            'action' => $action,
+            'count' => $success_count
+        ]);
+    } else {
+        $error = 'No se seleccionaron productos';
+    }
+}
+
 // Get all products
-$products = get_all_products(false); // Include inactive
+$all_products = get_all_products(false); // Include inactive
+
+// Apply filters
+$filter_status = $_GET['filter'] ?? 'all';
+$filter_stock = $_GET['stock'] ?? 'all';
+$search_query = $_GET['search'] ?? '';
+
+// Apply status filter
+if ($filter_status === 'all') {
+    $products = $all_products;
+} elseif ($filter_status === 'active') {
+    $products = array_filter($all_products, fn($p) => $p['active']);
+} elseif ($filter_status === 'inactive') {
+    $products = array_filter($all_products, fn($p) => !$p['active']);
+} else {
+    $products = $all_products;
+}
+
+// Apply stock filter
+if ($filter_stock === 'in_stock') {
+    $products = array_filter($products, fn($p) => $p['stock'] > 0);
+} elseif ($filter_stock === 'out_of_stock') {
+    $products = array_filter($products, fn($p) => $p['stock'] === 0);
+} elseif ($filter_stock === 'low_stock') {
+    $products = array_filter($products, fn($p) => $p['stock'] > 0 && $p['stock'] <= $p['stock_alert']);
+}
+
+// Apply search filter
+if (!empty($search_query)) {
+    $products = array_filter($products, function($product) use ($search_query) {
+        $search_lower = mb_strtolower($search_query);
+        return stripos($product['id'], $search_query) !== false ||
+               stripos(mb_strtolower($product['name']), $search_lower) !== false;
+    });
+}
+
+// Sort products (newest first)
+usort($products, function($a, $b) {
+    return strtotime($b['created_at'] ?? '2000-01-01') - strtotime($a['created_at'] ?? '2000-01-01');
+});
+
+// Calculate stats
+$total_products = count($all_products);
+$active_products = count(array_filter($all_products, fn($p) => $p['active']));
+$out_of_stock = count(array_filter($all_products, fn($p) => $p['stock'] === 0));
+$low_stock = count(array_filter($all_products, fn($p) => $p['stock'] > 0 && $p['stock'] <= $p['stock_alert']));
 
 // Get logged user
 $user = get_logged_user();
@@ -290,10 +372,90 @@ $user = get_logged_user();
             display: none;
         }
 
+        /* Filters */
+        .filters-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            margin-bottom: 15px;
+        }
+
+        .filters-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        /* Bulk Actions Bar */
+        .bulk-actions-bar {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bulk-actions-bar.show {
+            display: flex;
+        }
+
+        .bulk-actions-bar select {
+            padding: 6px 12px;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+        }
+
+        /* Header Actions */
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .header-actions .btn {
+            font-size: 13px;
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .main-content {
                 margin-left: 0;
+            }
+
+            .filters-row {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -329,134 +491,250 @@ $user = get_logged_user();
                 <div class="message error"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
 
+            <!-- Header Actions -->
+            <div class="header-actions">
+                <div>
+                    <a href="<?php echo url('/admin/productos-nuevo.php'); ?>" class="btn btn-primary">
+                        ➕ Nuevo Producto
+                    </a>
+                    <a href="<?php echo url('/admin/productos-archivados.php'); ?>" class="btn btn-secondary">
+                        📦 Ver Archivados
+                    </a>
+                </div>
+            </div>
+
             <!-- Stats -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-value"><?php echo count($products); ?></div>
+                    <div class="stat-value"><?php echo $total_products; ?></div>
                     <div class="stat-label">Total Productos</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">
-                        <?php echo count(array_filter($products, fn($p) => $p['active'])); ?>
-                    </div>
+                    <div class="stat-value"><?php echo $active_products; ?></div>
                     <div class="stat-label">Activos</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">
-                        <?php echo count(array_filter($products, fn($p) => $p['stock'] === 0)); ?>
-                    </div>
+                    <div class="stat-value"><?php echo $out_of_stock; ?></div>
                     <div class="stat-label">Sin Stock</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">
-                        <?php echo count(array_filter($products, fn($p) => $p['stock'] > 0 && $p['stock'] <= $p['stock_alert'])); ?>
-                    </div>
+                    <div class="stat-value"><?php echo $low_stock; ?></div>
                     <div class="stat-label">Stock Bajo</div>
                 </div>
             </div>
 
-            <!-- Products List -->
-            <div class="card">
-                <div class="card-header">Todos los Productos</div>
+            <!-- Filters -->
+            <div class="filters-card">
+                <form method="GET" action="">
+                    <div class="filters-row">
+                        <div class="filter-group">
+                            <label for="search">Buscar</label>
+                            <input type="text" id="search" name="search"
+                                   value="<?php echo htmlspecialchars($search_query); ?>"
+                                   placeholder="Nombre o ID del producto">
+                        </div>
 
-                <table class="products-table">
-                    <thead>
-                        <tr>
-                            <th>Imagen</th>
-                            <th>Nombre</th>
-                            <th>Precio</th>
-                            <th>Stock</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                        <div class="filter-group">
+                            <label for="filter">Estado</label>
+                            <select id="filter" name="filter">
+                                <option value="all" <?php echo $filter_status === 'all' ? 'selected' : ''; ?>>Todos</option>
+                                <option value="active" <?php echo $filter_status === 'active' ? 'selected' : ''; ?>>Activos</option>
+                                <option value="inactive" <?php echo $filter_status === 'inactive' ? 'selected' : ''; ?>>Inactivos</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="stock">Stock</label>
+                            <select id="stock" name="stock">
+                                <option value="all" <?php echo $filter_stock === 'all' ? 'selected' : ''; ?>>Todos</option>
+                                <option value="in_stock" <?php echo $filter_stock === 'in_stock' ? 'selected' : ''; ?>>Con Stock</option>
+                                <option value="out_of_stock" <?php echo $filter_stock === 'out_of_stock' ? 'selected' : ''; ?>>Sin Stock</option>
+                                <option value="low_stock" <?php echo $filter_stock === 'low_stock' ? 'selected' : ''; ?>>Stock Bajo</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">🔍 Filtrar</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Bulk Actions Bar -->
+            <form method="POST" id="bulkForm">
+                <div class="bulk-actions-bar" id="bulkActionsBar">
+                    <span id="selectedCount">0 productos seleccionados</span>
+                    <select name="bulk_action" id="bulkAction">
+                        <option value="">Seleccionar acción...</option>
+                        <option value="activate">Activar</option>
+                        <option value="deactivate">Desactivar</option>
+                        <option value="archive">Archivar</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-primary" onclick="return confirm('¿Confirmar acción en masa?')">
+                        Aplicar
+                    </button>
+                </div>
+
+                <!-- Products List -->
+                <div class="card">
+                    <div class="card-header">
                         <?php if (empty($products)): ?>
-                            <tr>
-                                <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
-                                    No hay productos.
-                                    <a href="<?php echo url('/admin/productos-nuevo.php'); ?>" style="color: #4CAF50;">Crear tu primer producto</a>
-                                </td>
-                            </tr>
+                            Todos los Productos
                         <?php else: ?>
-                            <?php foreach ($products as $product): ?>
+                            Mostrando <?php echo count($products); ?> de <?php echo $total_products; ?> productos
+                        <?php endif; ?>
+                    </div>
+
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+                                </th>
+                                <th>Imagen</th>
+                                <th>Nombre</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($products)): ?>
                                 <tr>
-                                    <td>
-                                        <img src="<?php echo htmlspecialchars(url($product['thumbnail'])); ?>"
-                                             alt="<?php echo htmlspecialchars($product['name']); ?>"
-                                             class="product-thumbnail">
-                                    </td>
-                                    <td>
-                                        <strong><?php echo htmlspecialchars($product['name']); ?></strong>
-                                    </td>
-                                    <td><?php echo format_product_price($product, 'ARS'); ?></td>
-                                    <td>
-                                        <?php echo $product['stock']; ?>
-                                        <?php if ($product['stock'] === 0): ?>
-                                            <span class="badge no-stock">Sin Stock</span>
-                                        <?php elseif ($product['stock'] <= $product['stock_alert']): ?>
-                                            <span class="badge low-stock">Bajo</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <span class="badge <?php echo $product['active'] ? 'active' : 'inactive'; ?>">
-                                            <?php echo $product['active'] ? 'Activo' : 'Inactivo'; ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="actions" id="actions-<?php echo $product['id']; ?>">
-                                            <div class="delete-actions">
-                                                <a href="<?php echo url('/admin/productos-editar.php?id=' . urlencode($product['id'])); ?>"
-                                                   class="btn btn-primary btn-sm">✏️ Editar</a>
-                                                <a href="?action=toggle&id=<?php echo urlencode($product['id']); ?>"
-                                                   class="btn btn-secondary btn-sm"
-                                                   onclick="return confirm('¿Cambiar estado del producto?')">
-                                                    <?php echo $product['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
-                                                </a>
-                                                <button class="btn btn-danger btn-sm"
-                                                        onclick="showDeleteConfirm('<?php echo $product['id']; ?>')">
-                                                    🗑️ Eliminar
-                                                </button>
-                                            </div>
-                                            <div class="delete-confirm" id="delete-confirm-<?php echo $product['id']; ?>">
-                                                <span style="font-size: 13px; color: #dc3545; font-weight: 600;">¿Confirmar eliminación?</span>
-                                                <a href="?action=delete&id=<?php echo urlencode($product['id']); ?>"
-                                                   class="btn btn-danger btn-sm">✓ Borrar</a>
-                                                <button class="btn btn-secondary btn-sm"
-                                                        onclick="hideDeleteConfirm('<?php echo $product['id']; ?>')">
-                                                    ✗ Cancelar
-                                                </button>
-                                            </div>
-                                        </div>
+                                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                                        No hay productos que coincidan con los filtros.
+                                        <a href="<?php echo url('/admin/productos-nuevo.php'); ?>" style="color: #4CAF50;">Crear nuevo producto</a>
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                            <?php else: ?>
+                                <?php foreach ($products as $product): ?>
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" name="selected_products[]"
+                                                   value="<?php echo htmlspecialchars($product['id']); ?>"
+                                                   class="product-checkbox"
+                                                   onchange="updateBulkActions()">
+                                        </td>
+                                        <td>
+                                            <img src="<?php echo htmlspecialchars(url($product['thumbnail'])); ?>"
+                                                 alt="<?php echo htmlspecialchars($product['name']); ?>"
+                                                 class="product-thumbnail">
+                                        </td>
+                                        <td>
+                                            <strong><?php echo htmlspecialchars($product['name']); ?></strong><br>
+                                            <small style="color: #999;">ID: <?php echo htmlspecialchars($product['id']); ?></small>
+                                        </td>
+                                        <td><?php echo format_product_price($product, 'ARS'); ?></td>
+                                        <td>
+                                            <?php echo $product['stock']; ?>
+                                            <?php if ($product['stock'] === 0): ?>
+                                                <span class="badge no-stock">Sin Stock</span>
+                                            <?php elseif ($product['stock'] <= $product['stock_alert']): ?>
+                                                <span class="badge low-stock">Bajo</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <span class="badge <?php echo $product['active'] ? 'active' : 'inactive'; ?>">
+                                                <?php echo $product['active'] ? 'Activo' : 'Inactivo'; ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="actions" id="actions-<?php echo $product['id']; ?>">
+                                                <div class="delete-actions">
+                                                    <a href="<?php echo url('/admin/productos-editar.php?id=' . urlencode($product['id'])); ?>"
+                                                       class="btn btn-primary btn-sm">✏️ Editar</a>
+                                                    <a href="?action=toggle&id=<?php echo urlencode($product['id']); ?>"
+                                                       class="btn btn-secondary btn-sm"
+                                                       onclick="return confirm('¿Cambiar estado del producto?')">
+                                                        <?php echo $product['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
+                                                    </a>
+                                                    <button class="btn btn-danger btn-sm"
+                                                            onclick="showArchiveConfirm('<?php echo $product['id']; ?>')">
+                                                        📦 Archivar
+                                                    </button>
+                                                </div>
+                                                <div class="delete-confirm" id="archive-confirm-<?php echo $product['id']; ?>">
+                                                    <span style="font-size: 13px; color: #dc3545; font-weight: 600;">¿Archivar producto?</span>
+                                                    <a href="?action=archive&id=<?php echo urlencode($product['id']); ?>"
+                                                       class="btn btn-danger btn-sm">✓ Archivar</a>
+                                                    <button class="btn btn-secondary btn-sm"
+                                                            onclick="hideArchiveConfirm('<?php echo $product['id']; ?>')">
+                                                        ✗ Cancelar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </form>
         </div>
 
     <script>
-        function showDeleteConfirm(productId) {
+        function showArchiveConfirm(productId) {
             // Hide action buttons
             const deleteActions = document.querySelector(`#actions-${productId} .delete-actions`);
             deleteActions.classList.add('hide');
 
             // Show confirm buttons
-            const deleteConfirm = document.getElementById(`delete-confirm-${productId}`);
-            deleteConfirm.classList.add('show');
+            const archiveConfirm = document.getElementById(`archive-confirm-${productId}`);
+            archiveConfirm.classList.add('show');
         }
 
-        function hideDeleteConfirm(productId) {
+        function hideArchiveConfirm(productId) {
             // Show action buttons
             const deleteActions = document.querySelector(`#actions-${productId} .delete-actions`);
             deleteActions.classList.remove('hide');
 
             // Hide confirm buttons
-            const deleteConfirm = document.getElementById(`delete-confirm-${productId}`);
-            deleteConfirm.classList.remove('show');
+            const archiveConfirm = document.getElementById(`archive-confirm-${productId}`);
+            archiveConfirm.classList.remove('show');
         }
+
+        // Handle checkbox selection for bulk actions
+        function toggleSelectAll(checkbox) {
+            const checkboxes = document.querySelectorAll('.product-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+            updateBulkActions();
+        }
+
+        function updateBulkActions() {
+            const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+            const count = checkboxes.length;
+            const bulkBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+            const selectAll = document.getElementById('selectAll');
+
+            if (count > 0) {
+                bulkBar.classList.add('show');
+                selectedCount.textContent = `${count} producto${count > 1 ? 's' : ''} seleccionado${count > 1 ? 's' : ''}`;
+            } else {
+                bulkBar.classList.remove('show');
+                selectAll.checked = false;
+            }
+        }
+
+        // Ensure at least one checkbox is selected and an action is chosen
+        document.getElementById('bulkForm')?.addEventListener('submit', function(e) {
+            const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+            const action = document.getElementById('bulkAction').value;
+
+            if (checkboxes.length === 0) {
+                e.preventDefault();
+                alert('Selecciona al menos un producto');
+                return false;
+            }
+
+            if (!action) {
+                e.preventDefault();
+                alert('Selecciona una acción');
+                return false;
+            }
+        });
     </script>
 </body>
 </html>
