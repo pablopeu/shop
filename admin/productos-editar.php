@@ -594,6 +594,12 @@ $user = get_logged_user();
                         </small>
                     </div>
 
+                    <!-- New Images Preview -->
+                    <div class="form-group" id="newImagesPreview" style="display: none;">
+                        <label>Nuevas imágenes a agregar:</label>
+                        <div class="image-gallery" id="new-image-gallery"></div>
+                    </div>
+
                     <!-- Pricing -->
                     <div class="section-divider">💰 Precios</div>
 
@@ -764,13 +770,55 @@ $user = get_logged_user();
             input.addEventListener('change', checkForChanges);
         });
 
-        // Detect file selection
+        // Detect file selection and show preview
         if (fileInput) {
-            fileInput.addEventListener('change', () => {
-                if (fileInput.files.length > 0) {
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
                     markChanged();
+                    showNewImagesPreview(this.files);
+                } else {
+                    hideNewImagesPreview();
                 }
             });
+        }
+
+        // Show preview of new images to be uploaded
+        function showNewImagesPreview(files) {
+            const newImagesPreview = document.getElementById('newImagesPreview');
+            const newImageGallery = document.getElementById('new-image-gallery');
+
+            if (!newImagesPreview || !newImageGallery) return;
+
+            newImageGallery.innerHTML = '';
+
+            // Sort files alphabetically
+            const sortedFiles = Array.from(files).sort((a, b) => {
+                return a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'});
+            });
+
+            sortedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'image-item';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" alt="${file.name}">
+                        <span class="image-badge">NUEVA</span>
+                    `;
+                    newImageGallery.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            });
+
+            newImagesPreview.style.display = 'block';
+        }
+
+        // Hide preview of new images
+        function hideNewImagesPreview() {
+            const newImagesPreview = document.getElementById('newImagesPreview');
+            if (newImagesPreview) {
+                newImagesPreview.style.display = 'none';
+            }
         }
 
         function checkForChanges() {
