@@ -1,0 +1,50 @@
+name: 🚀 Deploy to FTP
+
+on:
+  push:
+    branches:
+      - '**'  # Deploy desde todos los branches
+
+jobs:
+  deploy:
+    name: 🌐 FTP Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: 📂 Sync files to FTP
+        uses: SamKirkland/FTP-Deploy-Action@4.3.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.FTP_REMOTE_PATH }}
+          # Nota: FTP_REMOTE_PATH debe configurarse en GitHub Secrets
+          # Ejemplos comunes: /public_html/ o /httpdocs/ o /www/ o /
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .github/**
+            .payment_credentials_path
+            test-checkout-flow.php
+            test-production.php
+            run-tests.sh
+            run-production-test.sh
+            production-test-log.json
+            test-results-*.html
+            *.md
+            README.md
+            TESTING.md
+            TESTING-PRODUCTION.md
+            .gitignore
+            .editorconfig
+            node_modules/**
+            .DS_Store
+            Thumbs.db
+            *.log
+            .env
+            .env.*
