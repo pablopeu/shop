@@ -11,14 +11,29 @@
 /**
  * BASE_PATH: Subdirectorio donde está instalada la aplicación
  *
- * Ejemplos:
- * - Si tu sitio es https://tudominio.com/ → BASE_PATH = ''
- * - Si tu sitio es https://tudominio.com/shop/ → BASE_PATH = '/shop'
- * - Si tu sitio es https://tudominio.com/tienda/ → BASE_PATH = '/tienda'
+ * AUTO-DETECCIÓN: Se detecta automáticamente basado en la ubicación del archivo
+ * Si prefieres configurarlo manualmente, descomenta y ajusta la línea:
+ * define('BASE_PATH', '/shop');
  *
  * IMPORTANTE: NO incluir el / final
  */
-define('BASE_PATH', '/shop');
+if (!defined('BASE_PATH')) {
+    // Auto-detect BASE_PATH from current script directory
+    $script_dir = dirname($_SERVER['SCRIPT_FILENAME']);
+    $document_root = $_SERVER['DOCUMENT_ROOT'];
+
+    // Calculate relative path from document root
+    if (strpos($script_dir, $document_root) === 0) {
+        $relative_path = substr($script_dir, strlen($document_root));
+        // Clean up the path
+        $relative_path = str_replace('\\', '/', $relative_path);
+        $relative_path = rtrim($relative_path, '/');
+        define('BASE_PATH', $relative_path);
+    } else {
+        // Fallback: empty base path (root installation)
+        define('BASE_PATH', '');
+    }
+}
 
 /**
  * Generate URL with BASE_PATH
