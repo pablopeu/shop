@@ -666,3 +666,205 @@ function search_products($query, $filters = []) {
 
     return array_values($products);
 }
+
+/**
+ * Archive a product
+ * @param string $product_id Product ID
+ * @return bool Success status
+ */
+function archive_product($product_id) {
+    $products_file = __DIR__ . '/../data/products.json';
+    $archived_file = __DIR__ . '/../data/archived_products.json';
+
+    // Load products
+    $products_data = read_json($products_file);
+    $archived_data = read_json($archived_file);
+
+    if (!isset($archived_data['products'])) {
+        $archived_data = ['products' => []];
+    }
+
+    // Find and remove product from products.json
+    $product_to_archive = null;
+    foreach ($products_data['products'] as $index => $product) {
+        if ($product['id'] === $product_id) {
+            $product_to_archive = $product;
+            $product_to_archive['archived_date'] = get_timestamp();
+            array_splice($products_data['products'], $index, 1);
+            break;
+        }
+    }
+
+    if (!$product_to_archive) {
+        return false;
+    }
+
+    // Load full product data
+    $product_full_file = __DIR__ . "/../data/products/{$product_id}.json";
+    if (file_exists($product_full_file)) {
+        $full_product = read_json($product_full_file);
+        $full_product['archived_date'] = get_timestamp();
+
+        // Save to archived with full data
+        array_unshift($archived_data['products'], $product_to_archive);
+
+        // Also keep full product file in archived location
+        $archived_dir = __DIR__ . '/../data/archived_products';
+        if (!is_dir($archived_dir)) {
+            mkdir($archived_dir, 0755, true);
+        }
+        write_json("{$archived_dir}/{$product_id}.json", $full_product);
+
+        // Delete original full product file
+        unlink($product_full_file);
+    }
+
+    // Save products.json
+    write_json($products_file, $products_data);
+
+    // Save archived_products.json
+    write_json($archived_file, $archived_data);
+
+    return true;
+}
+
+/**
+ * Unarchive a product (restore from archive)
+ * @param string $product_id Product ID
+ * @return bool Success status
+ */
+function unarchive_product($product_id) {
+    $products_file = __DIR__ . '/../data/products.json';
+    $archived_file = __DIR__ . '/../data/archived_products.json';
+
+    // Load data
+    $products_data = read_json($products_file);
+    $archived_data = read_json($archived_file);
+
+    if (!isset($products_data['products'])) {
+        $products_data = ['products' => []];
+    }
+
+    // Find and remove product from archived_products.json
+    $product_to_restore = null;
+    foreach ($archived_data['products'] as $index => $product) {
+        if ($product['id'] === $product_id) {
+            $product_to_restore = $product;
+            unset($product_to_restore['archived_date']); // Remove archived_date field
+            array_splice($archived_data['products'], $index, 1);
+            break;
+        }
+    }
+
+    if (!$product_to_restore) {
+        return false;
+    }
+
+    // Restore full product data
+    $archived_product_file = __DIR__ . "/../data/archived_products/{$product_id}.json";
+    if (file_exists($archived_product_file)) {
+        $full_product = read_json($archived_product_file);
+        unset($full_product['archived_date']); // Remove archived_date field
+
+        // Restore to products directory
+        $product_file = __DIR__ . "/../data/products/{$product_id}.json";
+        write_json($product_file, $full_product);
+
+        // Delete from archived directory
+        unlink($archived_product_file);
+    }
+
+    // Add back to products.json
+    $products_data['products'][] = $product_to_restore;
+
+    // Save both files
+    write_json($products_file, $products_data);
+    write_json($archived_file, $archived_data);
+
+    return true;
+}
+
+/**
+ * Get all archived products
+ * @return array Archived products array
+ */
+function get_archived_products() {
+    $archived_file = __DIR__ . '/../data/archived_products.json';
+    $data = read_json($archived_file);
+
+    if (!isset($data['products']) || !is_array($data['products'])) {
+        return [];
+    }
+
+    return $data['products'];
+}
+
+/**
+ * Delete archived product permanently
+ * @param string $product_id Product ID
+ * @return array ['success' => bool, 'message' => string]
+ */
+function delete_archived_product($product_id) {
+    $archived_file = __DIR__ . '/../data/archived_products.json';
+    $archived_data = read_json($archived_file);
+
+    if (!isset($archived_data['products'])) {
+        return [
+            'success' => false,
+            'message' => 'Error al acceder a productos archivados.'
+        ];
+    }
+
+    $product_name = '';
+    $found = false;
+
+    // Remove from archived products list
+    foreach ($archived_data['products'] as $index => $product) {
+        if ($product['id'] === $product_id) {
+            $product_name = $product['name'];
+            array_splice($archived_data['products'], $index, 1);
+            $found = true;
+            break;
+        }
+    }
+
+    if (!$found) {
+        return [
+            'success' => false,
+            'message' => 'Producto archivado no encontrado.'
+        ];
+    }
+
+    // Save archived products file
+    write_json($archived_file, $archived_data);
+
+    // Delete full product file from archived directory
+    $archived_product_file = __DIR__ . "/../data/archived_products/{$product_id}.json";
+    if (file_exists($archived_product_file)) {
+        unlink($archived_product_file);
+    }
+
+    // Delete images directory
+    $image_dir = __DIR__ . "/../images/products/{$product_id}";
+    if (is_dir($image_dir)) {
+        $files = glob($image_dir . '/*');
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                unlink($file);
+            }
+        }
+        rmdir($image_dir);
+    }
+
+    // Log action
+    $current_user = get_logged_user();
+    log_admin_action('delete_archived_product', $current_user['username'] ?? 'system', [
+        'product_id' => $product_id,
+        'name' => $product_name
+    ]);
+
+    return [
+        'success' => true,
+        'message' => 'Producto eliminado permanentemente.'
+    ];
+}
