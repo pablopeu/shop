@@ -741,15 +741,6 @@ $user = get_logged_user();
             });
         });
 
-        // Warn before leaving page with unsaved changes
-        window.addEventListener('beforeunload', (e) => {
-            if (hasChanges) {
-                e.preventDefault();
-                e.returnValue = 'Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?';
-                return e.returnValue;
-            }
-        });
-
         // Allow form submission (don't warn when saving)
         form.addEventListener('submit', (e) => {
             const arsValue = parseFloat(priceArs.value) || 0;
@@ -771,5 +762,8 @@ $user = get_logged_user();
         // Initial UI state
         updateUIForChanges();
     </script>
+
+    <!-- Unsaved Changes Warning -->
+    <script src="/admin/includes/unsaved-changes-warning.js"></script>
 </body>
 </html>

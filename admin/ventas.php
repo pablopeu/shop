@@ -1044,10 +1044,82 @@ $status_labels = [
 
             document.getElementById('modalOrderContent').innerHTML = html;
             document.getElementById('orderModal').classList.add('active');
+
+            // Setup unsaved changes detection for modal forms
+            setupModalChangeDetection();
+        }
+
+        // Track unsaved changes in modal
+        let modalHasUnsavedChanges = false;
+        let modalOriginalValues = {};
+
+        function setupModalChangeDetection() {
+            const modalContent = document.getElementById('modalOrderContent');
+            const forms = modalContent.querySelectorAll('form');
+            const inputs = modalContent.querySelectorAll('input, select, textarea');
+            const saveButtons = modalContent.querySelectorAll('button[type="submit"]');
+
+            // Store original values
+            modalOriginalValues = {};
+            inputs.forEach(input => {
+                const key = input.name || input.id;
+                modalOriginalValues[key] = input.type === 'checkbox' ? input.checked : input.value;
+            });
+
+            // Reset state
+            modalHasUnsavedChanges = false;
+            saveButtons.forEach(btn => {
+                btn.style.background = '#27ae60';
+                btn.style.boxShadow = '0 2px 8px rgba(39, 174, 96, 0.3)';
+            });
+
+            // Detect changes
+            inputs.forEach(input => {
+                input.addEventListener('input', () => checkModalChanges(inputs, saveButtons));
+                input.addEventListener('change', () => checkModalChanges(inputs, saveButtons));
+            });
+
+            // Mark as saved when form is submitted
+            forms.forEach(form => {
+                form.addEventListener('submit', () => {
+                    modalHasUnsavedChanges = false;
+                });
+            });
+        }
+
+        function checkModalChanges(inputs, saveButtons) {
+            let hasChanges = false;
+            inputs.forEach(input => {
+                const key = input.name || input.id;
+                const currentValue = input.type === 'checkbox' ? input.checked : input.value;
+                if (currentValue !== modalOriginalValues[key]) {
+                    hasChanges = true;
+                }
+            });
+
+            modalHasUnsavedChanges = hasChanges;
+
+            // Update button colors
+            saveButtons.forEach(btn => {
+                if (hasChanges) {
+                    btn.style.background = '#e74c3c';
+                    btn.style.boxShadow = '0 2px 8px rgba(231, 76, 60, 0.3)';
+                } else {
+                    btn.style.background = '#27ae60';
+                    btn.style.boxShadow = '0 2px 8px rgba(39, 174, 96, 0.3)';
+                }
+            });
         }
 
         function closeModal() {
-            document.getElementById('orderModal').classList.remove('active');
+            if (modalHasUnsavedChanges) {
+                if (confirm('Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar?')) {
+                    modalHasUnsavedChanges = false;
+                    document.getElementById('orderModal').classList.remove('active');
+                }
+            } else {
+                document.getElementById('orderModal').classList.remove('active');
+            }
         }
 
         function showCancelModal(orderId, orderNumber) {

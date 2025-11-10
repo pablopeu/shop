@@ -791,15 +791,6 @@ $user = get_logged_user();
             }
         }
 
-        // Warn before leaving page with unsaved changes
-        window.addEventListener('beforeunload', (e) => {
-            if (hasUnsavedChanges) {
-                e.preventDefault();
-                e.returnValue = 'Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?';
-                return e.returnValue;
-            }
-        });
-
         // Before submit, save image order and validate prices
         form.addEventListener('submit', (e) => {
             // Validate prices
@@ -835,5 +826,8 @@ $user = get_logged_user();
         // Initial UI state
         updateUIForChanges();
     </script>
+
+    <!-- Unsaved Changes Warning -->
+    <script src="/admin/includes/unsaved-changes-warning.js"></script>
 </body>
 </html>
