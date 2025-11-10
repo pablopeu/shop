@@ -34,8 +34,20 @@ function enforce_https() {
  */
 function read_json($file, $associative = true) {
     if (!file_exists($file)) {
-        error_log("JSON file not found: $file");
-        return $associative ? [] : new stdClass();
+        // Try to create from .example file if it exists
+        $example_file = $file . '.example';
+        if (file_exists($example_file)) {
+            // Copy example file to actual file
+            if (copy($example_file, $file)) {
+                error_log("Created $file from example file");
+            } else {
+                error_log("JSON file not found and could not create from example: $file");
+                return $associative ? [] : new stdClass();
+            }
+        } else {
+            error_log("JSON file not found: $file");
+            return $associative ? [] : new stdClass();
+        }
     }
 
     $fp = fopen($file, 'r');
