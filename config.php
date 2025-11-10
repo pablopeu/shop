@@ -18,13 +18,14 @@
  * IMPORTANTE: NO incluir el / final
  */
 if (!defined('BASE_PATH')) {
-    // Auto-detect BASE_PATH from current script directory
-    $script_dir = dirname($_SERVER['SCRIPT_FILENAME']);
+    // Auto-detect BASE_PATH from config.php location (application root)
+    // This ensures BASE_PATH is always the application root, not subdirectories
+    $config_dir = __DIR__;
     $document_root = $_SERVER['DOCUMENT_ROOT'];
 
-    // Calculate relative path from document root
-    if (strpos($script_dir, $document_root) === 0) {
-        $relative_path = substr($script_dir, strlen($document_root));
+    // Calculate relative path from document root to application root
+    if (strpos($config_dir, $document_root) === 0) {
+        $relative_path = substr($config_dir, strlen($document_root));
         // Clean up the path
         $relative_path = str_replace('\\', '/', $relative_path);
         $relative_path = rtrim($relative_path, '/');
