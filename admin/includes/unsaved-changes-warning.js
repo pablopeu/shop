@@ -8,6 +8,27 @@
     let formSubmitted = false;
     let pendingNavigation = null;
 
+    // Find save button
+    function findSaveButton() {
+        return document.querySelector('button[name="save_email"], button[name="save_telegram"], button[name="save_payment"], button[name="save_credentials"], button[name="save_path"], button[type="submit"]');
+    }
+
+    // Set save button color based on state
+    function setSaveButtonColor(hasChanges) {
+        const saveButton = findSaveButton();
+        if (saveButton) {
+            if (hasChanges) {
+                // Red - unsaved changes
+                saveButton.style.background = '#e74c3c';
+                saveButton.style.boxShadow = '0 2px 8px rgba(231, 76, 60, 0.3)';
+            } else {
+                // Green - clean state
+                saveButton.style.background = '#27ae60';
+                saveButton.style.boxShadow = '0 2px 8px rgba(39, 174, 96, 0.3)';
+            }
+        }
+    }
+
     // Create modal HTML
     function createModal() {
         const modalHTML = `
@@ -90,8 +111,7 @@
 
     // Find save button and focus on it
     function focusOnSaveButton() {
-        // Try to find save button by common selectors
-        const saveButton = document.querySelector('button[name="save_email"], button[name="save_telegram"], button[name="save_payment"], button[name="save_credentials"], button[name="save_path"], button[type="submit"]');
+        const saveButton = findSaveButton();
 
         if (saveButton) {
             // Scroll to button with smooth animation
@@ -128,12 +148,14 @@
                 input.addEventListener('input', () => {
                     if (!formSubmitted) {
                         hasUnsavedChanges = true;
+                        setSaveButtonColor(true); // Red - unsaved changes
                     }
                 });
 
                 input.addEventListener('change', () => {
                     if (!formSubmitted) {
                         hasUnsavedChanges = true;
+                        setSaveButtonColor(true); // Red - unsaved changes
                     }
                 });
             });
@@ -142,6 +164,7 @@
             form.addEventListener('submit', () => {
                 formSubmitted = true;
                 hasUnsavedChanges = false;
+                setSaveButtonColor(false); // Green - clean state
             });
         });
     }
@@ -211,6 +234,9 @@
         interceptNavigation();
         setupModalButtons();
         window.addEventListener('beforeunload', warnBeforeUnload);
+
+        // Set initial button color to green (clean state)
+        setSaveButtonColor(false);
     }
 
     if (document.readyState === 'loading') {
