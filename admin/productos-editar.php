@@ -828,6 +828,6 @@ $user = get_logged_user();
     </script>
 
     <!-- Unsaved Changes Warning -->
-    <script src="/admin/includes/unsaved-changes-warning.js"></script>
+    <script src="<?php echo url('/admin/includes/unsaved-changes-warning.js'); ?>"></script>
 </body>
 </html>
