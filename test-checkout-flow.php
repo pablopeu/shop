@@ -191,11 +191,19 @@ class CheckoutFlowTester {
                 ($payment_credentials['mercadopago']['access_token_sandbox'] ?? '') :
                 ($payment_credentials['mercadopago']['access_token_prod'] ?? '');
 
+            $public_key = $sandbox_mode ?
+                ($payment_credentials['mercadopago']['public_key_sandbox'] ?? '') :
+                ($payment_credentials['mercadopago']['public_key_prod'] ?? '');
+
             if (empty($access_token)) {
                 throw new Exception("Access token de Mercadopago no configurado para modo: $mode");
             }
 
-            $this->mp_client = new MercadoPago($access_token, $sandbox_mode);
+            if (empty($public_key)) {
+                throw new Exception("Public key de Mercadopago no configurada para modo: $mode");
+            }
+
+            $this->mp_client = new MercadoPago($access_token, $sandbox_mode, $public_key);
             echo "   ✓ Cliente Mercadopago inicializado (modo: $mode)\n";
         }
 
@@ -480,10 +488,28 @@ class CheckoutFlowTester {
         echo "\n   → Procesando pago real con Mercadopago (escenario: $scenario)...\n";
 
         try {
+            // Primero, tokenizar la tarjeta
+            echo "   → Tokenizando tarjeta...\n";
+            $card_token_data = [
+                'card_number' => $card['number'],
+                'security_code' => $card['cvv'],
+                'expiration_month' => intval($card['expiration_month']),
+                'expiration_year' => intval($card['expiration_year']),
+                'cardholder' => [
+                    'name' => $card['cardholder']['name'],
+                    'identification' => $card['cardholder']['identification']
+                ]
+            ];
+
+            $card_token = $this->mp_client->createCardToken($card_token_data);
+            echo "   → Token creado: {$card_token['id']}\n";
+
+            // Luego, crear el pago con el token
             $payment_data = [
                 'transaction_amount' => floatval($order['total']),
                 'description' => "Test Order #{$order['order_number']}",
                 'payment_method_id' => 'master',
+                'token' => $card_token['id'],
                 'payer' => [
                     'email' => $order['customer_email'],
                     'identification' => $card['cardholder']['identification']
@@ -491,15 +517,6 @@ class CheckoutFlowTester {
                 'external_reference' => $order['id'],
                 'metadata' => [
                     'order_id' => $order['id']
-                ],
-                'card' => [
-                    'card_number' => $card['number'],
-                    'security_code' => $card['cvv'],
-                    'expiration_month' => $card['expiration_month'],
-                    'expiration_year' => $card['expiration_year'],
-                    'cardholder' => [
-                        'name' => $card['cardholder']['name']
-                    ]
                 ]
             ];
 
