@@ -21,6 +21,7 @@ require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/products.php';
 require_once __DIR__ . '/includes/orders.php';
 require_once __DIR__ . '/includes/email.php';
+require_once __DIR__ . '/includes/telegram.php';
 
 // =============================================================================
 // CONFIGURACIÓN
