@@ -3,6 +3,7 @@ config/credentials.php
 config/*.key
 *.pem
 .credentials_path
+.payment_credentials_path
 
 # ===== ENVIRONMENT-SPECIFIC CONFIGURATION =====
 # These files contain environment-specific data that should not be shared between branches
