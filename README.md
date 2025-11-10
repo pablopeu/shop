@@ -472,3 +472,4 @@ Copyright © 2025. Todos los derechos reservados.
 - [ ] **Probar recepción de notificaciones (email y Telegram)**
 - [ ] **Verificar logs del webhook** (`data/webhook_log.json`)
 # Deploy test
+# Deploy test
