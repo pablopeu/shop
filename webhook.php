@@ -262,18 +262,20 @@ if (!$data || !isset($data['type'])) {
     exit('Invalid data');
 }
 
-// Get payment config
+// Get payment config and credentials
 $payment_config = read_json(__DIR__ . '/config/payment.json');
+$payment_credentials = get_payment_credentials();
+
 $sandbox_mode = $payment_config['mercadopago']['mode'] ?? 'sandbox';
 $sandbox_mode = ($sandbox_mode === 'sandbox');
 
 $access_token = $sandbox_mode ?
-    $payment_config['mercadopago']['access_token_sandbox'] :
-    $payment_config['mercadopago']['access_token_prod'];
+    ($payment_credentials['mercadopago']['access_token_sandbox'] ?? '') :
+    ($payment_credentials['mercadopago']['access_token_prod'] ?? '');
 
 $webhook_secret = $sandbox_mode ?
-    ($payment_config['mercadopago']['webhook_secret_sandbox'] ?? '') :
-    ($payment_config['mercadopago']['webhook_secret_prod'] ?? '');
+    ($payment_credentials['mercadopago']['webhook_secret_sandbox'] ?? '') :
+    ($payment_credentials['mercadopago']['webhook_secret_prod'] ?? '');
 
 $security_config = $payment_config['mercadopago']['webhook_security'] ?? [
     'validate_signature' => true,

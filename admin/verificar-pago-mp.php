@@ -18,6 +18,7 @@ require_admin();
 // Get configurations
 $site_config = read_json(__DIR__ . '/../config/site.json');
 $payment_config = read_json(__DIR__ . '/../config/payment.json');
+$payment_credentials = get_payment_credentials();
 
 $payment_details = null;
 $error = '';
@@ -31,10 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_payment'])) {
         $error = 'Por favor ingresa un Payment ID';
     } else {
         try {
-            $sandbox_mode = $payment_config['mercadopago']['sandbox_mode'] ?? true;
+            $mode = $payment_config['mercadopago']['mode'] ?? 'sandbox';
+            $sandbox_mode = ($mode === 'sandbox');
             $access_token = $sandbox_mode ?
-                $payment_config['mercadopago']['access_token_sandbox'] :
-                $payment_config['mercadopago']['access_token_prod'];
+                ($payment_credentials['mercadopago']['access_token_sandbox'] ?? '') :
+                ($payment_credentials['mercadopago']['access_token_prod'] ?? '');
 
             if (empty($access_token)) {
                 $error = 'Mercadopago no configurado. Verifica tus credenciales.';

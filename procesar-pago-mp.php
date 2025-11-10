@@ -56,14 +56,20 @@ if (!$order) {
     exit;
 }
 
-// Get payment config
+// Get payment config and credentials
 $payment_config = read_json(__DIR__ . '/config/payment.json');
-$sandbox_mode = $payment_config['mercadopago']['sandbox_mode'] ?? true;
+$payment_credentials = get_payment_credentials();
+
+// Determine mode: check if 'mode' exists, fallback to 'sandbox_mode' for backward compatibility
+$mode = $payment_config['mercadopago']['mode'] ?? ($payment_config['mercadopago']['sandbox_mode'] ?? true ? 'sandbox' : 'production');
+$sandbox_mode = ($mode === 'sandbox');
+
 $access_token = $sandbox_mode ?
-    $payment_config['mercadopago']['access_token_sandbox'] :
-    $payment_config['mercadopago']['access_token_prod'];
+    ($payment_credentials['mercadopago']['access_token_sandbox'] ?? '') :
+    ($payment_credentials['mercadopago']['access_token_prod'] ?? '');
 
 if (empty($access_token)) {
+    error_log("Mercadopago access token not found. Mode: $mode, Sandbox: " . ($sandbox_mode ? 'yes' : 'no'));
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Mercadopago not configured']);
     exit;

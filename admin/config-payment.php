@@ -13,54 +13,6 @@ require_admin();
 $message = '';
 $error = '';
 
-/**
- * Get payment credentials from external secure file
- */
-function get_payment_credentials() {
-    $credentials_path_file = __DIR__ . '/../.payment_credentials_path';
-
-    // Get path to credentials file
-    if (!file_exists($credentials_path_file)) {
-        error_log("Payment credentials path file not found. Using default path.");
-        $credentials_path = '/home/payment_credentials.json';
-    } else {
-        $credentials_path = trim(file_get_contents($credentials_path_file));
-    }
-
-    // Read credentials file
-    if (!file_exists($credentials_path)) {
-        error_log("Payment credentials file not found at: $credentials_path");
-        return [
-            'mercadopago' => [
-                'access_token_sandbox' => '',
-                'access_token_prod' => '',
-                'public_key_sandbox' => '',
-                'public_key_prod' => '',
-                'webhook_secret_sandbox' => '',
-                'webhook_secret_prod' => ''
-            ]
-        ];
-    }
-
-    $credentials = @json_decode(file_get_contents($credentials_path), true);
-
-    if (!$credentials || json_last_error() !== JSON_ERROR_NONE) {
-        error_log("Invalid JSON in payment credentials file: " . json_last_error_msg());
-        return [
-            'mercadopago' => [
-                'access_token_sandbox' => '',
-                'access_token_prod' => '',
-                'public_key_sandbox' => '',
-                'public_key_prod' => '',
-                'webhook_secret_sandbox' => '',
-                'webhook_secret_prod' => ''
-            ]
-        ];
-    }
-
-    return $credentials;
-}
-
 // Update payment config
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_payment'])) {
     if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
