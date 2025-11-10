@@ -132,8 +132,15 @@ function send_email($to, $subject, $html_body, $plain_body = '') {
 
 /**
  * Send email using PHP's native mail() function
+ * REQUIRES: sendmail, postfix, or another MTA installed on the server
  */
 function send_email_native($to, $subject, $html_body, $plain_body, $from_email, $from_name) {
+    // Check if mail function is available
+    if (!function_exists('mail')) {
+        error_log("PHP mail() function is not available on this server");
+        return false;
+    }
+
     $boundary = md5(time());
 
     $headers = "From: $from_name <$from_email>\r\n";
@@ -151,12 +158,12 @@ function send_email_native($to, $subject, $html_body, $plain_body, $from_email, 
     $message .= $html_body . "\r\n";
     $message .= "--$boundary--";
 
-    $result = mail($to, $subject, $message, $headers);
+    $result = @mail($to, $subject, $message, $headers);
 
     if ($result) {
         error_log("Email sent successfully to: $to - Subject: $subject");
     } else {
-        error_log("Email failed to send to: $to - Subject: $subject");
+        error_log("Email failed to send to: $to - Subject: $subject - Possible cause: No MTA (sendmail/postfix) installed or configured");
     }
 
     return $result;

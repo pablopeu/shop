@@ -149,7 +149,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($result) {
                 $test_result = '✅ Email de prueba enviado correctamente a ' . htmlspecialchars($test_email);
             } else {
-                $test_result = '❌ Error al enviar email de prueba. Revisa los logs del servidor.';
+                // Check which method was used to provide specific error message
+                $current_method = $email_config['method'] ?? 'mail';
+                if ($current_method === 'mail') {
+                    $test_result = '❌ Error al enviar email. PHP mail() requiere un MTA (sendmail/postfix) instalado. <strong>Recomendación:</strong> Cambia a SMTP o instala postfix: <code>sudo apt-get install postfix</code>';
+                } else {
+                    $test_result = '❌ Error al enviar email. Verifica tus credenciales SMTP en "Configuración del Sistema".';
+                }
             }
         } else {
             $test_result = '❌ Debes ingresar una dirección de email';
