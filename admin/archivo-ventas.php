@@ -415,7 +415,7 @@ $status_labels = [
             }
 
             .stats-grid {
-                grid-template-columns: repeat(2, 1fr) !important;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
                 gap: 8px;
             }
 
@@ -465,11 +465,6 @@ $status_labels = [
             }
         }
 
-        @media (max-width: 375px) {
-            .stats-grid {
-                grid-template-columns: 1fr !important;
-            }
-        }
 
         /* Mobile Cards View */
         .mobile-cards {

@@ -503,7 +503,7 @@ $user = get_logged_user();
             }
 
             .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
                 gap: 8px;
             }
 
@@ -526,11 +526,6 @@ $user = get_logged_user();
             }
         }
 
-        @media (max-width: 375px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
 
         /* Mobile Cards View */
         .mobile-cards {

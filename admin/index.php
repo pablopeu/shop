@@ -104,7 +104,7 @@ $user = get_logged_user();
 
         @media (max-width: 768px) {
             .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
                 gap: 8px;
             }
         }
@@ -161,7 +161,7 @@ $user = get_logged_user();
         /* Responsive stats grid */
         @media (max-width: 768px) {
             .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             }
         }
 
