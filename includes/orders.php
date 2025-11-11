@@ -143,11 +143,14 @@ function create_order($order_data) {
         'customer_email' => $order_data['customer_email'] ?? null,
         'customer_phone' => $order_data['customer_phone'] ?? null,
         'customer_name' => $order_data['customer_name'] ?? null,
+        'contact_preference' => $order_data['contact_preference'] ?? 'whatsapp',
+        'delivery_method' => $order_data['delivery_method'] ?? 'pickup',
         'notes' => $order_data['notes'] ?? '',
         'emails_sent' => [
             'confirmation' => false,
             'status_update' => false
-        ]
+        ],
+        'stock_reduced' => false
     ];
 
     // Add order to array
@@ -155,24 +158,18 @@ function create_order($order_data) {
 
     // Save to file
     if (write_json($orders_file, $data)) {
-        // Reduce stock only for non-mercadopago orders
-        // For mercadopago, stock is reduced when webhook confirms payment
-        $payment_method = $order_data['payment_method'] ?? 'presencial';
-        if ($payment_method !== 'mercadopago') {
-            foreach ($order_data['items'] as $item) {
-                update_stock($item['product_id'], -$item['quantity'], "Order {$order_number}");
-            }
-            // Mark stock as reduced
-            $data['orders'][count($data['orders']) - 1]['stock_reduced'] = true;
-            write_json($orders_file, $data);
-        }
+        // IMPORTANT: Stock is NOT reduced when order is created
+        // Stock will be reduced when:
+        // 1. Payment status is updated to 'completed' (MercadoPago webhook)
+        // 2. Admin manually confirms payment and reduces stock
+        // This prevents stock being blocked by unpaid orders
 
         // Log action
         log_admin_action('order_created', 'system', [
             'order_id' => $order_id,
             'order_number' => $order_number,
             'total' => $order_data['total'],
-            'payment_method' => $payment_method
+            'payment_method' => $order_data['payment_method']
         ]);
 
         return ['success' => true, 'order' => $order];

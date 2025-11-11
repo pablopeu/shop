@@ -198,6 +198,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
     $customer_name = sanitize_input($_POST['customer_name'] ?? '');
     $customer_email = sanitize_input($_POST['customer_email'] ?? '');
     $customer_phone = sanitize_input($_POST['customer_phone'] ?? '');
+    $contact_preference = sanitize_input($_POST['contact_preference'] ?? 'whatsapp');
+    $delivery_method = sanitize_input($_POST['delivery_method'] ?? 'pickup');
     $payment_method = sanitize_input($_POST['payment_method'] ?? '');
 
     // Validate required fields
@@ -213,13 +215,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         $errors[] = 'El teléfono es requerido';
     }
 
-    if (!in_array($payment_method, ['presencial', 'mercadopago'])) {
+    if (!in_array($contact_preference, ['whatsapp', 'phone'])) {
+        $errors[] = 'Preferencia de contacto inválida';
+    }
+
+    if (!in_array($delivery_method, ['pickup', 'shipping'])) {
+        $errors[] = 'Método de entrega inválido';
+    }
+
+    if (!in_array($payment_method, ['arrangement', 'pickup_payment', 'mercadopago'])) {
         $errors[] = 'Método de pago inválido';
     }
 
     // Shipping address (only for delivery)
     $shipping_address = null;
-    $needs_shipping = isset($_POST['needs_shipping']) && $_POST['needs_shipping'] === '1';
+    $needs_shipping = ($delivery_method === 'shipping');
 
     if ($needs_shipping) {
         $address = sanitize_input($_POST['address'] ?? '');
@@ -277,6 +287,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             'customer_name' => $customer_name,
             'customer_email' => $customer_email,
             'customer_phone' => $customer_phone,
+            'contact_preference' => $contact_preference,
+            'delivery_method' => $delivery_method,
             'notes' => sanitize_input($_POST['notes'] ?? '')
         ];
 
@@ -294,9 +306,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             // Send order confirmation email to customer (always send)
             send_order_confirmation_email($order);
 
-            // For presencial payment: send all notifications immediately
+            // For non-mercadopago payments: send all notifications immediately
             // For Mercadopago: notifications will be sent when payment is processed
-            if ($payment_method === 'presencial') {
+            if ($payment_method !== 'mercadopago') {
                 send_admin_new_order_email($order);
                 send_telegram_new_order($order);
             }
@@ -306,14 +318,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             unset($_SESSION['coupon_code']);
 
             // Redirect based on payment method
-            if ($payment_method === 'presencial') {
-                // Redirect to thank you page
-                header("Location: " . url("/gracias.php?order={$order['id']}&token={$order['tracking_token']}"));
-                exit;
-            } elseif ($payment_method === 'mercadopago') {
+            if ($payment_method === 'mercadopago') {
                 // Redirect to Checkout Bricks payment page
                 // Payment will be processed using embedded form
                 header("Location: " . url("/pagar-mercadopago.php?order={$order['id']}&token={$order['tracking_token']}"));
+                exit;
+            } else {
+                // For arrangement and pickup_payment: redirect to thank you page
+                header("Location: " . url("/gracias.php?order={$order['id']}&token={$order['tracking_token']}"));
                 exit;
             }
         } else {
@@ -368,107 +380,243 @@ $csrf_token = generate_csrf_token();
         <div class="checkout-layout">
             <!-- Checkout Form -->
             <div class="checkout-form">
-                <form method="POST" action="">
+                <!-- Step Indicators -->
+                <div class="step-indicators">
+                    <div class="step-indicator active" data-step="1">
+                        <div class="step-number">1</div>
+                        <div class="step-title">Contacto</div>
+                    </div>
+                    <div class="step-indicator" data-step="2">
+                        <div class="step-number">2</div>
+                        <div class="step-title">Envío</div>
+                    </div>
+                    <div class="step-indicator" data-step="3">
+                        <div class="step-number">3</div>
+                        <div class="step-title">Pago</div>
+                    </div>
+                    <div class="step-indicator" data-step="4">
+                        <div class="step-number">4</div>
+                        <div class="step-title">Confirmar</div>
+                    </div>
+                </div>
+
+                <form method="POST" action="" id="checkout-form">
                     <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
 
-                    <!-- Customer Information -->
-                    <div class="form-section">
-                        <h2>📋 Información de Contacto</h2>
+                    <!-- STEP 1: Contact Information -->
+                    <div class="form-step active" data-step="1">
+                        <div class="form-section">
+                            <h2>📋 Información de Contacto</h2>
 
-                        <div class="form-group">
-                            <label for="customer_name">Nombre completo *</label>
-                            <input type="text" id="customer_name" name="customer_name"
-                                   value="<?php echo htmlspecialchars($_POST['customer_name'] ?? ''); ?>" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="customer_email">Email *</label>
-                            <input type="email" id="customer_email" name="customer_email"
-                                   value="<?php echo htmlspecialchars($_POST['customer_email'] ?? ''); ?>" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="customer_phone">Teléfono *</label>
-                            <input type="tel" id="customer_phone" name="customer_phone"
-                                   value="<?php echo htmlspecialchars($_POST['customer_phone'] ?? ''); ?>" required>
-                        </div>
-                    </div>
-
-                    <!-- Shipping Information -->
-                    <div class="form-section">
-                        <h2>🚚 Información de Envío</h2>
-
-                        <div class="form-group checkbox-group">
-                            <input type="checkbox" id="needs_shipping" name="needs_shipping" value="1"
-                                   onchange="toggleShipping(this.checked)"
-                                   <?php echo (isset($_POST['needs_shipping']) && $_POST['needs_shipping'] === '1') ? 'checked' : ''; ?>>
-                            <label for="needs_shipping">Necesito envío a domicilio</label>
-                        </div>
-
-                        <div id="shipping-fields" style="display: none;">
                             <div class="form-group">
-                                <label for="address">Dirección</label>
-                                <input type="text" id="address" name="address"
-                                       value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>">
+                                <label for="customer_name">Nombre completo *</label>
+                                <input type="text" id="customer_name" name="customer_name"
+                                       value="<?php echo htmlspecialchars($_POST['customer_name'] ?? ''); ?>" required>
                             </div>
 
                             <div class="form-group">
-                                <label for="city">Ciudad</label>
-                                <input type="text" id="city" name="city"
-                                       value="<?php echo htmlspecialchars($_POST['city'] ?? ''); ?>">
+                                <label for="customer_email">Email *</label>
+                                <input type="email" id="customer_email" name="customer_email"
+                                       value="<?php echo htmlspecialchars($_POST['customer_email'] ?? ''); ?>" required>
                             </div>
 
                             <div class="form-group">
-                                <label for="postal_code">Código Postal</label>
-                                <input type="text" id="postal_code" name="postal_code"
-                                       value="<?php echo htmlspecialchars($_POST['postal_code'] ?? ''); ?>">
+                                <label for="customer_phone">Teléfono / WhatsApp *</label>
+                                <input type="tel" id="customer_phone" name="customer_phone"
+                                       value="<?php echo htmlspecialchars($_POST['customer_phone'] ?? ''); ?>"
+                                       placeholder="+54 9 11 1234-5678" required>
+                                <small style="color: #666;">Formato WhatsApp preferido</small>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- Payment Method -->
-                    <div class="form-section">
-                        <h2>💳 Método de Pago</h2>
-
-                        <div class="payment-methods">
-                            <label class="payment-method" id="payment-presencial">
-                                <input type="radio" name="payment_method" value="presencial" required
-                                       onchange="selectPayment('presencial')">
-                                <div>
-                                    <strong>💵 Pago Presencial</strong>
-                                    <p style="font-size: 14px; color: #666; margin-top: 5px;">
-                                        Retiro en local o pago contra entrega
-                                    </p>
+                            <div class="form-group">
+                                <label>Preferencia de contacto *</label>
+                                <div class="radio-group">
+                                    <label class="radio-option">
+                                        <input type="radio" name="contact_preference" value="whatsapp"
+                                               <?php echo (!isset($_POST['contact_preference']) || $_POST['contact_preference'] === 'whatsapp') ? 'checked' : ''; ?> required>
+                                        <span>📱 Prefiero WhatsApp</span>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="contact_preference" value="phone"
+                                               <?php echo (isset($_POST['contact_preference']) && $_POST['contact_preference'] === 'phone') ? 'checked' : ''; ?>>
+                                        <span>📞 Prefiero llamada telefónica</span>
+                                    </label>
                                 </div>
-                            </label>
+                            </div>
+                        </div>
 
-                            <label class="payment-method" id="payment-mercadopago">
-                                <input type="radio" name="payment_method" value="mercadopago" required
-                                       onchange="selectPayment('mercadopago')">
-                                <div>
-                                    <strong>💳 Mercadopago</strong>
-                                    <p style="font-size: 14px; color: #666; margin-top: 5px;">
-                                        Tarjeta de crédito/débito
-                                    </p>
+                        <div class="step-navigation">
+                            <button type="button" class="btn btn-primary" onclick="nextStep()">
+                                Siguiente →
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: Delivery/Pickup -->
+                    <div class="form-step" data-step="2">
+                        <div class="form-section">
+                            <h2>🚚 Envío o Retiro</h2>
+
+                            <div class="form-group">
+                                <label>Método de entrega *</label>
+                                <div class="radio-group">
+                                    <label class="radio-option">
+                                        <input type="radio" name="delivery_method" value="pickup"
+                                               onchange="toggleShippingFields()"
+                                               <?php echo (!isset($_POST['delivery_method']) || $_POST['delivery_method'] === 'pickup') ? 'checked' : ''; ?> required>
+                                        <div>
+                                            <strong>🏪 Retiro en persona</strong>
+                                            <p style="font-size: 14px; color: #666; margin-top: 5px;">
+                                                Coordinaremos lugar y horario
+                                            </p>
+                                        </div>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="delivery_method" value="shipping"
+                                               onchange="toggleShippingFields()"
+                                               <?php echo (isset($_POST['delivery_method']) && $_POST['delivery_method'] === 'shipping') ? 'checked' : ''; ?>>
+                                        <div>
+                                            <strong>📦 Envío a domicilio</strong>
+                                            <p style="font-size: 14px; color: #666; margin-top: 5px;">
+                                                Completa tu dirección de envío
+                                            </p>
+                                        </div>
+                                    </label>
                                 </div>
-                            </label>
+                            </div>
+
+                            <div id="shipping-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="address">Dirección *</label>
+                                    <input type="text" id="address" name="address"
+                                           value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="city">Ciudad *</label>
+                                    <input type="text" id="city" name="city"
+                                           value="<?php echo htmlspecialchars($_POST['city'] ?? ''); ?>">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="postal_code">Código Postal *</label>
+                                    <input type="text" id="postal_code" name="postal_code"
+                                           value="<?php echo htmlspecialchars($_POST['postal_code'] ?? ''); ?>">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()">
+                                ← Anterior
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="nextStep()">
+                                Siguiente →
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Additional Notes -->
-                    <div class="form-section">
-                        <h2>📝 Notas Adicionales</h2>
+                    <!-- STEP 3: Payment Method -->
+                    <div class="form-step" data-step="3">
+                        <div class="form-section">
+                            <h2>💳 Método de Pago</h2>
 
-                        <div class="form-group">
-                            <label for="notes">Comentarios (opcional)</label>
-                            <textarea id="notes" name="notes" placeholder="Ej: horario preferido de entrega, referencias de ubicación..."><?php echo htmlspecialchars($_POST['notes'] ?? ''); ?></textarea>
+                            <div class="form-group">
+                                <div class="payment-methods">
+                                    <label class="payment-method">
+                                        <input type="radio" name="payment_method" value="arrangement" required>
+                                        <div>
+                                            <strong>🤝 Arreglo con <?php echo htmlspecialchars($site_config['site_owner']); ?></strong>
+                                            <p style="font-size: 14px; color: #666; margin-top: 5px;">
+                                                Coordinaremos el pago directamente
+                                            </p>
+                                        </div>
+                                    </label>
+
+                                    <label class="payment-method">
+                                        <input type="radio" name="payment_method" value="pickup_payment" required>
+                                        <div>
+                                            <strong>💵 Pago al retirar</strong>
+                                            <p style="font-size: 14px; color: #666; margin-top: 5px;">
+                                                Pago en efectivo o transferencia al momento del retiro
+                                            </p>
+                                        </div>
+                                    </label>
+
+                                    <label class="payment-method">
+                                        <input type="radio" name="payment_method" value="mercadopago" required>
+                                        <div>
+                                            <strong>💳 Mercadopago</strong>
+                                            <p style="font-size: 14px; color: #666; margin-top: 5px;">
+                                                Tarjeta de crédito/débito - Pago inmediato
+                                            </p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Additional Notes -->
+                            <div class="form-group">
+                                <label for="notes">Comentarios (opcional)</label>
+                                <textarea id="notes" name="notes" rows="3" placeholder="Ej: horario preferido, referencias de ubicación, forma de pago preferida..."><?php echo htmlspecialchars($_POST['notes'] ?? ''); ?></textarea>
+                            </div>
+                        </div>
+
+                        <div class="step-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()">
+                                ← Anterior
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="nextStep()">
+                                Siguiente →
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Submit Button -->
-                    <button type="submit" name="place_order" class="btn btn-primary">
-                        🛒 Confirmar Pedido
-                    </button>
+                    <!-- STEP 4: Confirmation -->
+                    <div class="form-step" data-step="4">
+                        <div class="form-section">
+                            <h2>✅ Confirmar Pedido</h2>
+
+                            <div class="confirmation-summary">
+                                <h3>Resumen de tu información:</h3>
+
+                                <div class="summary-section">
+                                    <h4>📋 Contacto</h4>
+                                    <p><strong>Nombre:</strong> <span id="confirm-name"></span></p>
+                                    <p><strong>Email:</strong> <span id="confirm-email"></span></p>
+                                    <p><strong>Teléfono:</strong> <span id="confirm-phone"></span></p>
+                                    <p><strong>Preferencia:</strong> <span id="confirm-contact-pref"></span></p>
+                                </div>
+
+                                <div class="summary-section">
+                                    <h4>🚚 Entrega</h4>
+                                    <p><strong>Método:</strong> <span id="confirm-delivery"></span></p>
+                                    <div id="confirm-shipping-address" style="display: none;">
+                                        <p><strong>Dirección:</strong> <span id="confirm-address"></span></p>
+                                        <p><strong>Ciudad:</strong> <span id="confirm-city"></span></p>
+                                        <p><strong>CP:</strong> <span id="confirm-postal"></span></p>
+                                    </div>
+                                </div>
+
+                                <div class="summary-section">
+                                    <h4>💳 Pago</h4>
+                                    <p><strong>Método:</strong> <span id="confirm-payment"></span></p>
+                                    <div id="confirm-notes-display" style="display: none;">
+                                        <p><strong>Comentarios:</strong> <span id="confirm-notes"></span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()">
+                                ← Anterior
+                            </button>
+                            <button type="submit" name="place_order" class="btn btn-primary">
+                                🛒 Confirmar Pedido
+                            </button>
+                        </div>
+                    </div>
                 </form>
             </div>
 
@@ -527,33 +675,224 @@ $csrf_token = generate_csrf_token();
         </div>
     </div>
 
-    <script>
-        // Toggle shipping fields
-        function toggleShipping(show) {
-            const fields = document.getElementById('shipping-fields');
-            fields.style.display = show ? 'block' : 'none';
+    <!-- Warning Modal -->
+    <div id="payment-warning-modal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeModal()"></div>
+        <div class="modal-content">
+            <h3>⚠️ Importante</h3>
+            <p>Tu orden fue recibida pero el producto sigue disponible en el shop. <strong>Alguien más puede comprarlo y pagarlo antes que vos.</strong></p>
+            <p>La única forma de garantizar la disponibilidad es pagando y avisándole a <strong><?php echo htmlspecialchars($site_config['site_owner']); ?></strong>.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Entendido</button>
+            </div>
+        </div>
+    </div>
 
-            // Update required attribute on shipping fields
-            const inputs = fields.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.required = show;
+    <script>
+        // Step management
+        let currentStep = 1;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStepDisplay();
+            toggleShippingFields();
+        });
+
+        // Validate current step
+        function validateStep(stepNumber) {
+            const step = document.querySelector(`.form-step[data-step="${stepNumber}"]`);
+            if (!step) return false;
+
+            // Get all required inputs in this step
+            const requiredInputs = step.querySelectorAll('input[required], textarea[required], select[required]');
+
+            for (let input of requiredInputs) {
+                // Skip validation if the input is hidden (like shipping fields when not needed)
+                if (input.offsetParent === null) continue;
+
+                if (input.type === 'radio') {
+                    // For radio buttons, check if at least one in the group is checked
+                    const radioGroup = step.querySelectorAll(`input[name="${input.name}"]`);
+                    const isChecked = Array.from(radioGroup).some(radio => radio.checked);
+                    if (!isChecked) {
+                        alert('Por favor completa todos los campos requeridos');
+                        return false;
+                    }
+                } else if (input.type === 'checkbox') {
+                    if (!input.checked && input.required) {
+                        alert('Por favor completa todos los campos requeridos');
+                        return false;
+                    }
+                } else {
+                    if (!input.value.trim()) {
+                        alert('Por favor completa todos los campos requeridos');
+                        input.focus();
+                        return false;
+                    }
+
+                    // Email validation
+                    if (input.type === 'email' && !isValidEmail(input.value)) {
+                        alert('Por favor ingresa un email válido');
+                        input.focus();
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        // Email validation helper
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        // Next step
+        function nextStep() {
+            if (!validateStep(currentStep)) {
+                return;
+            }
+
+            // Update confirmation summary when moving to step 4
+            if (currentStep === 3) {
+                updateConfirmationSummary();
+            }
+
+            if (currentStep < 4) {
+                currentStep++;
+                updateStepDisplay();
+                window.scrollTo(0, 0);
+            }
+        }
+
+        // Previous step
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepDisplay();
+                window.scrollTo(0, 0);
+            }
+        }
+
+        // Update step display
+        function updateStepDisplay() {
+            // Update step indicators
+            document.querySelectorAll('.step-indicator').forEach(indicator => {
+                const step = parseInt(indicator.dataset.step);
+                indicator.classList.remove('active', 'completed');
+
+                if (step === currentStep) {
+                    indicator.classList.add('active');
+                } else if (step < currentStep) {
+                    indicator.classList.add('completed');
+                }
+            });
+
+            // Update form steps
+            document.querySelectorAll('.form-step').forEach(step => {
+                const stepNum = parseInt(step.dataset.step);
+                step.classList.remove('active');
+                step.style.display = 'none';
+
+                if (stepNum === currentStep) {
+                    step.classList.add('active');
+                    step.style.display = 'block';
+                }
             });
         }
 
-        // Initialize shipping fields visibility
-        document.addEventListener('DOMContentLoaded', () => {
-            const checkbox = document.getElementById('needs_shipping');
-            if (checkbox.checked) {
-                toggleShipping(true);
+        // Toggle shipping fields based on delivery method
+        function toggleShippingFields() {
+            const shippingRadio = document.querySelector('input[name="delivery_method"][value="shipping"]');
+            const shippingFields = document.getElementById('shipping-fields');
+            const inputs = shippingFields.querySelectorAll('input');
+
+            if (shippingRadio && shippingRadio.checked) {
+                shippingFields.style.display = 'block';
+                inputs.forEach(input => input.required = true);
+            } else {
+                shippingFields.style.display = 'none';
+                inputs.forEach(input => input.required = false);
+            }
+        }
+
+        // Update confirmation summary
+        function updateConfirmationSummary() {
+            // Contact info
+            document.getElementById('confirm-name').textContent = document.getElementById('customer_name').value;
+            document.getElementById('confirm-email').textContent = document.getElementById('customer_email').value;
+            document.getElementById('confirm-phone').textContent = document.getElementById('customer_phone').value;
+
+            const contactPref = document.querySelector('input[name="contact_preference"]:checked');
+            document.getElementById('confirm-contact-pref').textContent =
+                contactPref.value === 'whatsapp' ? '📱 WhatsApp' : '📞 Llamada telefónica';
+
+            // Delivery info
+            const deliveryMethod = document.querySelector('input[name="delivery_method"]:checked');
+            const deliveryText = deliveryMethod.value === 'pickup' ? '🏪 Retiro en persona' : '📦 Envío a domicilio';
+            document.getElementById('confirm-delivery').textContent = deliveryText;
+
+            // Show/hide shipping address
+            const shippingAddressDiv = document.getElementById('confirm-shipping-address');
+            if (deliveryMethod.value === 'shipping') {
+                shippingAddressDiv.style.display = 'block';
+                document.getElementById('confirm-address').textContent = document.getElementById('address').value;
+                document.getElementById('confirm-city').textContent = document.getElementById('city').value;
+                document.getElementById('confirm-postal').textContent = document.getElementById('postal_code').value;
+            } else {
+                shippingAddressDiv.style.display = 'none';
+            }
+
+            // Payment info
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+            let paymentText = '';
+            if (paymentMethod.value === 'arrangement') {
+                paymentText = '🤝 Arreglo con <?php echo htmlspecialchars($site_config['site_owner']); ?>';
+            } else if (paymentMethod.value === 'pickup_payment') {
+                paymentText = '💵 Pago al retirar';
+            } else if (paymentMethod.value === 'mercadopago') {
+                paymentText = '💳 Mercadopago';
+            }
+            document.getElementById('confirm-payment').textContent = paymentText;
+
+            // Notes
+            const notes = document.getElementById('notes').value;
+            const notesDisplay = document.getElementById('confirm-notes-display');
+            if (notes.trim()) {
+                notesDisplay.style.display = 'block';
+                document.getElementById('confirm-notes').textContent = notes;
+            } else {
+                notesDisplay.style.display = 'none';
+            }
+        }
+
+        // Form submission handler
+        document.getElementById('checkout-form').addEventListener('submit', function(e) {
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+
+            // Show warning modal for non-mercadopago payments
+            if (paymentMethod && paymentMethod.value !== 'mercadopago') {
+                e.preventDefault();
+                showModal();
+
+                // After modal is closed, allow form submission
+                setTimeout(() => {
+                    // Remove this event listener to prevent infinite loop
+                    const form = document.getElementById('checkout-form');
+                    const newForm = form.cloneNode(true);
+                    form.parentNode.replaceChild(newForm, form);
+                    newForm.submit();
+                }, 100);
             }
         });
 
-        // Select payment method
-        function selectPayment(method) {
-            document.querySelectorAll('.payment-method').forEach(el => {
-                el.classList.remove('selected');
-            });
-            document.getElementById('payment-' + method).classList.add('selected');
+        // Modal functions
+        function showModal() {
+            document.getElementById('payment-warning-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('payment-warning-modal').style.display = 'none';
         }
 
         // Switch currency display
@@ -588,6 +927,234 @@ $csrf_token = generate_csrf_token();
             }
         }
     </script>
+
+    <style>
+        /* Step indicators */
+        .step-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            gap: 10px;
+        }
+
+        .step-indicator {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            padding: 10px;
+            opacity: 0.5;
+        }
+
+        .step-indicator.active,
+        .step-indicator.completed {
+            opacity: 1;
+        }
+
+        .step-indicator::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background: #ddd;
+            z-index: -1;
+        }
+
+        .step-indicator:last-child::after {
+            display: none;
+        }
+
+        .step-indicator.completed::after {
+            background: #28a745;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ddd;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 5px;
+            font-weight: bold;
+        }
+
+        .step-indicator.active .step-number {
+            background: #007bff;
+            color: white;
+        }
+
+        .step-indicator.completed .step-number {
+            background: #28a745;
+            color: white;
+        }
+
+        .step-title {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Form steps */
+        .form-step {
+            display: none;
+        }
+
+        .form-step.active {
+            display: block;
+        }
+
+        /* Step navigation */
+        .step-navigation {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .step-navigation button {
+            flex: 1;
+        }
+
+        /* Radio group styling */
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .radio-option:hover {
+            border-color: #007bff;
+            background: #f8f9fa;
+        }
+
+        .radio-option input[type="radio"] {
+            margin-top: 3px;
+        }
+
+        .radio-option input[type="radio"]:checked + span,
+        .radio-option:has(input[type="radio"]:checked) {
+            font-weight: bold;
+        }
+
+        .radio-option:has(input[type="radio"]:checked) {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+
+        /* Confirmation summary */
+        .confirmation-summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .summary-section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .summary-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .summary-section h4 {
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+
+        .summary-section p {
+            margin: 5px 0;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-content {
+            position: relative;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            margin: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 10001;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            color: #ff9800;
+        }
+
+        .modal-content p {
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .step-indicators {
+                gap: 5px;
+            }
+
+            .step-title {
+                font-size: 10px;
+            }
+
+            .step-number {
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+            }
+
+            .step-navigation {
+                flex-direction: column;
+            }
+
+            .radio-option {
+                padding: 10px;
+            }
+        }
+    </style>
     <!-- Mobile Menu -->
     <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
