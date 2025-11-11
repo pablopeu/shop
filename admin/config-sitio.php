@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
         $config['site_name'] = sanitize_input($_POST['site_name'] ?? '');
         $config['site_description'] = sanitize_input($_POST['site_description'] ?? '');
         $config['site_keywords'] = sanitize_input($_POST['site_keywords'] ?? '');
+        $config['site_owner'] = sanitize_input($_POST['site_owner'] ?? '');
         $config['contact_email'] = sanitize_input($_POST['contact_email'] ?? '');
         $config['contact_phone'] = sanitize_input($_POST['contact_phone'] ?? '');
         $config['footer_text'] = sanitize_input($_POST['footer_text'] ?? '');
@@ -173,6 +174,16 @@ $user = get_logged_user();
                 <div class="form-group">
                     <label for="site_description">Descripción del Sitio (SEO)</label>
                     <textarea id="site_description" name="site_description"><?php echo htmlspecialchars($site_config['site_description'] ?? ''); ?></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="site_owner">Nombre del Propietario / Responsable</label>
+                    <input type="text" id="site_owner" name="site_owner"
+                           value="<?php echo htmlspecialchars($site_config['site_owner'] ?? ''); ?>"
+                           placeholder="Ej: Juan Pérez">
+                    <small style="color: #666; font-size: 12px;">
+                        Este nombre se usará en comunicaciones con clientes (ej: "arreglo con Juan Pérez")
+                    </small>
                 </div>
 
                 <!-- Logo Section -->

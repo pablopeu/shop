@@ -2,6 +2,7 @@
     "site_name": "Mi Tienda",
     "site_description": "Tu tienda online de confianza",
     "site_keywords": "tienda, online, ecommerce",
+    "site_owner": "Pablo",
     "logo": {
         "enabled": true,
         "path": "/assets/logos/logo_1762662427.jpg",
