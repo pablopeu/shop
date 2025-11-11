@@ -134,7 +134,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <span>📦 Productos</span>
                 <span class="menu-arrow" id="arrow-productos">▶</span>
             </div>
-            <ul class="submenu <?php echo in_array($current_page, ['productos-listado.php', 'productos-nuevo.php', 'productos-editar.php']) ? 'open' : ''; ?>"
+            <ul class="submenu <?php echo in_array($current_page, ['productos-listado.php', 'productos-nuevo.php', 'productos-editar.php', 'productos-archivados.php']) ? 'open' : ''; ?>"
                 id="submenu-productos">
                 <li>
                     <a href="<?php echo url('/admin/productos-listado.php'); ?>"
@@ -146,6 +146,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <a href="<?php echo url('/admin/productos-nuevo.php'); ?>"
                        class="<?php echo $current_page === 'productos-nuevo.php' ? 'active' : ''; ?>">
                         ➕ Agregar Producto
+                    </a>
+                </li>
+                <li>
+                    <a href="<?php echo url('/admin/productos-archivados.php'); ?>"
+                       class="<?php echo $current_page === 'productos-archivados.php' ? 'active' : ''; ?>">
+                        📦 Productos Archivados
                     </a>
                 </li>
             </ul>
