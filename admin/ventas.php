@@ -809,7 +809,7 @@ $status_labels = [
                 <!-- Bulk Actions -->
                 <form method="POST" id="bulkForm">
                     <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-                    <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+                    <div class="bulk-actions-bar" style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
                         <select name="bulk_action" id="bulkAction" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                             <option value="">Seleccionar acción...</option>
                             <option value="pending">Marcar como Pendiente</option>
