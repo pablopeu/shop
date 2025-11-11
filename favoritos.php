@@ -228,13 +228,14 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
         function addToCart(productId) {
             let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 
-            const existingItem = cart.find(item => item.id === productId);
+            // Check if product already in cart (support both formats)
+            const existingItem = cart.find(item => (item.product_id || item.id) === productId);
 
             if (existingItem) {
                 existingItem.quantity++;
             } else {
                 cart.push({
-                    id: productId,
+                    product_id: productId,
                     quantity: 1,
                     added_at: new Date().toISOString()
                 });
@@ -247,7 +248,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
         // Go to product
         function goToProduct(slug) {
-            window.location.href = '/producto.php?slug=' + encodeURIComponent(slug);
+            window.location.href = '<?php echo url('/producto.php?slug='); ?>' + encodeURIComponent(slug);
         }
 
         // Share wishlist

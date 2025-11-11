@@ -222,18 +222,25 @@ if ($order['currency'] === 'USD') {
             <div class="payment-form">
                 <div class="loading" id="loading">
                     <div class="spinner"></div>
-                    <p>Cargando formulario de pago...</p>
+                    <p>Preparando pago...</p>
                 </div>
 
-                <div id="cardPaymentBrick_container"></div>
+                <div id="walletBrick_container"></div>
 
                 <div class="error" id="error-message"></div>
-                <div class="success" id="success-message"></div>
+            </div>
+
+            <div class="payment-info" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 14px; color: #555;">
+                <p style="margin: 0 0 10px 0;"><strong>💳 Pago seguro con Mercadopago</strong></p>
+                <p style="margin: 0; line-height: 1.6;">
+                    Al hacer clic en "Pagar con Mercadopago", serás redirigido a Mercadopago para completar tu pago de forma segura.
+                    Podrás usar tarjetas guardadas, agregar una nueva, o pagar con otros métodos disponibles.
+                </p>
             </div>
         </div>
 
         <div class="back-link">
-            <a href="/">← Volver al inicio</a>
+            <a href="<?php echo url('/'); ?>">← Volver al inicio</a>
         </div>
     </div>
 
@@ -247,68 +254,51 @@ if ($order['currency'] === 'USD') {
 
         const bricksBuilder = mp.bricks();
 
-        // Render Card Payment Brick
-        bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', {
-            initialization: {
-                amount: <?php echo $total_ars; ?>,
+        // First, create preference in backend
+        fetch('<?php echo url('/crear-preferencia-mp.php'); ?>', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
             },
-            customization: {
-                visual: {
-                    style: {
-                        theme: 'default'
-                    }
-                },
-                paymentMethods: {
-                    maxInstallments: 1
-                }
-            },
-            callbacks: {
-                onReady: () => {
-                    document.getElementById('loading').style.display = 'none';
-                },
-                onSubmit: (cardFormData) => {
-                    return new Promise((resolve, reject) => {
-                        fetch('/procesar-pago-mp.php', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                ...cardFormData,
-                                order_id: '<?php echo $order_id; ?>',
-                                tracking_token: '<?php echo $token; ?>'
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                document.getElementById('success-message').textContent = '¡Pago procesado! Redirigiendo...';
-                                document.getElementById('success-message').style.display = 'block';
-
-                                setTimeout(() => {
-                                    window.location.href = data.redirect_url;
-                                }, 2000);
-
-                                resolve();
-                            } else {
-                                document.getElementById('error-message').textContent = data.error || 'Error al procesar el pago';
-                                document.getElementById('error-message').style.display = 'block';
-                                reject();
-                            }
-                        })
-                        .catch(error => {
-                            document.getElementById('error-message').textContent = 'Error de conexión. Intente nuevamente.';
-                            document.getElementById('error-message').style.display = 'block';
-                            reject();
-                        });
-                    });
-                },
-                onError: (error) => {
-                    console.error('Error en Brick:', error);
-                    document.getElementById('error-message').textContent = 'Error al cargar el formulario de pago';
-                    document.getElementById('error-message').style.display = 'block';
-                }
+            body: JSON.stringify({
+                order_id: '<?php echo $order_id; ?>',
+                tracking_token: '<?php echo $token; ?>'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success || !data.preference_id) {
+                throw new Error(data.error || 'Error al crear preferencia de pago');
             }
+
+            // Render Wallet Brick with preference
+            bricksBuilder.create('wallet', 'walletBrick_container', {
+                initialization: {
+                    preferenceId: data.preference_id,
+                },
+                customization: {
+                    texts: {
+                        valueProp: 'security_safety',
+                    },
+                },
+                callbacks: {
+                    onReady: () => {
+                        document.getElementById('loading').style.display = 'none';
+                    },
+                    onError: (error) => {
+                        console.error('Error en Wallet Brick:', error);
+                        document.getElementById('error-message').textContent = 'Error al cargar el pago';
+                        document.getElementById('error-message').style.display = 'block';
+                        document.getElementById('loading').style.display = 'none';
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error creating preference:', error);
+            document.getElementById('error-message').textContent = 'Error al preparar el pago. Intente nuevamente.';
+            document.getElementById('error-message').style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
         });
     </script>
 </body>

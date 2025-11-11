@@ -361,7 +361,7 @@ $status_config = [
 
             <!-- Back to Home -->
             <div style="margin-top: 30px; text-align: center;">
-                <a href="/" class="btn btn-primary" style="display: inline-block; text-decoration: none;">
+                <a href="<?php echo url('/'); ?>" class="btn btn-primary" style="display: inline-block; text-decoration: none;">
                     🏠 Volver al Inicio
                 </a>
             </div>

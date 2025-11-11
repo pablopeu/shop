@@ -81,7 +81,7 @@ $user = get_logged_user();
 
 // Get webhook URL
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-$webhook_url = $protocol . $_SERVER['HTTP_HOST'] . '/webhook.php';
+$webhook_url = $protocol . $_SERVER['HTTP_HOST'] . url('/webhook.php');
 ?>
 <!DOCTYPE html>
 <html lang="es">
