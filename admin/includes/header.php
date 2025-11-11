@@ -177,8 +177,15 @@ $username = $_SESSION['username'] ?? 'Admin';
             padding: 10px;
         }
 
-        .admin-topbar .btn {
+        /* Buttons row */
+        .admin-topbar-buttons {
+            display: flex;
+            gap: 8px;
             width: 100%;
+        }
+
+        .admin-topbar .btn {
+            flex: 1;
             text-align: center;
             padding: 12px;
         }
@@ -215,7 +222,9 @@ $username = $_SESSION['username'] ?? 'Admin';
             <span>👤</span>
             <span class="username"><?php echo htmlspecialchars($username); ?></span>
         </div>
-        <a href="<?php echo url('/'); ?>" class="btn btn-secondary" target="_blank">🌐 Ver Sitio</a>
-        <a href="<?php echo url('/admin/logout.php'); ?>" class="btn btn-logout">🚪 Cerrar Sesión</a>
+        <div class="admin-topbar-buttons">
+            <a href="<?php echo url('/'); ?>" class="btn btn-secondary" target="_blank">🌐 Ver Sitio</a>
+            <a href="<?php echo url('/admin/logout.php'); ?>" class="btn btn-logout">🚪 Cerrar Sesión</a>
+        </div>
     </div>
 </div>
