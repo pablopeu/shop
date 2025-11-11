@@ -367,6 +367,7 @@ $user = get_logged_user();
             }
         }
 
+
         /* Responsive */
         @media (max-width: 1024px) {
             .main-content {
@@ -553,138 +554,139 @@ $user = get_logged_user();
                                         <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
                                     </th>
                                     <th>Imagen</th>
-                                <th>Nombre</th>
-                                <th>Precio</th>
-                                <th>Stock</th>
-                                <th>Archivado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($archived_products)): ?>
-                                <tr>
-                                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
-                                        No hay productos archivados.
-                                        <a href="<?php echo url('/admin/productos-listado.php'); ?>" style="color: #4CAF50;">Ir a productos activos</a>
-                                    </td>
+                                    <th>Nombre</th>
+                                    <th>Precio</th>
+                                    <th>Stock</th>
+                                    <th>Archivado</th>
+                                    <th>Acciones</th>
                                 </tr>
-                            <?php else: ?>
-                                <?php foreach ($archived_products as $product): ?>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($archived_products)): ?>
                                     <tr>
-                                        <td>
-                                            <input type="checkbox" name="selected_products[]"
-                                                   value="<?php echo htmlspecialchars($product['id']); ?>"
-                                                   class="product-checkbox"
-                                                   onchange="updateBulkActions()">
-                                        </td>
-                                        <td>
-                                            <img src="<?php echo htmlspecialchars(url($product['thumbnail'])); ?>"
-                                                 alt="<?php echo htmlspecialchars($product['name']); ?>"
-                                                 class="product-thumbnail">
-                                        </td>
-                                        <td>
-                                            <strong><?php echo htmlspecialchars($product['name']); ?></strong><br>
-                                            <small style="color: #999;">ID: <?php echo htmlspecialchars($product['id']); ?></small>
-                                        </td>
-                                        <td><?php echo format_product_price($product, 'ARS'); ?></td>
-                                        <td><?php echo $product['stock']; ?></td>
-                                        <td>
-                                            <span class="badge archived">Archivado</span><br>
-                                            <small style="color: #999;">
-                                                <?php
-                                                $date = new DateTime($product['archived_date'] ?? 'now');
-                                                echo $date->format('d/m/Y H:i');
-                                                ?>
-                                            </small>
-                                        </td>
-                                        <td>
-                                            <div class="actions">
-                                                <button type="button" class="btn btn-primary btn-sm"
-                                                        onclick="confirmRestoreProduct('<?php echo urlencode($product['id']); ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
-                                                    ↩️ Restaurar
-                                                </button>
-                                                <button type="button" class="btn btn-danger btn-sm"
-                                                        onclick="confirmDeleteProduct('<?php echo urlencode($product['id']); ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
-                                                    🗑️ Eliminar
-                                                </button>
-                                            </div>
+                                        <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                                            No hay productos archivados.
+                                            <a href="<?php echo url('/admin/productos-listado.php'); ?>" style="color: #4CAF50;">Ir a productos activos</a>
                                         </td>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                                <?php else: ?>
+                                    <?php foreach ($archived_products as $product): ?>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_products[]"
+                                                       value="<?php echo htmlspecialchars($product['id']); ?>"
+                                                       class="product-checkbox"
+                                                       onchange="updateBulkActions()">
+                                            </td>
+                                            <td>
+                                                <img src="<?php echo htmlspecialchars(url($product['thumbnail'])); ?>"
+                                                     alt="<?php echo htmlspecialchars($product['name']); ?>"
+                                                     class="product-thumbnail">
+                                            </td>
+                                            <td>
+                                                <strong><?php echo htmlspecialchars($product['name']); ?></strong><br>
+                                                <small style="color: #999;">ID: <?php echo htmlspecialchars($product['id']); ?></small>
+                                            </td>
+                                            <td><?php echo format_product_price($product, 'ARS'); ?></td>
+                                            <td><?php echo $product['stock']; ?></td>
+                                            <td>
+                                                <span class="badge archived">Archivado</span><br>
+                                                <small style="color: #999;">
+                                                    <?php
+                                                    $date = new DateTime($product['archived_date'] ?? 'now');
+                                                    echo $date->format('d/m/Y H:i');
+                                                    ?>
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <div class="actions">
+                                                    <button type="button" class="btn btn-primary btn-sm"
+                                                            onclick="confirmRestoreProduct('<?php echo urlencode($product['id']); ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
+                                                        ↩️ Restaurar
+                                                    </button>
+                                                    <button type="button" class="btn btn-danger btn-sm"
+                                                            onclick="confirmDeleteProduct('<?php echo urlencode($product['id']); ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
+                                                        🗑️ Eliminar
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
 
-        <!-- Mobile Cards View -->
-        <div class="mobile-cards">
-            <?php if (empty($archived_products)): ?>
-                <div class="card">
-                    <p style="text-align: center; color: #999; padding: 20px;">
-                        No hay productos archivados.
-                    </p>
-                </div>
-            <?php else: ?>
-                <?php foreach ($archived_products as $product): ?>
-                    <div class="mobile-card">
-                        <div class="mobile-card-header">
-                            <div style="display: flex; align-items: center; flex: 1;">
-                                <input type="checkbox" name="selected_products[]"
-                                       value="<?php echo htmlspecialchars($product['id']); ?>"
-                                       class="product-checkbox mobile-card-checkbox"
-                                       onchange="updateBulkActions()">
-                                <img src="<?php echo htmlspecialchars(url($product['thumbnail'])); ?>"
-                                     alt="<?php echo htmlspecialchars($product['name']); ?>"
-                                     class="mobile-card-thumbnail">
-                                <div>
-                                    <div class="mobile-card-title"><?php echo htmlspecialchars($product['name']); ?></div>
-                                    <small style="color: #999;">ID: <?php echo htmlspecialchars($product['id']); ?></small>
+            <!-- Mobile Cards View -->
+            <div class="mobile-cards">
+                <?php if (empty($archived_products)): ?>
+                    <div class="card">
+                        <p style="text-align: center; color: #999; padding: 20px;">
+                            No hay productos archivados.
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($archived_products as $product): ?>
+                        <div class="mobile-card">
+                            <div class="mobile-card-header">
+                                <div style="display: flex; align-items: center; flex: 1;">
+                                    <input type="checkbox" name="selected_products[]"
+                                           value="<?php echo htmlspecialchars($product['id']); ?>"
+                                           class="product-checkbox mobile-card-checkbox"
+                                           onchange="updateBulkActions()">
+                                    <img src="<?php echo htmlspecialchars(url($product['thumbnail'])); ?>"
+                                         alt="<?php echo htmlspecialchars($product['name']); ?>"
+                                         class="mobile-card-thumbnail">
+                                    <div>
+                                        <div class="mobile-card-title"><?php echo htmlspecialchars($product['name']); ?></div>
+                                        <small style="color: #999;">ID: <?php echo htmlspecialchars($product['id']); ?></small>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="mobile-card-body">
-                            <div class="mobile-card-row">
-                                <span class="mobile-card-label">Precio:</span>
-                                <span class="mobile-card-value"><strong><?php echo format_product_price($product, 'ARS'); ?></strong></span>
+                            <div class="mobile-card-body">
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Precio:</span>
+                                    <span class="mobile-card-value"><strong><?php echo format_product_price($product, 'ARS'); ?></strong></span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Stock:</span>
+                                    <span class="mobile-card-value"><?php echo $product['stock']; ?></span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Archivado:</span>
+                                    <span class="mobile-card-value">
+                                        <?php
+                                        $date = new DateTime($product['archived_date'] ?? 'now');
+                                        echo $date->format('d/m/Y H:i');
+                                        ?>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Estado:</span>
+                                    <span class="mobile-card-value">
+                                        <span class="badge archived">Archivado</span>
+                                    </span>
+                                </div>
                             </div>
-                            <div class="mobile-card-row">
-                                <span class="mobile-card-label">Stock:</span>
-                                <span class="mobile-card-value"><?php echo $product['stock']; ?></span>
-                            </div>
-                            <div class="mobile-card-row">
-                                <span class="mobile-card-label">Archivado:</span>
-                                <span class="mobile-card-value">
-                                    <?php
-                                    $date = new DateTime($product['archived_date'] ?? 'now');
-                                    echo $date->format('d/m/Y H:i');
-                                    ?>
-                                </span>
-                            </div>
-                            <div class="mobile-card-row">
-                                <span class="mobile-card-label">Estado:</span>
-                                <span class="mobile-card-value">
-                                    <span class="badge archived">Archivado</span>
-                                </span>
-                            </div>
-                        </div>
 
-                        <div class="mobile-card-actions">
-                            <button type="button" class="btn btn-primary btn-sm"
-                                    onclick="confirmRestoreProduct('<?php echo urlencode($product['id']); ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
-                                Restaurar
-                            </button>
-                            <button type="button" class="btn btn-danger btn-sm"
-                                    onclick="confirmDeleteProduct('<?php echo urlencode($product['id']); ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
-                                Eliminar
-                            </button>
+                            <div class="mobile-card-actions">
+                                <button type="button" class="btn btn-primary btn-sm"
+                                        onclick="confirmRestoreProduct('<?php echo urlencode($product['id']); ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
+                                    Restaurar
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm"
+                                        onclick="confirmDeleteProduct('<?php echo urlencode($product['id']); ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
+                                    Eliminar
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+
     </div>
 
     <!-- Modal Component -->
