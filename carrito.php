@@ -258,7 +258,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
             console.log('Fetching products for IDs:', productIds);
 
             try {
-                const response = await fetch('/api/get_products.php', {
+                const response = await fetch('<?php echo url('/api/get_products.php'); ?>', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -585,7 +585,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
             }
 
             try {
-                const response = await fetch('/api/validate_coupon.php', {
+                const response = await fetch('<?php echo url('/api/validate_coupon.php'); ?>', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -693,7 +693,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
                 };
 
                 // Sync to session
-                const response = await fetch('/api/sync_cart.php', {
+                const response = await fetch('<?php echo url('/api/sync_cart.php'); ?>', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
