@@ -147,9 +147,6 @@ $username = $_SESSION['username'] ?? 'Admin';
 
 <div class="admin-topbar">
     <div class="admin-topbar-left">
-        <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Toggle menu">
-            ☰
-        </button>
         <h1><?php echo htmlspecialchars($page_title); ?></h1>
     </div>
     <div class="admin-topbar-actions">
@@ -159,5 +156,8 @@ $username = $_SESSION['username'] ?? 'Admin';
         </div>
         <a href="<?php echo url('/'); ?>" class="btn btn-secondary" target="_blank">🌐 Ver Sitio</a>
         <a href="<?php echo url('/admin/logout.php'); ?>" class="btn btn-logout">🚪 Cerrar Sesión</a>
+        <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Toggle menu">
+            ☰
+        </button>
     </div>
 </div>

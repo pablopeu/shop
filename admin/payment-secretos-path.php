@@ -229,6 +229,110 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-secondary:hover {
             background: #5a6268;
         }
+
+        /* Table Container for Mobile Scroll */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 -15px;
+            padding: 0 15px;
+        }
+
+        @media (min-width: 1025px) {
+            .table-container {
+                overflow-x: visible;
+                margin: 0;
+                padding: 0;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+
+            .filters-row {
+                grid-template-columns: 1fr !important;
+            }
+
+            table {
+                min-width: 900px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 10px;
+            }
+
+            table {
+                font-size: 12px;
+                min-width: 800px;
+            }
+
+            table th,
+            table td {
+                padding: 8px 6px !important;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px;
+            }
+
+            .actions {
+                flex-direction: column !important;
+                gap: 5px !important;
+            }
+
+            .actions .btn {
+                width: 100%;
+                padding: 6px 10px;
+            }
+
+            .bulk-actions-bar {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .bulk-actions-bar select,
+            .bulk-actions-bar .btn {
+                width: 100%;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+
+            /* Better touch targets */
+            .btn {
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            input[type="text"],
+            input[type="email"],
+            input[type="number"],
+            input[type="password"],
+            select,
+            textarea {
+                font-size: 16px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
     </style>
 </head>
 <body>
