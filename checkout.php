@@ -57,6 +57,7 @@ $site_config = read_json(__DIR__ . '/config/site.json');
 $footer_config = read_json(__DIR__ . '/config/footer.json');
 $currency_config = read_json(__DIR__ . '/config/currency.json');
 $payment_config = read_json(__DIR__ . '/config/payment.json');
+$payment_credentials = get_payment_credentials();
 $theme_config = read_json(__DIR__ . '/config/theme.json');
 
 $active_theme = $theme_config['active_theme'] ?? 'minimal';
@@ -335,10 +336,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             unset($_SESSION['cart']);
             unset($_SESSION['coupon_code']);
 
+            // Check if this is an AJAX request (for modal payment)
+            $is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+                       strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+
             // Redirect based on payment method
             if ($payment_method === 'mercadopago') {
-                // Redirect to Checkout Bricks payment page
-                // Payment will be processed using embedded form
+                // If AJAX request, return JSON for modal
+                if ($is_ajax) {
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'success' => true,
+                        'order_id' => $order['id'],
+                        'order_number' => $order['order_number'],
+                        'tracking_token' => $order['tracking_token'],
+                        'total' => $order['total'],
+                        'currency' => $order['currency'],
+                        'items' => $order['items']
+                    ]);
+                    exit;
+                }
+
+                // Normal redirect to payment page
                 header("Location: " . url("/pagar-mercadopago.php?order={$order['id']}&token={$order['tracking_token']}"));
                 exit;
             } else {
@@ -795,7 +814,55 @@ $csrf_token = generate_csrf_token();
         </div>
     </div>
 
+    <!-- Mercadopago Payment Modal -->
+    <div id="mercadopago-modal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeMercadopagoModal()"></div>
+        <div class="modal-content mercadopago-modal-content">
+            <button class="modal-close-btn" onclick="closeMercadopagoModal()">✕</button>
+            <div class="header">
+                <h2>💳 Pagar con Mercadopago</h2>
+                <p style="color: #666; font-size: 14px; margin-top: 5px;">Orden <span id="mp-order-number"></span></p>
+            </div>
+
+            <div class="order-summary-modal">
+                <h3 style="margin-bottom: 12px; color: #333;">Resumen de la orden</h3>
+                <div id="mp-order-items"></div>
+                <div class="order-row total" style="border-top: 2px solid #ddd; margin-top: 12px; padding-top: 12px; font-weight: bold;">
+                    <span>Total a pagar</span>
+                    <span id="mp-total"></span>
+                </div>
+            </div>
+
+            <div class="payment-form-modal">
+                <div class="loading" id="mp-loading">
+                    <div class="spinner"></div>
+                    <p>Preparando pago...</p>
+                </div>
+
+                <div id="walletBrick_container"></div>
+
+                <div class="error" id="mp-error-message" style="display: none;"></div>
+            </div>
+
+            <div class="payment-info-modal">
+                <p style="margin: 0 0 10px 0;"><strong>💳 Pago seguro con Mercadopago</strong></p>
+                <p style="margin: 0; line-height: 1.6; font-size: 14px; color: #666;">
+                    Al hacer clic en "Pagar", serás redirigido a Mercadopago para completar tu pago de forma segura.
+                </p>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Mercadopago configuration
+        <?php
+        $mp_mode = $payment_config['mercadopago']['mode'] ?? 'sandbox';
+        $mp_public_key = $mp_mode === 'sandbox' ?
+            ($payment_credentials['mercadopago']['public_key_sandbox'] ?? '') :
+            ($payment_credentials['mercadopago']['public_key_prod'] ?? '');
+        ?>
+        const MERCADOPAGO_PUBLIC_KEY = '<?php echo $mp_public_key; ?>';
+
         // Step management
         let currentStep = 1;
 
@@ -1100,9 +1167,17 @@ $csrf_token = generate_csrf_token();
 
         // Form submission handler
         let formSubmitAllowed = false;
+        let mercadopagoOrder = null;
 
         document.getElementById('checkout-form').addEventListener('submit', function(e) {
             const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+
+            // If Mercadopago, create order via AJAX and show modal
+            if (paymentMethod && paymentMethod.value === 'mercadopago' && !formSubmitAllowed) {
+                e.preventDefault();
+                createOrderAndShowMercadopagoModal();
+                return false;
+            }
 
             // Show warning modal for non-mercadopago payments
             if (paymentMethod && paymentMethod.value !== 'mercadopago' && !formSubmitAllowed) {
@@ -1111,6 +1186,145 @@ $csrf_token = generate_csrf_token();
                 return false;
             }
         });
+
+        // Create order via AJAX and show Mercadopago modal
+        function createOrderAndShowMercadopagoModal() {
+            // Get form data
+            const formData = new FormData(document.getElementById('checkout-form'));
+
+            // Show loading
+            const submitBtn = document.querySelector('button[name="place_order"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ Creando orden...';
+
+            // Submit form via AJAX with XMLHttpRequest header
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Store order data
+                    mercadopagoOrder = data;
+
+                    // Show Mercadopago modal
+                    showMercadopagoModal(data);
+
+                    // Re-enable button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                } else {
+                    alert('Error al crear la orden: ' + (data.error || 'Error desconocido'));
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al procesar la orden. Por favor intenta nuevamente.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        }
+
+        // Show Mercadopago modal with Wallet Brick
+        function showMercadopagoModal(orderData) {
+            // Populate modal with order data
+            document.getElementById('mp-order-number').textContent = '#' + orderData.order_number;
+
+            // Format items
+            let itemsHTML = '';
+            orderData.items.forEach(item => {
+                itemsHTML += `
+                    <div class="order-row" style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; color: #666;">
+                        <span>${item.name} x${item.quantity}</span>
+                        <span>$${parseFloat(item.final_price).toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            document.getElementById('mp-order-items').innerHTML = itemsHTML;
+
+            // Format total
+            const currency = orderData.currency === 'USD' ? 'U$D' : '$';
+            document.getElementById('mp-total').textContent = currency + ' ' + parseFloat(orderData.total).toFixed(2);
+
+            // Show modal
+            document.getElementById('mercadopago-modal').style.display = 'flex';
+
+            // Load Mercadopago Wallet Brick
+            loadMercadopagoWalletBrick(orderData.order_id, orderData.tracking_token);
+        }
+
+        // Load Mercadopago Wallet Brick
+        function loadMercadopagoWalletBrick(orderId, trackingToken) {
+            const loading = document.getElementById('mp-loading');
+            const errorMessage = document.getElementById('mp-error-message');
+
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
+
+            // Create preference
+            fetch('<?php echo url('/crear-preferencia-mp.php'); ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    order_id: orderId,
+                    tracking_token: trackingToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success || !data.preference_id) {
+                    throw new Error(data.error || 'Error al crear preferencia de pago');
+                }
+
+                // Initialize Mercadopago SDK
+                const mp = new MercadoPago(MERCADOPAGO_PUBLIC_KEY, {
+                    locale: 'es-AR'
+                });
+
+                const bricksBuilder = mp.bricks();
+
+                // Clear container first
+                document.getElementById('walletBrick_container').innerHTML = '';
+
+                // Render Wallet Brick
+                bricksBuilder.create('wallet', 'walletBrick_container', {
+                    initialization: {
+                        preferenceId: data.preference_id,
+                    },
+                    customization: {
+                        texts: {
+                            valueProp: 'security_safety',
+                        },
+                    },
+                    callbacks: {
+                        onReady: () => {
+                            loading.style.display = 'none';
+                        },
+                        onError: (error) => {
+                            console.error('Error en Wallet Brick:', error);
+                            errorMessage.textContent = 'Error al cargar el pago. Intenta nuevamente.';
+                            errorMessage.style.display = 'block';
+                            loading.style.display = 'none';
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error creating preference:', error);
+                errorMessage.textContent = 'Error al preparar el pago. Intenta nuevamente.';
+                errorMessage.style.display = 'block';
+                loading.style.display = 'none';
+            });
+        }
 
         // Payment Warning Modal functions
         function showPaymentWarningModal() {
@@ -1122,6 +1336,13 @@ $csrf_token = generate_csrf_token();
             // Allow form submission after modal is closed
             formSubmitAllowed = true;
             document.getElementById('checkout-form').submit();
+        }
+
+        // Mercadopago Modal functions
+        function closeMercadopagoModal() {
+            document.getElementById('mercadopago-modal').style.display = 'none';
+            // Optionally reload or redirect
+            window.location.href = '<?php echo url('/'); ?>';
         }
 
         // Switch currency display
@@ -1442,7 +1663,87 @@ $csrf_token = generate_csrf_token();
                 width: 100%;
             }
         }
+        /* Mercadopago Modal specific styles */
+        .mercadopago-modal-content {
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .modal-close-btn:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .order-summary-modal {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .order-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .payment-form-modal {
+            margin: 20px 0;
+        }
+
+        .payment-info-modal {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
+
+    <!-- Mercadopago SDK -->
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+
     <!-- Mobile Menu -->
     <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
