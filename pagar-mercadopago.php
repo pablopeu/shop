@@ -233,7 +233,7 @@ if ($order['currency'] === 'USD') {
         </div>
 
         <div class="back-link">
-            <a href="/">← Volver al inicio</a>
+            <a href="<?php echo url('/'); ?>">← Volver al inicio</a>
         </div>
     </div>
 
@@ -268,7 +268,7 @@ if ($order['currency'] === 'USD') {
                 },
                 onSubmit: (cardFormData) => {
                     return new Promise((resolve, reject) => {
-                        fetch('/procesar-pago-mp.php', {
+                        fetch('<?php echo url('/procesar-pago-mp.php'); ?>', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
