@@ -194,6 +194,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
     $is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
+    // Clean output buffer for AJAX requests to ensure clean JSON response
+    if ($is_ajax) {
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        ob_start();
+    }
+
     // Validate CSRF token
     if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token de seguridad inválido';
@@ -284,6 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
 
     // If there are errors and this is AJAX, return JSON
     if (!empty($errors) && $is_ajax) {
+        ob_clean();
         header('Content-Type: application/json');
         echo json_encode([
             'success' => false,
@@ -354,6 +363,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             if ($payment_method === 'mercadopago') {
                 // If AJAX request, return JSON for modal
                 if ($is_ajax) {
+                    ob_clean();
                     header('Content-Type: application/json');
                     echo json_encode([
                         'success' => true,
@@ -380,6 +390,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
 
             // If AJAX, return error as JSON
             if ($is_ajax) {
+                ob_clean();
                 header('Content-Type: application/json');
                 echo json_encode([
                     'success' => false,
@@ -1256,12 +1267,28 @@ $csrf_token = generate_csrf_token();
                 body: formData
             })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error('Error en la respuesta del servidor');
-                }
-                return response.json();
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers.get('Content-Type'));
+
+                // Clone response to read it twice
+                return response.clone().text().then(text => {
+                    console.log('Raw response:', text);
+
+                    if (!response.ok) {
+                        throw new Error('Error en la respuesta del servidor (HTTP ' + response.status + ')');
+                    }
+
+                    // Try to parse as JSON
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('JSON parse error:', e);
+                        throw new Error('La respuesta no es un JSON válido. Respuesta: ' + text.substring(0, 200));
+                    }
+                });
             })
             .then(data => {
+                console.log('Parsed data:', data);
                 if (data.success) {
                     // Store order data
                     mercadopagoOrder = data;
@@ -1279,7 +1306,7 @@ $csrf_token = generate_csrf_token();
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('Error completo:', error);
                 alert('Error al procesar la orden. Por favor intenta nuevamente.\n\nDetalle: ' + error.message);
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
