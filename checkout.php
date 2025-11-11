@@ -190,6 +190,10 @@ if ($checkout_currency === 'ARS') {
 // Process checkout form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
 
+    // Check if this is an AJAX request
+    $is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+
     // Validate CSRF token
     if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token de seguridad inválido';
@@ -278,6 +282,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         }
     }
 
+    // If there are errors and this is AJAX, return JSON
+    if (!empty($errors) && $is_ajax) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'error' => implode(', ', $errors)
+        ]);
+        exit;
+    }
+
     // If no errors, create order
     if (empty($errors)) {
 
@@ -336,10 +350,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             unset($_SESSION['cart']);
             unset($_SESSION['coupon_code']);
 
-            // Check if this is an AJAX request (for modal payment)
-            $is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-                       strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
-
             // Redirect based on payment method
             if ($payment_method === 'mercadopago') {
                 // If AJAX request, return JSON for modal
@@ -367,6 +377,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             }
         } else {
             $errors[] = $result['error'] ?? 'Error al procesar la orden';
+
+            // If AJAX, return error as JSON
+            if ($is_ajax) {
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false,
+                    'error' => $result['error'] ?? 'Error al procesar la orden'
+                ]);
+                exit;
+            }
         }
     }
 }
@@ -778,7 +798,7 @@ $csrf_token = generate_csrf_token();
             <p class="phone-display"><strong id="whatsapp-phone-display"></strong></p>
             <p style="color: #ff9800; font-weight: bold;">⚠️ Por favor revisa si te llegó el mensaje, ya que es la única forma que tendremos de avisarte sobre tu compra.</p>
             <div class="modal-actions">
-                <button type="button" class="btn btn-secondary" onclick="closeWhatsAppModal()">Cancelar</button>
+                <button type="button" class="btn btn-secondary" onclick="skipWhatsAppValidation()">Omitir verificación</button>
                 <button type="button" class="btn btn-primary" onclick="sendWhatsAppTest()">Enviar mensaje de prueba</button>
             </div>
             <div id="whatsapp-status" style="margin-top: 15px; display: none;"></div>
@@ -794,7 +814,7 @@ $csrf_token = generate_csrf_token();
             <p class="email-display"><strong id="email-display"></strong></p>
             <p style="color: #ff9800; font-weight: bold;">⚠️ Por favor revisa tu bandeja de entrada y spam, ya que es la única forma que tendremos de avisarte sobre tu compra.</p>
             <div class="modal-actions">
-                <button type="button" class="btn btn-secondary" onclick="closeEmailModal()">Cancelar</button>
+                <button type="button" class="btn btn-secondary" onclick="skipEmailValidation()">Omitir verificación</button>
                 <button type="button" class="btn btn-primary" onclick="sendEmailTest()">Enviar email de prueba</button>
             </div>
             <div id="email-status" style="margin-top: 15px; display: none;"></div>
@@ -809,7 +829,8 @@ $csrf_token = generate_csrf_token();
             <p>Tu orden fue recibida pero el producto sigue disponible en el shop. <strong>Alguien más puede comprarlo y pagarlo antes que vos.</strong></p>
             <p>La única forma de garantizar la disponibilidad es pagando y avisándole a <strong><?php echo htmlspecialchars($site_config['site_owner']); ?></strong>.</p>
             <div class="modal-actions">
-                <button type="button" class="btn btn-primary" onclick="closePaymentWarningModal()">Entendido</button>
+                <button type="button" class="btn btn-primary" onclick="closePaymentWarningModal()">Entendido, finalizar compra</button>
+                <button type="button" class="btn btn-secondary" onclick="backToPaymentMethod()">Prefiero volver y cambiar el método de pago</button>
             </div>
         </div>
     </div>
@@ -1048,14 +1069,26 @@ $csrf_token = generate_csrf_token();
                 return;
             }
 
-            // If already validated, proceed
+            // Check if user already validated or skipped in this session
+            const whatsappValidated = sessionStorage.getItem('whatsappValidated');
+            const emailValidated = sessionStorage.getItem('emailValidated');
+            const contactPref = document.querySelector('input[name="contact_preference"]:checked').value;
+
+            // If already validated or skipped for this preference, proceed
+            if ((contactPref === 'whatsapp' && whatsappValidated) ||
+                (contactPref === 'email' && emailValidated)) {
+                contactValidated = true;
+                nextStep();
+                return;
+            }
+
+            // If already validated in this page load, proceed
             if (contactValidated) {
                 nextStep();
                 return;
             }
 
-            const contactPref = document.querySelector('input[name="contact_preference"]:checked').value;
-
+            // Show validation modal
             if (contactPref === 'whatsapp') {
                 showWhatsAppValidationModal();
             } else if (contactPref === 'email') {
@@ -1076,6 +1109,13 @@ $csrf_token = generate_csrf_token();
         function closeWhatsAppModal() {
             document.getElementById('whatsapp-validation-modal').style.display = 'none';
             document.getElementById('whatsapp-status').style.display = 'none';
+        }
+
+        function skipWhatsAppValidation() {
+            sessionStorage.setItem('whatsappValidated', 'skipped');
+            contactValidated = true;
+            closeWhatsAppModal();
+            nextStep();
         }
 
         function sendWhatsAppTest() {
@@ -1104,6 +1144,7 @@ $csrf_token = generate_csrf_token();
         }
 
         function confirmWhatsAppValidation() {
+            sessionStorage.setItem('whatsappValidated', 'confirmed');
             contactValidated = true;
             closeWhatsAppModal();
             nextStep();
@@ -1119,6 +1160,13 @@ $csrf_token = generate_csrf_token();
         function closeEmailModal() {
             document.getElementById('email-validation-modal').style.display = 'none';
             document.getElementById('email-status').style.display = 'none';
+        }
+
+        function skipEmailValidation() {
+            sessionStorage.setItem('emailValidated', 'skipped');
+            contactValidated = true;
+            closeEmailModal();
+            nextStep();
         }
 
         function sendEmailTest() {
@@ -1160,6 +1208,7 @@ $csrf_token = generate_csrf_token();
         }
 
         function confirmEmailValidation() {
+            sessionStorage.setItem('emailValidated', 'confirmed');
             contactValidated = true;
             closeEmailModal();
             nextStep();
@@ -1206,7 +1255,12 @@ $csrf_token = generate_csrf_token();
                 },
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     // Store order data
@@ -1226,7 +1280,7 @@ $csrf_token = generate_csrf_token();
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error al procesar la orden. Por favor intenta nuevamente.');
+                alert('Error al procesar la orden. Por favor intenta nuevamente.\n\nDetalle: ' + error.message);
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             });
@@ -1336,6 +1390,14 @@ $csrf_token = generate_csrf_token();
             // Allow form submission after modal is closed
             formSubmitAllowed = true;
             document.getElementById('checkout-form').submit();
+        }
+
+        function backToPaymentMethod() {
+            document.getElementById('payment-warning-modal').style.display = 'none';
+            // Go back to step 3 (payment method)
+            currentStep = 3;
+            updateStepDisplay();
+            window.scrollTo(0, 0);
         }
 
         // Mercadopago Modal functions
