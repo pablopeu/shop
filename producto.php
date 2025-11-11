@@ -487,14 +487,14 @@ write_json($visits_file, $visits_data);
         function addToCart(productId) {
             let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 
-            // Check if product already in cart
-            const existingItem = cart.find(item => item.id === productId);
+            // Check if product already in cart (support both formats)
+            const existingItem = cart.find(item => (item.product_id || item.id) === productId);
 
             if (existingItem) {
                 existingItem.quantity++;
             } else {
                 cart.push({
-                    id: productId,
+                    product_id: productId,
                     quantity: 1,
                     added_at: new Date().toISOString()
                 });

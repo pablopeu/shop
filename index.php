@@ -246,8 +246,8 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             // Get current cart from localStorage
             let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 
-            // Check if product already exists
-            const existingItem = cart.find(item => item.product_id === productId);
+            // Check if product already exists (support both formats)
+            const existingItem = cart.find(item => (item.product_id || item.id) === productId);
 
             if (existingItem) {
                 existingItem.quantity += 1;
