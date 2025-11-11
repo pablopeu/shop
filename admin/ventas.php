@@ -924,6 +924,7 @@ $status_labels = [
                                         <input type="checkbox" name="selected_orders[]"
                                                value="<?php echo htmlspecialchars($order['id']); ?>"
                                                class="order-checkbox mobile-card-checkbox"
+                                               form="bulkForm"
                                                onchange="updateSelectedCount()">
                                         <div>
                                             <div class="mobile-card-title">Pedido #<?php echo htmlspecialchars($order['order_number']); ?></div>
