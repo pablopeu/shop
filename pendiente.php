@@ -284,12 +284,12 @@ $site_config = read_json(__DIR__ . '/config/site.json');
 
         <div class="buttons">
             <?php if ($order): ?>
-            <a href="/pedido.php?order=<?php echo urlencode($order['id']); ?>&token=<?php echo urlencode($order['tracking_token']); ?>"
+            <a href="<?php echo url('/pedido.php?order=' . urlencode($order['id']) . '&token=' . urlencode($order['tracking_token'])); ?>"
                class="btn btn-primary">
                 📦 Ver estado del pedido
             </a>
             <?php endif; ?>
-            <a href="/" class="btn btn-secondary">
+            <a href="<?php echo url('/'); ?>" class="btn btn-secondary">
                 🏠 Volver al inicio
             </a>
         </div>

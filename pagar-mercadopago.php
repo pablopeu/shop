@@ -11,7 +11,7 @@ session_start();
 
 // Check if order_id is provided
 if (!isset($_GET['order']) || !isset($_GET['token'])) {
-    header('Location: /');
+    header('Location: ' . url('/'));
     exit;
 }
 

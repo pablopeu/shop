@@ -1,0 +1,193 @@
+{
+    "timestamp": "2025-11-10T18:16:27+00:00",
+    "duration_ms": 16187.6,
+    "results": [
+        {
+            "name": "Test 1: Verificar productos disponibles",
+            "status": "passed",
+            "time": 0.11,
+            "details": "4 productos activos encontrados, 4 con stock",
+            "error": null
+        },
+        {
+            "name": "Test 2: Verificar cupones activos",
+            "status": "passed",
+            "time": 0.05,
+            "details": "2 cupones activos encontrados",
+            "error": null
+        },
+        {
+            "name": "Test 3: Compra exitosa (Presencial)",
+            "status": "passed",
+            "time": 8605.85,
+            "details": "Orden #ORD-2025-00006 creada - Producto: cuchillo manteca - Total: $100",
+            "error": null
+        },
+        {
+            "name": "Test 4: Compra con cupón de descuento",
+            "status": "passed",
+            "time": 0.5,
+            "details": "SALTADO: Stock insuficiente para probar cupón (Insufficient stock for: cuchillo manteca)",
+            "error": null
+        },
+        {
+            "name": "Test 5: Intento de compra sin stock",
+            "status": "passed",
+            "time": 0.32,
+            "details": "Validación correcta: Stock insuficiente detectado (1 disponibles vs 11 solicitados)",
+            "error": null
+        },
+        {
+            "name": "Test 6: Compra múltiples productos",
+            "status": "passed",
+            "time": 7578.47,
+            "details": "Orden #ORD-2025-00007 con 2 productos - Total: $100",
+            "error": null
+        },
+        {
+            "name": "Test 7: Verificar emails generados",
+            "status": "passed",
+            "time": 0.86,
+            "details": "0 emails registrados para 0 órdenes",
+            "error": null
+        },
+        {
+            "name": "Test 8: Verificar órdenes en sistema",
+            "status": "passed",
+            "time": 0.55,
+            "details": "2 órdenes verificadas en el sistema: ORD-2025-00006, ORD-2025-00007",
+            "error": null
+        }
+    ],
+    "orders_created": [
+        "order-69122beb0aca6-101bd454",
+        "order-69122bf39ef20-a363848d"
+    ],
+    "operations": [
+        {
+            "timestamp": "2025-11-10 18:16:19",
+            "type": "COMPRA_PRESENCIAL",
+            "data": {
+                "id": "order-69122beb0aca6-101bd454",
+                "order_number": "ORD-2025-00006",
+                "user_id": "test-production",
+                "date": "2025-11-10T18:16:11+00:00",
+                "items": [
+                    {
+                        "product_id": "prod-6908131358142-3389e5aa",
+                        "name": "cuchillo manteca",
+                        "price": 100,
+                        "quantity": 1,
+                        "final_price": 100
+                    }
+                ],
+                "currency": "ARS",
+                "subtotal": 100,
+                "discount_promotion": 0,
+                "discount_coupon": 0,
+                "coupon_code": null,
+                "shipping_cost": 0,
+                "total": 100,
+                "status": "pending",
+                "status_history": [
+                    {
+                        "status": "pending",
+                        "date": "2025-11-10T18:16:11+00:00",
+                        "user": "system"
+                    }
+                ],
+                "payment_method": "presencial",
+                "payment_status": "pending",
+                "payment_id": null,
+                "payment_link": null,
+                "tracking_number": null,
+                "tracking_url": null,
+                "tracking_token": "3d4bba829fa872297269dbe464fb0b618ee1d7231e473ce91cfca1f61df0f01a",
+                "shipping_address": null,
+                "customer_email": "test@ejemplo.com",
+                "customer_phone": "+5491100000000",
+                "customer_name": "Cliente Test Automatizado",
+                "notes": "[TEST PRODUCCIÓN] Compra exitosa presencial",
+                "emails_sent": {
+                    "confirmation": false,
+                    "status_update": false
+                }
+            }
+        },
+        {
+            "timestamp": "2025-11-10 18:16:19",
+            "type": "VALIDACION_STOCK",
+            "data": {
+                "producto": "cuchillo manteca",
+                "stock_disponible": 1,
+                "cantidad_solicitada": 11,
+                "resultado": "Rechazado correctamente"
+            }
+        },
+        {
+            "timestamp": "2025-11-10 18:16:27",
+            "type": "COMPRA_MULTIPLE",
+            "data": {
+                "id": "order-69122bf39ef20-a363848d",
+                "order_number": "ORD-2025-00007",
+                "user_id": "test-production",
+                "date": "2025-11-10T18:16:19+00:00",
+                "items": [
+                    {
+                        "product_id": "prod-6908131358142-3389e5aa",
+                        "name": "cuchillo manteca",
+                        "price": 100,
+                        "quantity": 1,
+                        "final_price": 100
+                    },
+                    {
+                        "product_id": "prod-6908bb22b6b1c-0f16700a",
+                        "name": "Cuchillo de oficio japones",
+                        "price": 0,
+                        "quantity": 1,
+                        "final_price": 0
+                    }
+                ],
+                "currency": "ARS",
+                "subtotal": 100,
+                "discount_promotion": 0,
+                "discount_coupon": 0,
+                "coupon_code": null,
+                "shipping_cost": 0,
+                "total": 100,
+                "status": "pending",
+                "status_history": [
+                    {
+                        "status": "pending",
+                        "date": "2025-11-10T18:16:19+00:00",
+                        "user": "system"
+                    }
+                ],
+                "payment_method": "presencial",
+                "payment_status": "pending",
+                "payment_id": null,
+                "payment_link": null,
+                "tracking_number": null,
+                "tracking_url": null,
+                "tracking_token": "7cca881d2b096bf31a63c15de84fb412dcb0d6baaf6fb927b920df9c393a1023",
+                "shipping_address": null,
+                "customer_email": "test@ejemplo.com",
+                "customer_phone": "+5491100000000",
+                "customer_name": "Cliente Test Automatizado",
+                "notes": "[TEST PRODUCCIÓN] Compra múltiples productos",
+                "emails_sent": {
+                    "confirmation": false,
+                    "status_update": false
+                }
+            }
+        },
+        {
+            "timestamp": "2025-11-10 18:16:27",
+            "type": "EMAILS_GENERADOS",
+            "data": {
+                "total_emails": 0,
+                "ordenes": []
+            }
+        }
+    ]
+}

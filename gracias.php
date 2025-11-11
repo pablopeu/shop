@@ -18,7 +18,7 @@ $order_id = $_GET['order'] ?? '';
 $token = $_GET['token'] ?? '';
 
 if (empty($order_id) || empty($token)) {
-    header('Location: /');
+    header('Location: ' . url('/'));
     exit;
 }
 
@@ -26,7 +26,7 @@ if (empty($order_id) || empty($token)) {
 $order = get_order_by_token($token);
 
 if (!$order || $order['id'] !== $order_id) {
-    header('Location: /');
+    header('Location: ' . url('/'));
     exit;
 }
 
@@ -59,15 +59,15 @@ if ($payment_status && $payment_status !== 'approved') {
     <?php render_theme_css($active_theme); ?>
 
     <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
+    <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
+            <a href="<?php echo url('/'); ?>" class="logo"><?php render_site_logo($site_config); ?></a>
             <nav class="nav">
-                <a href="/">🏠 Volver al inicio</a>
+                <a href="<?php echo url('/'); ?>">🏠 Volver al inicio</a>
             </nav>
         </div>
     </header>
@@ -183,18 +183,18 @@ if ($payment_status && $payment_status !== 'approved') {
         <?php endif; ?>
 
         <div class="buttons">
-            <a href="/pedido.php?order=<?php echo urlencode($order['id']); ?>&token=<?php echo urlencode($order['tracking_token']); ?>"
+            <a href="<?php echo url('/pedido.php?order=' . urlencode($order['id']) . '&token=' . urlencode($order['tracking_token'])); ?>"
                class="btn btn-primary">
                 📦 Seguir mi pedido
             </a>
-            <a href="/" class="btn btn-secondary">
+            <a href="<?php echo url('/'); ?>" class="btn btn-secondary">
                 🏠 Volver al inicio
             </a>
         </div>
 
         <p style="margin-top: 30px; color: #999; font-size: 14px;">
             Guarda este enlace para hacer seguimiento de tu pedido.<br>
-            También puedes rastrearlo en cualquier momento desde <a href="/track.php" style="color: #667eea;">aquí</a> usando tu email y número de pedido.
+            También puedes rastrearlo en cualquier momento desde <a href="<?php echo url('/track.php'); ?>" style="color: #667eea;">aquí</a> usando tu email y número de pedido.
         </p>
     </div>
 

@@ -233,7 +233,7 @@ $csrf_token = generate_csrf_token();
         <div class="password-note">
             <strong>Credenciales por defecto:</strong><br>
             Usuario: <code>admin</code><br>
-            Contraseña: <code>password</code><br>
+            Contraseña: <code>admin123</code><br>
             <small style="color: #999; margin-top: 5px; display: block;">
                 ⚠️ Cambia la contraseña después del primer login
             </small>

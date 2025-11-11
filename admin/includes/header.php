@@ -109,7 +109,7 @@ $username = $_SESSION['username'] ?? 'Admin';
             <span>👤</span>
             <span class="username"><?php echo htmlspecialchars($username); ?></span>
         </div>
-        <a href="/" class="btn btn-secondary" target="_blank">🌐 Ver Sitio</a>
-        <a href="/admin/logout.php" class="btn btn-logout">🚪 Cerrar Sesión</a>
+        <a href="<?php echo url('/'); ?>" class="btn btn-secondary" target="_blank">🌐 Ver Sitio</a>
+        <a href="<?php echo url('/admin/logout.php'); ?>" class="btn btn-logout">🚪 Cerrar Sesión</a>
     </div>
 </div>

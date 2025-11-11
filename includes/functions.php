@@ -4,6 +4,9 @@
  * Sistema de funciones principales para la aplicación
  */
 
+// Load config first (includes BASE_PATH and url() function)
+require_once __DIR__ . '/../config.php';
+
 // Security headers
 function set_security_headers() {
     header('X-Frame-Options: DENY');
@@ -31,8 +34,20 @@ function enforce_https() {
  */
 function read_json($file, $associative = true) {
     if (!file_exists($file)) {
-        error_log("JSON file not found: $file");
-        return $associative ? [] : new stdClass();
+        // Try to create from .example file if it exists
+        $example_file = $file . '.example';
+        if (file_exists($example_file)) {
+            // Copy example file to actual file
+            if (copy($example_file, $file)) {
+                error_log("Created $file from example file");
+            } else {
+                error_log("JSON file not found and could not create from example: $file");
+                return $associative ? [] : new stdClass();
+            }
+        } else {
+            error_log("JSON file not found: $file");
+            return $associative ? [] : new stdClass();
+        }
     }
 
     $fp = fopen($file, 'r');
@@ -431,9 +446,14 @@ function is_maintenance_mode() {
 
 /**
  * Redirect to URL
- * @param string $url URL to redirect to
+ * @param string $url URL to redirect to (automatically applies BASE_PATH to internal paths)
  */
 function redirect($url) {
+    // If it's an internal path (starts with /), apply url()
+    // External URLs (http://, https://) are left as-is
+    if (!empty($url) && $url[0] === '/' && strpos($url, '//') !== 0) {
+        $url = url($url);
+    }
     header("Location: $url");
     exit;
 }
@@ -562,7 +582,7 @@ function validate_theme($theme_slug) {
 function render_site_logo($site_config) {
     if (!empty($site_config['logo']['enabled']) && !empty($site_config['logo']['path'])) {
         // Render logo image
-        $logo_path = htmlspecialchars($site_config['logo']['path']);
+        $logo_path = htmlspecialchars(url($site_config['logo']['path']));
         $logo_alt = htmlspecialchars($site_config['logo']['alt'] ?? $site_config['site_name']);
         $logo_width = (int)($site_config['logo']['width'] ?? 170);
         $logo_height = (int)($site_config['logo']['height'] ?? 85);
@@ -597,7 +617,7 @@ function render_footer($site_config, $footer_config) {
         // Logo
         if (!empty($footer_config['left_column']['logo']['enabled']) && !empty($footer_config['left_column']['logo']['path'])) {
             $logo = $footer_config['left_column']['logo'];
-            echo '<img src="' . htmlspecialchars($logo['path']) . '" ';
+            echo '<img src="' . htmlspecialchars(url($logo['path'])) . '" ';
             echo 'alt="' . htmlspecialchars($logo['alt'] ?? 'Logo') . '" ';
             echo 'height="' . (int)($logo['height'] ?? 83) . '" ';
             echo 'width="' . (int)($logo['width'] ?? 169) . '">';

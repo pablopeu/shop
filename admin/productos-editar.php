@@ -22,7 +22,7 @@ $page_title = 'Editar Producto';
 $product_id = $_GET['id'] ?? '';
 
 if (empty($product_id)) {
-    header('Location: /admin/productos-listado.php');
+    header('Location: ' . url('/admin/productos-listado.php'));
     exit;
 }
 
@@ -30,7 +30,7 @@ if (empty($product_id)) {
 $product = get_product_by_id($product_id);
 
 if (!$product) {
-    header('Location: /admin/productos-listado.php?error=not_found');
+    header('Location: ' . url('/admin/productos-listado.php?error=not_found'));
     exit;
 }
 
@@ -55,7 +55,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_image' && isset($_GET[
 
         // Save
         if (update_product($product_id, $product)) {
-            header('Location: /admin/productos-editar.php?id=' . $product_id . '&msg=image_deleted');
+            header('Location: ' . url('/admin/productos-editar.php?id=' . $product_id . '&msg=image_deleted'));
             exit;
         }
     }
@@ -135,17 +135,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
             $error = 'Debe haber al menos una imagen';
         } else {
             // Update product
-            if (update_product($product_id, $product_data)) {
+            $update_result = update_product($product_id, $product_data);
+            if ($update_result['success']) {
                 log_admin_action('product_updated', $_SESSION['username'], [
                     'product_id' => $product_id,
                     'name' => $product_data['name']
                 ]);
 
                 // Redirect to product listing
-                header('Location: /admin/productos-listado.php?msg=product_updated');
+                header('Location: ' . url('/admin/productos-listado.php?msg=product_updated'));
                 exit;
             } else {
-                $error = 'Error al actualizar el producto';
+                $error = $update_result['message'] ?? 'Error al actualizar el producto';
             }
         }
     }
@@ -570,7 +571,7 @@ $user = get_logged_user();
                                 <?php foreach ($product_images as $index => $image_url): ?>
                                     <div class="image-item" data-index="<?php echo $index; ?>">
                                         <span class="drag-handle">⋮⋮</span>
-                                        <img src="<?php echo htmlspecialchars($image_url); ?>" alt="Imagen del producto">
+                                        <img src="<?php echo htmlspecialchars(url($image_url)); ?>" alt="Imagen del producto">
                                         <?php if ($index === 0): ?>
                                             <span class="image-badge">PRINCIPAL</span>
                                         <?php endif; ?>
@@ -591,6 +592,12 @@ $user = get_logged_user();
                         <small style="color: #666; margin-top: 5px; display: block;">
                             Formatos: JPG, PNG, GIF, WebP. Tamaño máximo: 5MB por imagen. Puedes seleccionar múltiples imágenes.
                         </small>
+                    </div>
+
+                    <!-- New Images Preview -->
+                    <div class="form-group" id="newImagesPreview" style="display: none;">
+                        <label>Nuevas imágenes a agregar:</label>
+                        <div class="image-gallery" id="new-image-gallery"></div>
                     </div>
 
                     <!-- Pricing -->
@@ -677,7 +684,7 @@ $user = get_logged_user();
                         <button type="submit" name="save_product" class="btn-save" id="saveBtn">
                             💾 Guardar Cambios
                         </button>
-                        <a href="/admin/productos-listado.php" class="btn btn-secondary">
+                        <a href="<?php echo url('/admin/productos-listado.php'); ?>" class="btn btn-secondary">
                             ❌ Cancelar
                         </a>
                     </div>
@@ -763,13 +770,55 @@ $user = get_logged_user();
             input.addEventListener('change', checkForChanges);
         });
 
-        // Detect file selection
+        // Detect file selection and show preview
         if (fileInput) {
-            fileInput.addEventListener('change', () => {
-                if (fileInput.files.length > 0) {
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
                     markChanged();
+                    showNewImagesPreview(this.files);
+                } else {
+                    hideNewImagesPreview();
                 }
             });
+        }
+
+        // Show preview of new images to be uploaded
+        function showNewImagesPreview(files) {
+            const newImagesPreview = document.getElementById('newImagesPreview');
+            const newImageGallery = document.getElementById('new-image-gallery');
+
+            if (!newImagesPreview || !newImageGallery) return;
+
+            newImageGallery.innerHTML = '';
+
+            // Sort files alphabetically
+            const sortedFiles = Array.from(files).sort((a, b) => {
+                return a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'});
+            });
+
+            sortedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'image-item';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" alt="${file.name}">
+                        <span class="image-badge">NUEVA</span>
+                    `;
+                    newImageGallery.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            });
+
+            newImagesPreview.style.display = 'block';
+        }
+
+        // Hide preview of new images
+        function hideNewImagesPreview() {
+            const newImagesPreview = document.getElementById('newImagesPreview');
+            if (newImagesPreview) {
+                newImagesPreview.style.display = 'none';
+            }
         }
 
         function checkForChanges() {
@@ -828,6 +877,6 @@ $user = get_logged_user();
     </script>
 
     <!-- Unsaved Changes Warning -->
-    <script src="/admin/includes/unsaved-changes-warning.js"></script>
+    <script src="<?php echo url('/admin/includes/unsaved-changes-warning.js'); ?>"></script>
 </body>
 </html>

@@ -31,7 +31,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_slide' && isset($_GET[
 
         // Save
         if (write_json(__DIR__ . '/../config/carousel.json', $config)) {
-            header('Location: /admin/config-carrusel.php?msg=slide_deleted');
+            header('Location: ' . url('/admin/config-carrusel.php?msg=slide_deleted'));
             exit;
         }
     }
