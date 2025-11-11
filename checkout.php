@@ -1252,6 +1252,10 @@ $csrf_token = generate_csrf_token();
             // Get form data
             const formData = new FormData(document.getElementById('checkout-form'));
 
+            // IMPORTANT: Add the place_order parameter manually
+            // When using FormData constructor, button values are not included
+            formData.append('place_order', '1');
+
             // Show loading
             const submitBtn = document.querySelector('button[name="place_order"]');
             const originalText = submitBtn.innerHTML;
