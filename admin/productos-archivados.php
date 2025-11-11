@@ -393,11 +393,11 @@ $user = get_logged_user();
                                     </td>
                                     <td>
                                         <div class="actions">
-                                            <button class="btn btn-primary btn-sm"
+                                            <button type="button" class="btn btn-primary btn-sm"
                                                     onclick="confirmRestoreProduct('<?php echo urlencode($product['id']); ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
                                                 ↩️ Restaurar
                                             </button>
-                                            <button class="btn btn-danger btn-sm"
+                                            <button type="button" class="btn btn-danger btn-sm"
                                                     onclick="confirmDeleteProduct('<?php echo urlencode($product['id']); ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
                                                 🗑️ Eliminar
                                             </button>
@@ -424,6 +424,7 @@ $user = get_logged_user();
                 message: `¿Estás seguro de que deseas restaurar "${productName}"?`,
                 details: 'El producto volverá al listado principal de productos activos y estará disponible en el catálogo público.',
                 icon: '↩️',
+                iconClass: 'info',
                 confirmText: 'Restaurar',
                 confirmType: 'primary',
                 onConfirm: function() {
@@ -441,6 +442,7 @@ $user = get_logged_user();
                 message: `¿Estás COMPLETAMENTE SEGURO de que deseas eliminar "${productName}"?`,
                 details: '🚨 ADVERTENCIA: Esta acción es IRREVERSIBLE. Se eliminarán permanentemente todos los datos del producto, incluyendo imágenes y estadísticas. Esta acción NO se puede deshacer.',
                 icon: '🗑️',
+                iconClass: 'danger',
                 confirmText: 'Sí, Eliminar Permanentemente',
                 cancelText: 'No, Conservar Producto',
                 confirmType: 'danger',

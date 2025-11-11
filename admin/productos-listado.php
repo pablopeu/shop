@@ -623,11 +623,11 @@ $user = get_logged_user();
                                                 <div class="delete-actions">
                                                     <a href="<?php echo url('/admin/productos-editar.php?id=' . urlencode($product['id'])); ?>"
                                                        class="btn btn-primary btn-sm">✏️ Editar</a>
-                                                    <button class="btn btn-secondary btn-sm"
+                                                    <button type="button" class="btn btn-secondary btn-sm"
                                                        onclick="confirmToggleProduct('<?php echo urlencode($product['id']); ?>', <?php echo $product['active'] ? 'true' : 'false'; ?>)">
                                                         <?php echo $product['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
                                                     </button>
-                                                    <button class="btn btn-danger btn-sm"
+                                                    <button type="button" class="btn btn-danger btn-sm"
                                                             onclick="confirmArchiveProduct('<?php echo $product['id']; ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
                                                         📦 Archivar
                                                     </button>
@@ -661,6 +661,7 @@ $user = get_logged_user();
                     ? 'El producto dejará de mostrarse en el catálogo público.'
                     : 'El producto volverá a mostrarse en el catálogo público.',
                 icon: isActive ? '❌' : '✅',
+                iconClass: isActive ? 'warning' : 'success',
                 confirmText: actionCap,
                 confirmType: isActive ? 'warning' : 'primary',
                 onConfirm: function() {
@@ -678,6 +679,7 @@ $user = get_logged_user();
                 message: `¿Estás seguro de que deseas archivar "${productName}"?`,
                 details: 'El producto se moverá al archivo y no aparecerá en el listado principal. Podrás restaurarlo desde la sección de Productos Archivados.',
                 icon: '📦',
+                iconClass: 'warning',
                 confirmText: 'Archivar',
                 confirmType: 'danger',
                 onConfirm: function() {
@@ -722,22 +724,25 @@ $user = get_logged_user();
             }
 
             // Configurar modal según la acción
-            let title, message, icon, confirmType;
+            let title, message, icon, iconClass, confirmType;
 
             if (action === 'activate') {
                 title = 'Activar Productos';
                 message = `¿Activar ${count} producto${count > 1 ? 's' : ''}?`;
                 icon = '✅';
+                iconClass = 'success';
                 confirmType = 'primary';
             } else if (action === 'deactivate') {
                 title = 'Desactivar Productos';
                 message = `¿Desactivar ${count} producto${count > 1 ? 's' : ''}?`;
                 icon = '❌';
+                iconClass = 'warning';
                 confirmType = 'warning';
             } else if (action === 'archive') {
                 title = 'Archivar Productos';
                 message = `¿Archivar ${count} producto${count > 1 ? 's' : ''}?`;
                 icon = '📦';
+                iconClass = 'danger';
                 confirmType = 'danger';
             }
 
@@ -746,6 +751,7 @@ $user = get_logged_user();
                 message: message,
                 details: `Esta acción se aplicará a ${count} producto${count > 1 ? 's seleccionados' : ' seleccionado'}.`,
                 icon: icon,
+                iconClass: iconClass,
                 confirmText: 'Confirmar',
                 confirmType: confirmType,
                 onConfirm: function() {
