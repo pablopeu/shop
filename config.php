@@ -48,6 +48,16 @@ if (!function_exists('url')) {
             $path = '/' . $path;
         }
 
+        // If BASE_PATH is empty, return path as-is
+        if (BASE_PATH === '') {
+            return $path;
+        }
+
+        // Check if path already starts with BASE_PATH to avoid duplication
+        if (strpos($path, BASE_PATH . '/') === 0 || $path === BASE_PATH) {
+            return $path;
+        }
+
         return BASE_PATH . $path;
     }
 }
