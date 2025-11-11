@@ -355,89 +355,91 @@ $user = get_logged_user();
         <div class="card">
             <div class="card-header">Todos los Cupones</div>
 
-            <table class="coupons-table">
-                <thead>
-                    <tr>
-                        <th>Código</th>
-                        <th>Tipo / Descuento</th>
-                        <th>Vigencia</th>
-                        <th>Usos</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($coupons)): ?>
+            <div class="table-container">
+                <table class="coupons-table">
+                    <thead>
                         <tr>
-                            <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
-                                No hay cupones.
-                                <a href="/admin/cupones-nuevo.php" style="color: #4CAF50;">Crear tu primer cupón</a>
-                            </td>
+                            <th>Código</th>
+                            <th>Tipo / Descuento</th>
+                            <th>Vigencia</th>
+                            <th>Usos</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
                         </tr>
-                    <?php else: ?>
-                        <?php foreach ($coupons as $coupon):
-                            $is_expired = strtotime($coupon['end_date']) < $now;
-                            $is_maxed = $coupon['max_uses'] > 0 && $coupon['uses_count'] >= $coupon['max_uses'];
-                        ?>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($coupons)): ?>
                             <tr>
-                                <td>
-                                    <span class="coupon-code"><?php echo htmlspecialchars($coupon['code']); ?></span>
-                                </td>
-                                <td>
-                                    <span class="badge <?php echo $coupon['type']; ?>">
-                                        <?php echo $coupon['type'] === 'percentage' ? '%' : '$'; ?>
-                                    </span>
-                                    <strong>
-                                        <?php
-                                        echo $coupon['type'] === 'percentage'
-                                            ? $coupon['value'] . '% OFF'
-                                            : format_price($coupon['value'], 'ARS') . ' OFF';
-                                        ?>
-                                    </strong>
-                                </td>
-                                <td>
-                                    <?php echo date('d/m/Y', strtotime($coupon['start_date'])); ?> -
-                                    <?php echo date('d/m/Y', strtotime($coupon['end_date'])); ?>
-                                    <br>
-                                    <?php if ($is_expired): ?>
-                                        <span class="badge expired">Expirado</span>
-                                    <?php else: ?>
-                                        <span class="badge valid">Vigente</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php echo $coupon['uses_count']; ?> /
-                                    <?php echo $coupon['max_uses'] > 0 ? $coupon['max_uses'] : '∞'; ?>
-                                    <?php if ($is_maxed): ?>
-                                        <br><span class="badge inactive">Límite alcanzado</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <span class="badge <?php echo $coupon['active'] ? 'active' : 'inactive'; ?>">
-                                        <?php echo $coupon['active'] ? 'Activo' : 'Inactivo'; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="actions">
-                                        <a href="/admin/cupones-editar.php?id=<?php echo urlencode($coupon['id']); ?>"
-                                           class="btn btn-primary btn-sm">✏️ Editar</a>
-                                        <a href="?action=toggle&id=<?php echo urlencode($coupon['id']); ?>"
-                                           class="btn btn-secondary btn-sm"
-                                           onclick="return confirm('¿Cambiar estado del cupón?')">
-                                            <?php echo $coupon['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
-                                        </a>
-                                        <a href="?action=delete&id=<?php echo urlencode($coupon['id']); ?>"
-                                           class="btn btn-danger btn-sm"
-                                           onclick="return confirm('¿Eliminar este cupón? Esta acción no se puede deshacer.')">
-                                            🗑️ Eliminar
-                                        </a>
-                                    </div>
+                                <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                                    No hay cupones.
+                                    <a href="/admin/cupones-nuevo.php" style="color: #4CAF50;">Crear tu primer cupón</a>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                        <?php else: ?>
+                            <?php foreach ($coupons as $coupon):
+                                $is_expired = strtotime($coupon['end_date']) < $now;
+                                $is_maxed = $coupon['max_uses'] > 0 && $coupon['uses_count'] >= $coupon['max_uses'];
+                            ?>
+                                <tr>
+                                    <td>
+                                        <span class="coupon-code"><?php echo htmlspecialchars($coupon['code']); ?></span>
+                                    </td>
+                                    <td>
+                                        <span class="badge <?php echo $coupon['type']; ?>">
+                                            <?php echo $coupon['type'] === 'percentage' ? '%' : '$'; ?>
+                                        </span>
+                                        <strong>
+                                            <?php
+                                            echo $coupon['type'] === 'percentage'
+                                                ? $coupon['value'] . '% OFF'
+                                                : format_price($coupon['value'], 'ARS') . ' OFF';
+                                            ?>
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <?php echo date('d/m/Y', strtotime($coupon['start_date'])); ?> -
+                                        <?php echo date('d/m/Y', strtotime($coupon['end_date'])); ?>
+                                        <br>
+                                        <?php if ($is_expired): ?>
+                                            <span class="badge expired">Expirado</span>
+                                        <?php else: ?>
+                                            <span class="badge valid">Vigente</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php echo $coupon['uses_count']; ?> /
+                                        <?php echo $coupon['max_uses'] > 0 ? $coupon['max_uses'] : '∞'; ?>
+                                        <?php if ($is_maxed): ?>
+                                            <br><span class="badge inactive">Límite alcanzado</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <span class="badge <?php echo $coupon['active'] ? 'active' : 'inactive'; ?>">
+                                            <?php echo $coupon['active'] ? 'Activo' : 'Inactivo'; ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="actions">
+                                            <a href="/admin/cupones-editar.php?id=<?php echo urlencode($coupon['id']); ?>"
+                                               class="btn btn-primary btn-sm">✏️ Editar</a>
+                                            <a href="?action=toggle&id=<?php echo urlencode($coupon['id']); ?>"
+                                               class="btn btn-secondary btn-sm"
+                                               onclick="return confirm('¿Cambiar estado del cupón?')">
+                                                <?php echo $coupon['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
+                                            </a>
+                                            <a href="?action=delete&id=<?php echo urlencode($coupon['id']); ?>"
+                                               class="btn btn-danger btn-sm"
+                                               onclick="return confirm('¿Eliminar este cupón? Esta acción no se puede deshacer.')">
+                                                🗑️ Eliminar
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </body>
