@@ -429,29 +429,106 @@ $user = get_logged_user();
             font-size: 13px;
         }
 
+        /* Table Container for Mobile Scroll */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 -15px;
+            padding: 0 15px;
+        }
+
+        @media (min-width: 1025px) {
+            .table-container {
+                overflow-x: visible;
+                margin: 0;
+                padding: 0;
+            }
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .main-content {
                 margin-left: 0;
+                padding: 15px;
             }
 
             .filters-row {
                 grid-template-columns: 1fr;
             }
+
+            .products-table {
+                min-width: 900px;
+            }
         }
 
         @media (max-width: 768px) {
+            .main-content {
+                padding: 10px;
+            }
+
             .products-table {
-                font-size: 13px;
+                font-size: 12px;
+                min-width: 800px;
             }
 
             .products-table th,
             .products-table td {
-                padding: 10px;
+                padding: 8px 6px;
             }
 
             .actions {
                 flex-direction: column;
+                gap: 5px;
+            }
+
+            .actions .btn {
+                width: 100%;
+                padding: 6px 10px;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-actions > div {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .header-actions .btn {
+                width: 100%;
+                text-align: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .bulk-actions-bar {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .bulk-actions-bar select,
+            .bulk-actions-bar .btn {
+                width: 100%;
+            }
+
+            /* Better touch targets */
+            .btn {
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -564,7 +641,8 @@ $user = get_logged_user();
                         <?php endif; ?>
                     </div>
 
-                    <table class="products-table">
+                    <div class="table-container">
+                        <table class="products-table">
                         <thead>
                             <tr>
                                 <th style="width: 40px;">
@@ -639,6 +717,7 @@ $user = get_logged_user();
                             <?php endif; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </form>
         </div>

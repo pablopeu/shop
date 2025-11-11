@@ -21,13 +21,48 @@ $username = $_SESSION['username'] ?? 'Admin';
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 15px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .admin-topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
     }
 
     .admin-topbar h1 {
         font-size: 22px;
         color: #2c3e50;
         margin: 0;
+    }
+
+    /* Hamburger Menu Button */
+    .hamburger-btn {
+        display: none;
+        background: #2c3e50;
+        border: none;
+        color: white;
+        padding: 10px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 20px;
+        line-height: 1;
+        transition: all 0.3s;
+    }
+
+    .hamburger-btn:hover {
+        background: #34495e;
+    }
+
+    .hamburger-btn:active {
+        transform: scale(0.95);
+    }
+
+    @media (max-width: 1024px) {
+        .hamburger-btn {
+            display: block;
+        }
     }
 
     .admin-topbar-actions {
@@ -87,13 +122,21 @@ $username = $_SESSION['username'] ?? 'Admin';
 
     @media (max-width: 768px) {
         .admin-topbar {
-            flex-direction: column;
-            gap: 15px;
-            align-items: stretch;
+            flex-wrap: wrap;
+        }
+
+        .admin-topbar-left {
+            flex: 1;
+        }
+
+        .admin-topbar h1 {
+            font-size: 18px;
         }
 
         .admin-topbar-actions {
             flex-direction: column;
+            width: 100%;
+            order: 3;
         }
 
         .admin-topbar-user {
@@ -103,7 +146,12 @@ $username = $_SESSION['username'] ?? 'Admin';
 </style>
 
 <div class="admin-topbar">
-    <h1><?php echo htmlspecialchars($page_title); ?></h1>
+    <div class="admin-topbar-left">
+        <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Toggle menu">
+            ☰
+        </button>
+        <h1><?php echo htmlspecialchars($page_title); ?></h1>
+    </div>
     <div class="admin-topbar-actions">
         <div class="admin-topbar-user">
             <span>👤</span>
