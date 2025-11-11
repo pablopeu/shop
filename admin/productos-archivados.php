@@ -367,6 +367,7 @@ $user = get_logged_user();
             }
         }
 
+
         /* Responsive */
         @media (max-width: 1024px) {
             .main-content {
