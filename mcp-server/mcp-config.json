@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "mercadopago": {
+      "command": "node",
+      "args": ["/home/user/shop/mcp-server/index.js"],
+      "env": {},
+      "description": "Mercadopago API integration for payments, refunds, and payment search"
+    }
+  }
+}
