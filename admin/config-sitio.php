@@ -202,8 +202,8 @@ $user = get_logged_user();
                                     <small style="color: #666;"><?php echo htmlspecialchars(basename($site_config['logo']['path'])); ?></small>
                                 </div>
                             </div>
-                            <button type="submit" name="delete_logo"
-                                    onclick="return confirm('¿Está seguro de eliminar el logo?')"
+                            <button type="button"
+                                    onclick="confirmDeleteLogo()"
                                     style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
                                 🗑️ Eliminar
                             </button>
@@ -358,6 +358,48 @@ $user = get_logged_user();
             setTimeout(() => {
                 saveBtn.classList.remove('saved');
             }, 3000);
+        }
+    </script>
+
+    <!-- Modal Component -->
+    <?php include __DIR__ . '/includes/modal.php'; ?>
+
+    <script>
+        /**
+         * Confirmar eliminación del logo
+         */
+        function confirmDeleteLogo() {
+            showModal({
+                title: '⚠️ Eliminar Logo',
+                message: '¿Estás seguro de que deseas eliminar el logo del sitio?',
+                details: '🚨 <strong>ADVERTENCIA:</strong> Esta acción es irreversible. Una vez eliminado, no podrás recuperar el archivo del logo.',
+                icon: '🗑️',
+                iconClass: 'danger',
+                confirmText: 'Sí, Eliminar Logo',
+                cancelText: 'No, Conservar',
+                confirmType: 'danger',
+                onConfirm: function() {
+                    // Create a hidden form and submit it
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '';
+
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrf_token';
+                    csrfInput.value = '<?php echo $csrf_token; ?>';
+                    form.appendChild(csrfInput);
+
+                    const deleteInput = document.createElement('input');
+                    deleteInput.type = 'hidden';
+                    deleteInput.name = 'delete_logo';
+                    deleteInput.value = '1';
+                    form.appendChild(deleteInput);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
         }
     </script>
 </body>
