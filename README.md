@@ -1,6 +1,6 @@
 # E-commerce Platform - PHP + JSON
 
-Plataforma completa de e-commerce con backoffice administrativo, diseño responsive moderno, sistema de themes intercambiables, y gestión de productos mediante archivos JSON.
+Plataforma completa de e-commerce con backoffice administrativo, diseño responsive moderno, sistema de themes intercambiables, y gestión de productos mediante archivos JSON. 
 
 ## Stack Tecnológico
 
