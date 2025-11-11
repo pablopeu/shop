@@ -45,7 +45,7 @@ function render_theme_css($active_theme = 'minimal') {
 
     // Generar tags <link> para cada archivo
     foreach ($css_files as $css_file) {
-        echo '<link rel="stylesheet" href="' . htmlspecialchars($css_file) . '">' . PHP_EOL . '    ';
+        echo '<link rel="stylesheet" href="' . htmlspecialchars(url($css_file)) . '">' . PHP_EOL . '    ';
     }
 }
 

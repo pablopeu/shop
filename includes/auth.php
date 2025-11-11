@@ -8,6 +8,24 @@ require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/rate_limit.php';
 
 /**
+ * Get users file path (configurable location)
+ * @return string Path to users.json file
+ */
+function get_users_file_path() {
+    $users_path_file = __DIR__ . '/../.users_path';
+
+    if (file_exists($users_path_file)) {
+        $path = trim(file_get_contents($users_path_file));
+        if (!empty($path)) {
+            return $path;
+        }
+    }
+
+    // Fallback to default location
+    return __DIR__ . '/../data/passwords/users.json';
+}
+
+/**
  * Authenticate admin user
  * @param string $username Username
  * @param string $password Password
@@ -39,7 +57,7 @@ function authenticate_admin($username, $password) {
     }
 
     // Load users
-    $users_file = __DIR__ . '/../data/passwords/users.json';
+    $users_file = get_users_file_path();
     $users_data = read_json($users_file);
 
     if (!isset($users_data['users'])) {
@@ -196,7 +214,7 @@ function hash_password($password) {
  * @return array ['success' => bool, 'message' => string]
  */
 function create_admin_user($username, $password, $email) {
-    $users_file = __DIR__ . '/../data/passwords/users.json';
+    $users_file = get_users_file_path();
     $users_data = read_json($users_file);
 
     if (!isset($users_data['users'])) {
@@ -249,7 +267,7 @@ function create_admin_user($username, $password, $email) {
  * @return array ['success' => bool, 'message' => string]
  */
 function change_admin_password($user_id, $old_password, $new_password) {
-    $users_file = __DIR__ . '/../data/passwords/users.json';
+    $users_file = get_users_file_path();
     $users_data = read_json($users_file);
 
     if (!isset($users_data['users'])) {

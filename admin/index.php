@@ -354,35 +354,35 @@ $user = get_logged_user();
             <h2>Acciones Rápidas</h2>
             <div class="actions-grid">
                 <?php if ($dashboard_config['quick_actions']['productos'] ?? true): ?>
-                <a href="/admin/productos-listado.php" class="action-btn">
+                <a href="<?php echo url('/admin/productos-listado.php'); ?>" class="action-btn">
                     <div class="icon">📦</div>
                     <div class="text">Productos</div>
                 </a>
                 <?php endif; ?>
 
                 <?php if ($dashboard_config['quick_actions']['ventas'] ?? true): ?>
-                <a href="/admin/ventas.php" class="action-btn">
+                <a href="<?php echo url('/admin/ventas.php'); ?>" class="action-btn">
                     <div class="icon">💰</div>
                     <div class="text">Ventas</div>
                 </a>
                 <?php endif; ?>
 
                 <?php if ($dashboard_config['quick_actions']['cupones'] ?? true): ?>
-                <a href="/admin/cupones-listado.php" class="action-btn">
+                <a href="<?php echo url('/admin/cupones-listado.php'); ?>" class="action-btn">
                     <div class="icon">🎫</div>
                     <div class="text">Cupones</div>
                 </a>
                 <?php endif; ?>
 
                 <?php if ($dashboard_config['quick_actions']['reviews'] ?? true): ?>
-                <a href="/admin/reviews-listado.php" class="action-btn">
+                <a href="<?php echo url('/admin/reviews-listado.php'); ?>" class="action-btn">
                     <div class="icon">⭐</div>
                     <div class="text">Reviews</div>
                 </a>
                 <?php endif; ?>
 
                 <?php if ($dashboard_config['quick_actions']['config'] ?? true): ?>
-                <a href="/admin/config.php" class="action-btn">
+                <a href="<?php echo url('/admin/config-sitio.php'); ?>" class="action-btn">
                     <div class="icon">⚙️</div>
                     <div class="text">Configuración</div>
                 </a>

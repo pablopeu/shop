@@ -85,10 +85,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
                         'name' => $product_data['name']
                     ]);
 
-                    // Redirect to list after 2 seconds
-                    header("refresh:2;url=/admin/productos-listado.php");
+                    // Redirect to list after success
+                    header('Location: ' . url('/admin/productos-listado.php?msg=product_created'));
+                    exit;
                 } else {
-                    $error = $result['error'] ?? 'Error al crear el producto';
+                    $error = $result['message'] ?? 'Error al crear el producto';
 
                     // Clean up images if product creation failed
                     foreach ($images as $img) {
@@ -556,7 +557,7 @@ $user = get_logged_user();
                     <button type="submit" name="save_product" class="btn-save" id="saveBtn">
                         💾 Crear Producto
                     </button>
-                    <a href="/admin/productos-listado.php" class="btn btn-secondary">
+                    <a href="<?php echo url('/admin/productos-listado.php'); ?>" class="btn btn-secondary">
                         ❌ Cancelar
                     </a>
                 </div>
@@ -764,6 +765,6 @@ $user = get_logged_user();
     </script>
 
     <!-- Unsaved Changes Warning -->
-    <script src="/admin/includes/unsaved-changes-warning.js"></script>
+    <script src="<?php echo url('/admin/includes/unsaved-changes-warning.js'); ?>"></script>
 </body>
 </html>

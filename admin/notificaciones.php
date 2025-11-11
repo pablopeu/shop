@@ -904,6 +904,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 
     <!-- Unsaved Changes Warning -->
-    <script src="/admin/includes/unsaved-changes-warning.js"></script>
+    <script src="<?php echo url('/admin/includes/unsaved-changes-warning.js'); ?>"></script>
 </body>
 </html>

@@ -38,7 +38,7 @@ $payment_message = get_payment_message($payment_status, $payment_status_detail);
     <?php render_theme_css($active_theme); ?>
 
     <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
+    <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 
     <style>
         .error-container {
@@ -169,9 +169,9 @@ $payment_message = get_payment_message($payment_status, $payment_status_detail);
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
+            <a href="<?php echo url('/'); ?>" class="logo"><?php render_site_logo($site_config); ?></a>
             <nav class="nav">
-                <a href="/">🏠 Volver al inicio</a>
+                <a href="<?php echo url('/'); ?>">🏠 Volver al inicio</a>
             </nav>
         </div>
     </header>
@@ -207,10 +207,10 @@ $payment_message = get_payment_message($payment_status, $payment_status_detail);
         </div>
 
         <div class="buttons">
-            <a href="/checkout.php" class="btn btn-primary">
+            <a href="<?php echo url('/checkout.php'); ?>" class="btn btn-primary">
                 🔄 Intentar nuevamente
             </a>
-            <a href="/carrito.php" class="btn btn-secondary">
+            <a href="<?php echo url('/carrito.php'); ?>" class="btn btn-secondary">
                 🛒 Ver carrito
             </a>
         </div>

@@ -57,21 +57,21 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
     <?php render_theme_css($active_theme); ?>
 
     <!-- Carousel CSS -->
-    <link rel="stylesheet" href="/includes/carousel.css">
+    <link rel="stylesheet" href="<?php echo url('/includes/carousel.css'); ?>">
 
     <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
+    <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
+            <a href="<?php echo url('/'); ?>" class="logo"><?php render_site_logo($site_config); ?></a>
             <nav class="nav">
-                <a href="/">Inicio</a>
-                <a href="/buscar.php">Buscar</a>
-                <a href="/favoritos.php">Favoritos</a>
-                <a href="/track.php">📦 Rastrear</a>
+                <a href="<?php echo url('/'); ?>">Inicio</a>
+                <a href="<?php echo url('/buscar.php'); ?>">Buscar</a>
+                <a href="<?php echo url('/favoritos.php'); ?>">Favoritos</a>
+                <a href="<?php echo url('/track.php'); ?>">📦 Rastrear</a>
                 <a href="#" class="cart-link" onclick="openCartPanel(); return false;">
                     🛒 Carrito
                     <span class="cart-badge hidden" id="cart-count">0</span>
@@ -123,15 +123,15 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                 <h3>No hay productos disponibles</h3>
                 <p>Pronto agregaremos productos a nuestra tienda.</p>
                 <br>
-                <a href="/admin/login.php" class="btn">Ir al Admin Panel</a>
+                <a href="<?php echo url('/admin/login.php'); ?>" class="btn">Ir al Admin Panel</a>
             </div>
         <?php else: ?>
             <div class="products-grid">
                 <?php foreach ($products as $product): ?>
                     <div class="product-card">
-                        <div class="product-image" onclick="window.location.href='/producto.php?slug=<?php echo urlencode($product['slug']); ?>'">
+                        <div class="product-image" onclick="window.location.href='<?php echo url('/producto.php?slug=' . urlencode($product['slug'])); ?>'">
                             <?php if (!empty($product['thumbnail'])): ?>
-                                <img src="<?php echo htmlspecialchars($product['thumbnail']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                                <img src="<?php echo htmlspecialchars(url($product['thumbnail'])); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" style="width: 100%; height: 100%; object-fit: cover;">
                             <?php else: ?>
                                 Sin imagen
                             <?php endif; ?>
@@ -154,7 +154,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                             </div>
 
                             <div class="product-buttons">
-                                <button class="btn btn-secondary" onclick="window.location.href='/producto.php?slug=<?php echo urlencode($product['slug']); ?>'" <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>
+                                <button class="btn btn-secondary" onclick="window.location.href='<?php echo url('/producto.php?slug=' . urlencode($product['slug'])); ?>'" <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>
                                     Ver detalle
                                 </button>
                                 <button class="btn btn-add-cart" onclick="addToCart('<?php echo htmlspecialchars($product['id']); ?>', event)" <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>
@@ -438,7 +438,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                 }
 
                 // Sync to session
-                const response = await fetch('/api/sync_cart.php', {
+                const response = await fetch('<?php echo url('/api/sync_cart.php'); ?>', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -455,7 +455,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
                 if (result.success) {
                     // Redirect to cart page (full view)
-                    window.location.href = '/carrito.php';
+                    window.location.href = '<?php echo url('/carrito.php'); ?>';
                 } else {
                     alert('Error al procesar el carrito');
                 }
@@ -476,12 +476,12 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
     </script>
 
     <!-- Cart Validator -->
-    <script src="/includes/cart-validator.js"></script>
+    <script src="<?php echo url('/includes/cart-validator.js'); ?>"></script>
 
     <!-- Carousel JS -->
-    <script src="/includes/carousel.js"></script>
+    <script src="<?php echo url('/includes/carousel.js'); ?>"></script>
 
     <!-- Mobile Menu -->
-    <script src="/includes/mobile-menu.js"></script>
+    <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 </body>
 </html>

@@ -40,11 +40,40 @@ function upload_image($file, $destination_dir, $allowed_types = null, $max_size 
         return ['success' => false, 'error' => 'El archivo excede el tamaño máximo permitido (5MB)'];
     }
 
-    // Verify MIME type
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime_type = $finfo->file($file['tmp_name']);
+    // Verify MIME type (with fallback for servers without fileinfo extension)
+    $mime_type = null;
 
-    if (!in_array($mime_type, $allowed_types)) {
+    // Try using finfo if available
+    if (class_exists('finfo')) {
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mime_type = $finfo->file($file['tmp_name']);
+    }
+    // Fallback to mime_content_type if available
+    elseif (function_exists('mime_content_type')) {
+        $mime_type = mime_content_type($file['tmp_name']);
+    }
+    // Last resort: validate by file extension
+    else {
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $valid_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        if (!in_array($extension, $valid_extensions)) {
+            return ['success' => false, 'error' => 'Extensión de archivo no permitida. Use JPG, PNG, GIF o WebP'];
+        }
+
+        // Map extension to MIME type for consistency
+        $extension_mime_map = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp'
+        ];
+        $mime_type = $extension_mime_map[$extension] ?? 'image/jpeg';
+    }
+
+    // Validate MIME type if we got one
+    if ($mime_type && !in_array($mime_type, $allowed_types)) {
         return ['success' => false, 'error' => 'Tipo de archivo no permitido. Solo se permiten imágenes'];
     }
 

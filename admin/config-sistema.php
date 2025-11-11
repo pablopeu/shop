@@ -25,7 +25,15 @@ $credentials_path_file = __DIR__ . '/../.credentials_path';
 // Get current credentials path
 $current_path = file_exists($credentials_path_file)
     ? trim(file_get_contents($credentials_path_file))
-    : '/home/smtp_credentials.json';
+    : '/home/notification_credentials.json';
+
+// Users path file
+$users_path_file = __DIR__ . '/../.users_path';
+
+// Get current users path
+$current_users_path = file_exists($users_path_file)
+    ? trim(file_get_contents($users_path_file))
+    : __DIR__ . '/../data/passwords/users.json';
 
 // Load current credentials
 $current_credentials = [
@@ -70,6 +78,7 @@ function is_outside_webroot($path) {
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Handle credentials save
     if (isset($_POST['save_credentials'])) {
         $new_path = sanitize_input($_POST['credentials_path'] ?? '');
 
@@ -142,6 +151,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     log_admin_action('credentials_updated', $_SESSION['username']);
                 } else {
                     $error = '❌ Error al escribir el archivo de credenciales (verifica permisos del directorio)';
+                }
+            }
+        }
+    }
+
+    // Handle password change
+    elseif (isset($_POST['change_password'])) {
+        $current_password = $_POST['current_password'] ?? '';
+        $new_password = $_POST['new_password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+
+        if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
+            $error = '❌ Todos los campos son requeridos';
+        } elseif ($new_password !== $confirm_password) {
+            $error = '❌ Las nuevas contraseñas no coinciden';
+        } elseif (strlen($new_password) < 8) {
+            $error = '❌ La nueva contraseña debe tener al menos 8 caracteres';
+        } else {
+            $result = change_admin_password($_SESSION['user_id'], $current_password, $new_password);
+
+            if ($result['success']) {
+                $message = '✅ Contraseña actualizada exitosamente';
+            } else {
+                $error = '❌ ' . $result['message'];
+            }
+        }
+    }
+
+    // Handle users location save
+    elseif (isset($_POST['save_users_location'])) {
+        $new_users_path = sanitize_input($_POST['users_path'] ?? '');
+
+        if (empty($new_users_path)) {
+            $error = '❌ El path no puede estar vacío';
+        } elseif (!is_outside_webroot($new_users_path)) {
+            $error = '❌ El path debe estar FUERA del directorio público (public_html, www, htdocs, etc.)';
+        } else {
+            $old_path = $current_users_path;
+            $actions_performed = [];
+
+            // Ensure directory exists
+            $dir = dirname($new_users_path);
+            if (!file_exists($dir)) {
+                if (!@mkdir($dir, 0755, true)) {
+                    $error = '❌ No se pudo crear el directorio: ' . $dir . ' (verifica permisos)';
+                } else {
+                    $actions_performed[] = 'Directorio creado';
+                }
+            }
+
+            // Verify directory is writable
+            if (empty($error) && !is_writable($dir)) {
+                $error = '❌ El directorio no es escribible: ' . $dir . ' (verifica permisos)';
+            }
+
+            if (empty($error)) {
+                // Copy existing users file to new location
+                if (file_exists($old_path)) {
+                    $users_content = file_get_contents($old_path);
+                    if (file_put_contents($new_users_path, $users_content) !== false) {
+                        $actions_performed[] = 'Archivo de usuarios movido';
+
+                        // Set restrictive permissions
+                        @chmod($new_users_path, 0600);
+                        $actions_performed[] = 'Permisos establecidos (600)';
+
+                        // Save path reference
+                        file_put_contents($users_path_file, $new_users_path);
+                        $current_users_path = $new_users_path;
+
+                        // Optionally delete old file (only if it was in the default location)
+                        if (strpos($old_path, 'data/passwords/') !== false) {
+                            @unlink($old_path);
+                            $actions_performed[] = 'Archivo anterior eliminado';
+                        }
+
+                        $action_details = implode(' • ', $actions_performed);
+                        $message = '✅ Ubicación de usuarios guardada exitosamente en: ' . $new_users_path . '<br><small>' . $action_details . '</small>';
+                        log_admin_action('users_location_updated', $_SESSION['username']);
+                    } else {
+                        $error = '❌ Error al escribir el archivo de usuarios (verifica permisos del directorio)';
+                    }
+                } else {
+                    $error = '❌ No se encontró el archivo de usuarios actual en: ' . $old_path;
                 }
             }
         }
@@ -333,24 +426,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="warning-box">
                 <strong>⚠️ Importante - Seguridad:</strong><br>
-                Las credenciales (contraseñas SMTP, tokens de Telegram) se guardan en un archivo JSON <strong>fuera del directorio público</strong> del sitio web.<br>
-                Esto garantiza que NO sean accesibles desde internet.
+                Las credenciales (contraseñas SMTP, tokens de Telegram, etc.) se guardan en un archivo JSON <strong>fuera del directorio público</strong> del sitio web.<br>
+                Esto garantiza que NO sean accesibles desde internet.<br><br>
+                <strong>📄 Archivo de Notificaciones:</strong> Este archivo contiene credenciales para SMTP (email) y Telegram (bot).
             </div>
 
             <form method="POST">
                 <div class="form-group">
-                    <label for="credentials_path">Path del archivo de credenciales</label>
+                    <label for="credentials_path">Path del archivo de credenciales de notificaciones</label>
                     <input type="text" id="credentials_path" name="credentials_path"
                            value="<?php echo htmlspecialchars($current_path); ?>"
-                           placeholder="/home/smtp_credentials.json" required>
-                    <small>Ruta absoluta donde se guardarán las credenciales (debe estar FUERA de public_html/www)</small>
+                           placeholder="/home/notification_credentials.json" required>
+                    <small>Ruta absoluta donde se guardarán las credenciales de SMTP y Telegram (debe estar FUERA de public_html/www)</small>
                 </div>
 
                 <div class="info-box">
                     <strong>📝 Ejemplos de paths seguros:</strong><br><br>
-                    <strong>Desarrollo local:</strong> <code>/home/smtp_credentials.json</code><br>
-                    <strong>Hosting cPanel:</strong> <code>/home2/uv0023/smtp_credentials.json</code> (fuera de public_html)<br>
-                    <strong>VPS:</strong> <code>/home/usuario/credentials.json</code><br><br>
+                    <strong>Desarrollo local:</strong> <code>/home/notification_credentials.json</code><br>
+                    <strong>Hosting cPanel:</strong> <code>/home2/uv0023/notification_credentials.json</code> (fuera de public_html)<br>
+                    <strong>VPS:</strong> <code>/home/usuario/credentials/notifications.json</code><br><br>
                     <strong>❌ NUNCA uses:</strong> <code>/var/www/html/...</code>, <code>/public_html/...</code>, <code>/www/...</code>
                 </div>
 
@@ -419,6 +513,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
+                <div class="warning-box" style="background: #ffe8e8; border-left-color: #dc3545;">
+                    <strong>⚠️ ATENCIÓN - Ubicación Actual:</strong><br>
+                    Tu archivo actual está en: <code><?php echo htmlspecialchars($current_path); ?></code><br>
+                    <?php if (!is_outside_webroot($current_path)): ?>
+                        <span style="color: #dc3545; font-weight: bold;">🚨 RIESGO: Este archivo está DENTRO del webroot y es potencialmente accesible desde internet.</span>
+                    <?php else: ?>
+                        <span style="color: #28a745; font-weight: bold;">✅ SEGURO: Este archivo está fuera del webroot.</span>
+                    <?php endif; ?>
+                </div>
+
                 <div class="info-box">
                     <strong>🔒 Al guardar:</strong><br>
                     1. Se creará automáticamente el archivo JSON en el path especificado<br>
@@ -431,9 +535,108 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </button>
             </form>
         </div>
+
+        <!-- Password Change Section -->
+        <div class="card">
+            <div class="card-header">
+                <h2>🔑 Cambiar Contraseña de Administrador</h2>
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Importante - Seguridad:</strong><br>
+                Asegúrate de usar una contraseña segura con al menos 8 caracteres. Se recomienda usar una combinación de letras mayúsculas, minúsculas, números y símbolos.
+            </div>
+
+            <form method="POST">
+                <div class="form-group">
+                    <label for="current_password">Contraseña Actual</label>
+                    <input type="password" id="current_password" name="current_password"
+                           placeholder="Tu contraseña actual" required autocomplete="current-password">
+                    <small>Ingresa tu contraseña actual para confirmar tu identidad</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="new_password">Nueva Contraseña</label>
+                    <input type="password" id="new_password" name="new_password"
+                           placeholder="Mínimo 8 caracteres" required autocomplete="new-password">
+                    <small>Debe tener al menos 8 caracteres</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_password">Confirmar Nueva Contraseña</label>
+                    <input type="password" id="confirm_password" name="confirm_password"
+                           placeholder="Repite la nueva contraseña" required autocomplete="new-password">
+                    <small>Vuelve a ingresar la nueva contraseña para confirmar</small>
+                </div>
+
+                <div class="info-box">
+                    <strong>🔒 Al cambiar la contraseña:</strong><br>
+                    1. Deberás usar la nueva contraseña en tu próximo inicio de sesión<br>
+                    2. Se registrará un log de este cambio por seguridad<br>
+                    3. Guarda tu nueva contraseña en un lugar seguro
+                </div>
+
+                <button type="submit" name="change_password" class="btn btn-primary">
+                    🔐 Cambiar Contraseña
+                </button>
+            </form>
+        </div>
+
+        <!-- Users Location Section -->
+        <div class="card">
+            <div class="card-header">
+                <h2>👥 Ubicación de Usuarios Administradores</h2>
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Importante - Seguridad:</strong><br>
+                Los datos de usuarios administradores (credenciales, contraseñas hasheadas) deben almacenarse en un archivo JSON <strong>fuera del directorio público</strong> del sitio web.<br>
+                Esto garantiza que NO sean accesibles desde internet.
+            </div>
+
+            <form method="POST">
+                <div class="form-group">
+                    <label for="users_path">Path del archivo de usuarios</label>
+                    <input type="text" id="users_path" name="users_path"
+                           value="<?php echo htmlspecialchars($current_users_path); ?>"
+                           placeholder="/home/admin_users.json" required>
+                    <small>Ruta absoluta donde se guardarán los usuarios administradores (debe estar FUERA de public_html/www)</small>
+                </div>
+
+                <div class="info-box">
+                    <strong>📝 Ejemplos de paths seguros:</strong><br><br>
+                    <strong>Desarrollo local:</strong> <code>/home/admin_users.json</code><br>
+                    <strong>Hosting cPanel:</strong> <code>/home2/uv0023/admin_users.json</code> (fuera de public_html)<br>
+                    <strong>VPS:</strong> <code>/home/usuario/secure/users.json</code><br><br>
+                    <strong>❌ NUNCA uses:</strong> <code>/var/www/html/...</code>, <code>/public_html/...</code>, <code>/www/...</code>
+                </div>
+
+                <div class="warning-box" style="background: #ffe8e8; border-left-color: #dc3545;">
+                    <strong>⚠️ ATENCIÓN - Ubicación Actual:</strong><br>
+                    Tu archivo actual está en: <code><?php echo htmlspecialchars($current_users_path); ?></code><br>
+                    <?php if (!is_outside_webroot($current_users_path)): ?>
+                        <span style="color: #dc3545; font-weight: bold;">🚨 RIESGO: Este archivo está DENTRO del webroot y es potencialmente accesible desde internet.</span>
+                    <?php else: ?>
+                        <span style="color: #28a745; font-weight: bold;">✅ SEGURO: Este archivo está fuera del webroot.</span>
+                    <?php endif; ?>
+                </div>
+
+                <div class="info-box">
+                    <strong>🔒 Al guardar:</strong><br>
+                    1. Se creará automáticamente el directorio si no existe<br>
+                    2. Se copiará el archivo actual a la nueva ubicación<br>
+                    3. Se establecerán permisos restrictivos (600 - solo owner puede leer)<br>
+                    4. El archivo en la ubicación anterior será eliminado si está dentro de data/passwords/
+                </div>
+
+                <button type="submit" name="save_users_location" class="btn btn-primary">
+                    💾 Guardar Ubicación
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- Unsaved Changes Warning -->
-    <script src="/admin/includes/unsaved-changes-warning.js"></script>
+    <script src="<?php echo url('/admin/includes/unsaved-changes-warning.js'); ?>"></script>
 </body>
 </html>

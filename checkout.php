@@ -29,7 +29,7 @@ session_start();
 
 // Check if cart exists in session
 if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
-    header('Location: /carrito.php?error=empty');
+    header('Location: ' . url('/carrito.php?error=empty'));
     exit;
 }
 
@@ -45,7 +45,7 @@ foreach ($_SESSION['cart'] as $item) {
 // If no valid items remain, redirect back
 if (empty($valid_items)) {
     unset($_SESSION['cart']);
-    header('Location: /carrito.php?error=empty');
+    header('Location: ' . url('/carrito.php?error=empty'));
     exit;
 }
 
@@ -308,12 +308,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             // Redirect based on payment method
             if ($payment_method === 'presencial') {
                 // Redirect to thank you page
-                header("Location: /gracias.php?order={$order['id']}&token={$order['tracking_token']}");
+                header("Location: " . url("/gracias.php?order={$order['id']}&token={$order['tracking_token']}"));
                 exit;
             } elseif ($payment_method === 'mercadopago') {
                 // Redirect to Checkout Bricks payment page
                 // Payment will be processed using embedded form
-                header("Location: /pagar-mercadopago.php?order={$order['id']}&token={$order['tracking_token']}");
+                header("Location: " . url("/pagar-mercadopago.php?order={$order['id']}&token={$order['tracking_token']}"));
                 exit;
             }
         } else {
@@ -337,17 +337,15 @@ $csrf_token = generate_csrf_token();
     <?php render_theme_css($active_theme); ?>
 
     <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
-    <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
+    <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
     <!-- Header -->
     <div class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
+            <a href="<?php echo url('/'); ?>" class="logo"><?php render_site_logo($site_config); ?></a>
             <div>
-                <a href="/carrito.php" class="btn-secondary">← Volver al carrito</a>
+                <a href="<?php echo url('/carrito.php'); ?>" class="btn-secondary">← Volver al carrito</a>
             </div>
         </div>
     </div>
@@ -591,7 +589,7 @@ $csrf_token = generate_csrf_token();
         }
     </script>
     <!-- Mobile Menu -->
-    <script src="/includes/mobile-menu.js"></script>
+    <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
     <!-- Footer -->
     <footer class="footer">

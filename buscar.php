@@ -87,18 +87,16 @@ $absolute_max = !empty($prices) ? max($prices) : 10000;
     <?php render_theme_css($active_theme); ?>
 
     <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
-    <!-- Mobile Menu Styles -->
-    <link rel="stylesheet" href="/includes/mobile-menu.css">
+    <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <a href="/" class="logo"><?php render_site_logo($site_config); ?></a>
+            <a href="<?php echo url('/'); ?>" class="logo"><?php render_site_logo($site_config); ?></a>
 
             <div class="search-box">
-                <form method="GET" action="/buscar.php">
+                <form method="GET" action="<?php echo url('/buscar.php'); ?>">
                     <input type="text"
                            name="q"
                            placeholder="Buscar productos..."
@@ -109,9 +107,9 @@ $absolute_max = !empty($prices) ? max($prices) : 10000;
             </div>
 
             <nav class="nav">
-                <a href="/">Inicio</a>
-                <a href="/favoritos.php">Favoritos</a>
-                <a href="/carrito.php">Carrito (<span id="cart-count">0</span>)</a>
+                <a href="<?php echo url('/'); ?>">Inicio</a>
+                <a href="<?php echo url('/favoritos.php'); ?>">Favoritos</a>
+                <a href="<?php echo url('/carrito.php'); ?>">Carrito (<span id="cart-count">0</span>)</a>
             </nav>
         </div>
     </header>
@@ -134,7 +132,7 @@ $absolute_max = !empty($prices) ? max($prices) : 10000;
             <aside class="filters">
                 <h2>🔍 Filtros</h2>
 
-                <form method="GET" action="/buscar.php">
+                <form method="GET" action="<?php echo url('/buscar.php'); ?>">
                     <input type="hidden" name="q" value="<?php echo htmlspecialchars($query); ?>">
 
                     <!-- Sort -->
@@ -176,7 +174,7 @@ $absolute_max = !empty($prices) ? max($prices) : 10000;
                     </div>
 
                     <button type="submit" class="apply-filters">Aplicar Filtros</button>
-                    <a href="/buscar.php?q=<?php echo urlencode($query); ?>" class="clear-filters">Limpiar Filtros</a>
+                    <a href="<?php echo url('/buscar.php?q=' . urlencode($query)); ?>" class="clear-filters">Limpiar Filtros</a>
                 </form>
             </aside>
 
@@ -187,16 +185,16 @@ $absolute_max = !empty($prices) ? max($prices) : 10000;
                         <h2>No se encontraron resultados</h2>
                         <?php if (!empty($query)): ?>
                             <p>No encontramos productos que coincidan con "<?php echo htmlspecialchars($query); ?>"</p>
-                            <p>Intenta con otros términos de búsqueda o <a href="/buscar.php">explora todos los productos</a></p>
+                            <p>Intenta con otros términos de búsqueda o <a href="<?php echo url('/buscar.php'); ?>">explora todos los productos</a></p>
                         <?php else: ?>
                             <p>No hay productos disponibles en este momento.</p>
-                            <a href="/" class="btn">Volver al Inicio</a>
+                            <a href="<?php echo url('/'); ?>" class="btn">Volver al Inicio</a>
                         <?php endif; ?>
                     </div>
                 <?php else: ?>
                     <div class="products-grid">
                         <?php foreach ($results as $product): ?>
-                            <div class="product-card" onclick="window.location.href='/producto.php?slug=<?php echo urlencode($product['slug']); ?>'">
+                            <div class="product-card" onclick="window.location.href='<?php echo url('/producto.php?slug=' . urlencode($product['slug'])); ?>'">
                                 <div class="product-image">
                                     <?php if (!empty($product['thumbnail'])): ?>
                                         <img src="<?php echo htmlspecialchars($product['thumbnail']); ?>"
@@ -253,9 +251,9 @@ $absolute_max = !empty($prices) ? max($prices) : 10000;
     </script>
 
     <!-- Cart Validator -->
-    <script src="/includes/cart-validator.js"></script>
+    <script src="<?php echo url('/includes/cart-validator.js'); ?>"></script>
     <!-- Mobile Menu -->
-    <script src="/includes/mobile-menu.js"></script>
+    <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
     <!-- Footer -->
     <footer class="footer">

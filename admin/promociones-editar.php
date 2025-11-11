@@ -16,13 +16,13 @@ $page_title = 'Editar Promoción';
 $promotion_id = $_GET['id'] ?? '';
 
 if (empty($promotion_id)) {
-    header('Location: /admin/promociones-listado.php');
+    header('Location: ' . url('/admin/promociones-listado.php'));
     exit;
 }
 
 $promotion = get_promotion_by_id($promotion_id);
 if (!$promotion) {
-    header('Location: /admin/promociones-listado.php?error=not_found');
+    header('Location: ' . url('/admin/promociones-listado.php?error=not_found'));
     exit;
 }
 
@@ -257,6 +257,6 @@ $user = get_logged_user();
     </script>
 
     <!-- Unsaved Changes Warning -->
-    <script src="/admin/includes/unsaved-changes-warning.js"></script>
+    <script src="<?php echo url('/admin/includes/unsaved-changes-warning.js'); ?>"></script>
 </body>
 </html>
