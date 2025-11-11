@@ -353,25 +353,6 @@ $user = get_logged_user();
             align-items: center;
         }
 
-        .delete-confirm {
-            display: none;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .delete-confirm.show {
-            display: flex;
-        }
-
-        .delete-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .delete-actions.hide {
-            display: none;
-        }
-
         /* Filters */
         .filters-card {
             background: white;
@@ -568,7 +549,7 @@ $user = get_logged_user();
                         <option value="deactivate">Desactivar</option>
                         <option value="archive">Archivar</option>
                     </select>
-                    <button type="submit" class="btn btn-sm btn-primary" onclick="return confirm('¿Confirmar acción en masa?')">
+                    <button type="button" class="btn btn-sm btn-primary" onclick="confirmBulkAction()">
                         Aplicar
                     </button>
                 </div>
@@ -642,23 +623,13 @@ $user = get_logged_user();
                                                 <div class="delete-actions">
                                                     <a href="<?php echo url('/admin/productos-editar.php?id=' . urlencode($product['id'])); ?>"
                                                        class="btn btn-primary btn-sm">✏️ Editar</a>
-                                                    <a href="?action=toggle&id=<?php echo urlencode($product['id']); ?>"
-                                                       class="btn btn-secondary btn-sm"
-                                                       onclick="return confirm('¿Cambiar estado del producto?')">
-                                                        <?php echo $product['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
-                                                    </a>
-                                                    <button class="btn btn-danger btn-sm"
-                                                            onclick="showArchiveConfirm('<?php echo $product['id']; ?>')">
-                                                        📦 Archivar
-                                                    </button>
-                                                </div>
-                                                <div class="delete-confirm" id="archive-confirm-<?php echo $product['id']; ?>">
-                                                    <span style="font-size: 13px; color: #dc3545; font-weight: 600;">¿Archivar producto?</span>
-                                                    <a href="?action=archive&id=<?php echo urlencode($product['id']); ?>"
-                                                       class="btn btn-danger btn-sm">✓ Archivar</a>
                                                     <button class="btn btn-secondary btn-sm"
-                                                            onclick="hideArchiveConfirm('<?php echo $product['id']; ?>')">
-                                                        ✗ Cancelar
+                                                       onclick="confirmToggleProduct('<?php echo urlencode($product['id']); ?>', <?php echo $product['active'] ? 'true' : 'false'; ?>)">
+                                                        <?php echo $product['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
+                                                    </button>
+                                                    <button class="btn btn-danger btn-sm"
+                                                            onclick="confirmArchiveProduct('<?php echo $product['id']; ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
+                                                        📦 Archivar
                                                     </button>
                                                 </div>
                                             </div>
@@ -672,25 +643,115 @@ $user = get_logged_user();
             </form>
         </div>
 
-    <script>
-        function showArchiveConfirm(productId) {
-            // Hide action buttons
-            const deleteActions = document.querySelector(`#actions-${productId} .delete-actions`);
-            deleteActions.classList.add('hide');
+    <!-- Modal Component -->
+    <?php include __DIR__ . '/includes/modal.php'; ?>
 
-            // Show confirm buttons
-            const archiveConfirm = document.getElementById(`archive-confirm-${productId}`);
-            archiveConfirm.classList.add('show');
+    <script>
+        /**
+         * Confirmar cambio de estado de producto (Activar/Desactivar)
+         */
+        function confirmToggleProduct(productId, isActive) {
+            const action = isActive ? 'desactivar' : 'activar';
+            const actionCap = isActive ? 'Desactivar' : 'Activar';
+
+            showModal({
+                title: `${actionCap} Producto`,
+                message: `¿Estás seguro de que deseas ${action} este producto?`,
+                details: isActive
+                    ? 'El producto dejará de mostrarse en el catálogo público.'
+                    : 'El producto volverá a mostrarse en el catálogo público.',
+                icon: isActive ? '❌' : '✅',
+                confirmText: actionCap,
+                confirmType: isActive ? 'warning' : 'primary',
+                onConfirm: function() {
+                    window.location.href = `?action=toggle&id=${productId}`;
+                }
+            });
         }
 
-        function hideArchiveConfirm(productId) {
-            // Show action buttons
-            const deleteActions = document.querySelector(`#actions-${productId} .delete-actions`);
-            deleteActions.classList.remove('hide');
+        /**
+         * Confirmar archivo de producto
+         */
+        function confirmArchiveProduct(productId, productName) {
+            showModal({
+                title: 'Archivar Producto',
+                message: `¿Estás seguro de que deseas archivar "${productName}"?`,
+                details: 'El producto se moverá al archivo y no aparecerá en el listado principal. Podrás restaurarlo desde la sección de Productos Archivados.',
+                icon: '📦',
+                confirmText: 'Archivar',
+                confirmType: 'danger',
+                onConfirm: function() {
+                    window.location.href = `?action=archive&id=${productId}`;
+                }
+            });
+        }
 
-            // Hide confirm buttons
-            const archiveConfirm = document.getElementById(`archive-confirm-${productId}`);
-            archiveConfirm.classList.remove('show');
+        /**
+         * Confirmar acción masiva
+         */
+        function confirmBulkAction() {
+            const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+            const action = document.getElementById('bulkAction').value;
+            const count = checkboxes.length;
+
+            // Validaciones
+            if (count === 0) {
+                showModal({
+                    title: 'Sin Productos Seleccionados',
+                    message: 'Debes seleccionar al menos un producto para realizar una acción masiva.',
+                    icon: '⚠️',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    cancelText: 'Cerrar',
+                    onConfirm: function() {}
+                });
+                return;
+            }
+
+            if (!action) {
+                showModal({
+                    title: 'Acción No Seleccionada',
+                    message: 'Debes seleccionar una acción para aplicar a los productos seleccionados.',
+                    icon: '⚠️',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    cancelText: 'Cerrar',
+                    onConfirm: function() {}
+                });
+                return;
+            }
+
+            // Configurar modal según la acción
+            let title, message, icon, confirmType;
+
+            if (action === 'activate') {
+                title = 'Activar Productos';
+                message = `¿Activar ${count} producto${count > 1 ? 's' : ''}?`;
+                icon = '✅';
+                confirmType = 'primary';
+            } else if (action === 'deactivate') {
+                title = 'Desactivar Productos';
+                message = `¿Desactivar ${count} producto${count > 1 ? 's' : ''}?`;
+                icon = '❌';
+                confirmType = 'warning';
+            } else if (action === 'archive') {
+                title = 'Archivar Productos';
+                message = `¿Archivar ${count} producto${count > 1 ? 's' : ''}?`;
+                icon = '📦';
+                confirmType = 'danger';
+            }
+
+            showModal({
+                title: title,
+                message: message,
+                details: `Esta acción se aplicará a ${count} producto${count > 1 ? 's seleccionados' : ' seleccionado'}.`,
+                icon: icon,
+                confirmText: 'Confirmar',
+                confirmType: confirmType,
+                onConfirm: function() {
+                    document.getElementById('bulkForm').submit();
+                }
+            });
         }
 
         // Handle checkbox selection for bulk actions
@@ -718,23 +779,6 @@ $user = get_logged_user();
             }
         }
 
-        // Ensure at least one checkbox is selected and an action is chosen
-        document.getElementById('bulkForm')?.addEventListener('submit', function(e) {
-            const checkboxes = document.querySelectorAll('.product-checkbox:checked');
-            const action = document.getElementById('bulkAction').value;
-
-            if (checkboxes.length === 0) {
-                e.preventDefault();
-                alert('Selecciona al menos un producto');
-                return false;
-            }
-
-            if (!action) {
-                e.preventDefault();
-                alert('Selecciona una acción');
-                return false;
-            }
-        });
     </script>
 </body>
 </html>

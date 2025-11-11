@@ -256,25 +256,6 @@ $user = get_logged_user();
             align-items: center;
         }
 
-        .delete-confirm {
-            display: none;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .delete-confirm.show {
-            display: flex;
-        }
-
-        .delete-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .delete-actions.hide {
-            display: none;
-        }
-
         /* Warning Box */
         .warning-box {
             background: #fff3cd;
@@ -411,29 +392,15 @@ $user = get_logged_user();
                                         </small>
                                     </td>
                                     <td>
-                                        <div class="actions" id="actions-<?php echo $product['id']; ?>">
-                                            <div class="delete-actions">
-                                                <a href="?action=restore&id=<?php echo urlencode($product['id']); ?>"
-                                                   class="btn btn-primary btn-sm"
-                                                   onclick="return confirm('¿Restaurar este producto?')">
-                                                    ↩️ Restaurar
-                                                </a>
-                                                <button class="btn btn-danger btn-sm"
-                                                        onclick="showDeleteConfirm('<?php echo $product['id']; ?>')">
-                                                    🗑️ Eliminar
-                                                </button>
-                                            </div>
-                                            <div class="delete-confirm" id="delete-confirm-<?php echo $product['id']; ?>">
-                                                <span style="font-size: 13px; color: #dc3545; font-weight: 600;">
-                                                    ⚠️ Esta acción NO se puede deshacer
-                                                </span>
-                                                <a href="?action=delete&id=<?php echo urlencode($product['id']); ?>"
-                                                   class="btn btn-danger btn-sm">✓ Eliminar Permanentemente</a>
-                                                <button class="btn btn-secondary btn-sm"
-                                                        onclick="hideDeleteConfirm('<?php echo $product['id']; ?>')">
-                                                    ✗ Cancelar
-                                                </button>
-                                            </div>
+                                        <div class="actions">
+                                            <button class="btn btn-primary btn-sm"
+                                                    onclick="confirmRestoreProduct('<?php echo urlencode($product['id']); ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
+                                                ↩️ Restaurar
+                                            </button>
+                                            <button class="btn btn-danger btn-sm"
+                                                    onclick="confirmDeleteProduct('<?php echo urlencode($product['id']); ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
+                                                🗑️ Eliminar
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -444,25 +411,43 @@ $user = get_logged_user();
             </div>
         </div>
 
-    <script>
-        function showDeleteConfirm(productId) {
-            // Hide action buttons
-            const deleteActions = document.querySelector(`#actions-${productId} .delete-actions`);
-            deleteActions.classList.add('hide');
+    <!-- Modal Component -->
+    <?php include __DIR__ . '/includes/modal.php'; ?>
 
-            // Show confirm buttons
-            const deleteConfirm = document.getElementById(`delete-confirm-${productId}`);
-            deleteConfirm.classList.add('show');
+    <script>
+        /**
+         * Confirmar restauración de producto
+         */
+        function confirmRestoreProduct(productId, productName) {
+            showModal({
+                title: 'Restaurar Producto',
+                message: `¿Estás seguro de que deseas restaurar "${productName}"?`,
+                details: 'El producto volverá al listado principal de productos activos y estará disponible en el catálogo público.',
+                icon: '↩️',
+                confirmText: 'Restaurar',
+                confirmType: 'primary',
+                onConfirm: function() {
+                    window.location.href = `?action=restore&id=${productId}`;
+                }
+            });
         }
 
-        function hideDeleteConfirm(productId) {
-            // Show action buttons
-            const deleteActions = document.querySelector(`#actions-${productId} .delete-actions`);
-            deleteActions.classList.remove('hide');
-
-            // Hide confirm buttons
-            const deleteConfirm = document.getElementById(`delete-confirm-${productId}`);
-            deleteConfirm.classList.remove('show');
+        /**
+         * Confirmar eliminación permanente de producto
+         */
+        function confirmDeleteProduct(productId, productName) {
+            showModal({
+                title: '⚠️ Eliminar Permanentemente',
+                message: `¿Estás COMPLETAMENTE SEGURO de que deseas eliminar "${productName}"?`,
+                details: '🚨 ADVERTENCIA: Esta acción es IRREVERSIBLE. Se eliminarán permanentemente todos los datos del producto, incluyendo imágenes y estadísticas. Esta acción NO se puede deshacer.',
+                icon: '🗑️',
+                confirmText: 'Sí, Eliminar Permanentemente',
+                cancelText: 'No, Conservar Producto',
+                confirmType: 'danger',
+                onConfirm: function() {
+                    window.location.href = `?action=delete&id=${productId}`;
+                }
+            });
         }
     </script>
 </body>
