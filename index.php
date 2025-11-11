@@ -219,23 +219,27 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
     <script>
         // Products data for cart panel
         const products = <?php
-            // Apply url() to products for JavaScript usage
-            $products_for_js = array_map(function($p) {
+            // Deep clone products to avoid reference issues
+            $products_for_js = json_decode(json_encode($products), true);
+
+            // Apply url() to cloned products for JavaScript usage
+            foreach ($products_for_js as &$p) {
                 if (isset($p['thumbnail'])) {
                     $p['thumbnail'] = url($p['thumbnail']);
                 }
                 if (isset($p['images']) && is_array($p['images'])) {
-                    $p['images'] = array_map(function($img) {
+                    foreach ($p['images'] as &$img) {
                         if (is_array($img) && isset($img['url'])) {
                             $img['url'] = url($img['url']);
                         } elseif (is_string($img)) {
                             $img = url($img);
                         }
-                        return $img;
-                    }, $p['images']);
+                    }
+                    unset($img); // Break reference
                 }
-                return $p;
-            }, $products);
+            }
+            unset($p); // Break reference
+
             echo json_encode($products_for_js);
         ?>;
         const exchangeRate = <?php echo $currency_config['exchange_rate']; ?>;
