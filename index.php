@@ -218,7 +218,30 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
     <script>
         // Products data for cart panel
-        const products = <?php echo json_encode($products); ?>;
+        const products = <?php
+            // Deep clone products to avoid reference issues
+            $products_for_js = json_decode(json_encode($products), true);
+
+            // Apply url() to cloned products for JavaScript usage
+            foreach ($products_for_js as &$p) {
+                if (isset($p['thumbnail'])) {
+                    $p['thumbnail'] = url($p['thumbnail']);
+                }
+                if (isset($p['images']) && is_array($p['images'])) {
+                    foreach ($p['images'] as &$img) {
+                        if (is_array($img) && isset($img['url'])) {
+                            $img['url'] = url($img['url']);
+                        } elseif (is_string($img)) {
+                            $img = url($img);
+                        }
+                    }
+                    unset($img); // Break reference
+                }
+            }
+            unset($p); // Break reference
+
+            echo json_encode($products_for_js);
+        ?>;
         const exchangeRate = <?php echo $currency_config['exchange_rate']; ?>;
 
         function addToCart(productId, event) {
@@ -227,8 +250,8 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
             // Get current cart from localStorage
             let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 
-            // Check if product already exists
-            const existingItem = cart.find(item => item.product_id === productId);
+            // Check if product already exists (support both formats)
+            const existingItem = cart.find(item => (item.product_id || item.id) === productId);
 
             if (existingItem) {
                 existingItem.quantity += 1;

@@ -156,7 +156,7 @@ try {
         send_admin_new_order_email($updated_order);   // To admin
         send_telegram_payment_approved($updated_order); // To admin via Telegram
 
-        $redirect_url = '/gracias.php?order=' . $order_id . '&token=' . $tracking_token;
+        $redirect_url = url('/gracias.php?order=' . $order_id . '&token=' . $tracking_token);
     } elseif ($payment['status'] === 'in_process' ||
               $payment['status'] === 'pending' ||
               $payment['status'] === 'authorized' ||
@@ -168,9 +168,9 @@ try {
         $updated_order = $orders_data['orders'][$order_index];
         send_payment_pending_email($updated_order);
 
-        $redirect_url = '/gracias.php?order=' . $order_id . '&token=' . $tracking_token .
+        $redirect_url = url('/gracias.php?order=' . $order_id . '&token=' . $tracking_token .
                        '&payment_status=' . urlencode($payment['status']) .
-                       '&payment_status_detail=' . urlencode($payment['status_detail']);
+                       '&payment_status_detail=' . urlencode($payment['status_detail']));
     } else {
         // Rejected, cancelled, or any other status
         $orders_data['orders'][$order_index]['status'] = 'rechazada';
@@ -180,9 +180,9 @@ try {
         send_payment_rejected_email($updated_order, $payment['status_detail']);
         send_telegram_payment_rejected($updated_order);
 
-        $redirect_url = '/error.php?order=' . $order_id . '&token=' . $tracking_token .
+        $redirect_url = url('/error.php?order=' . $order_id . '&token=' . $tracking_token .
                        '&payment_status=' . urlencode($payment['status']) .
-                       '&payment_status_detail=' . urlencode($payment['status_detail']);
+                       '&payment_status_detail=' . urlencode($payment['status_detail']));
     }
 
     // Save order

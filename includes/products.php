@@ -32,6 +32,9 @@ function get_all_products($active_only = false) {
         return ($a['order'] ?? 999) - ($b['order'] ?? 999);
     });
 
+    // DO NOT apply url() here - PHP views already do it
+    // Only get_product_by_id() applies url() for API responses
+
     return array_values($products);
 }
 
@@ -49,14 +52,31 @@ function get_product_by_id($product_id) {
 
     $product = read_json($product_file);
 
-    // Ensure thumbnail exists - use first image if not set
-    if (!isset($product['thumbnail']) && isset($product['images']) && !empty($product['images'])) {
-        if (is_array($product['images'][0])) {
-            // Images is array of objects
-            $product['thumbnail'] = $product['images'][0]['url'] ?? '';
-        } else {
-            // Images is array of strings
-            $product['thumbnail'] = $product['images'][0];
+    // Apply url() to all images for subdirectory support
+    if (isset($product['images']) && is_array($product['images'])) {
+        foreach ($product['images'] as &$image) {
+            if (is_array($image) && isset($image['url'])) {
+                $image['url'] = url($image['url']);
+            } elseif (is_string($image)) {
+                $image = url($image);
+            }
+        }
+        unset($image); // Break reference
+    }
+
+    // Apply url() to thumbnail
+    if (isset($product['thumbnail']) && !empty($product['thumbnail'])) {
+        $product['thumbnail'] = url($product['thumbnail']);
+    } else {
+        // Ensure thumbnail exists - use first image if not set
+        if (isset($product['images']) && !empty($product['images'])) {
+            if (is_array($product['images'][0])) {
+                // Images is array of objects
+                $product['thumbnail'] = $product['images'][0]['url'] ?? '';
+            } else {
+                // Images is array of strings
+                $product['thumbnail'] = $product['images'][0];
+            }
         }
     }
 
