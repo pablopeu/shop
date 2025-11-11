@@ -55,6 +55,53 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])
     }
 }
 
+// Handle bulk actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
+    $action = $_POST['bulk_action'];
+    $selected_products = $_POST['selected_products'] ?? [];
+
+    if (!empty($selected_products)) {
+        $success_count = 0;
+        $error_count = 0;
+
+        foreach ($selected_products as $product_id) {
+            if ($action === 'restore') {
+                if (unarchive_product($product_id)) {
+                    $success_count++;
+                } else {
+                    $error_count++;
+                }
+            } elseif ($action === 'delete') {
+                $result = delete_archived_product($product_id);
+                if ($result['success']) {
+                    $success_count++;
+                } else {
+                    $error_count++;
+                }
+            }
+        }
+
+        if ($success_count > 0) {
+            $action_text = $action === 'restore' ? 'restaurado(s)' : 'eliminado(s)';
+            $message = "$success_count producto(s) $action_text exitosamente";
+
+            if ($error_count > 0) {
+                $message .= " ($error_count fallaron)";
+            }
+
+            log_admin_action('bulk_archived_products_action', $_SESSION['username'], [
+                'action' => $action,
+                'success_count' => $success_count,
+                'error_count' => $error_count
+            ]);
+        } else {
+            $error = 'No se pudieron procesar los productos seleccionados';
+        }
+    } else {
+        $error = 'No se seleccionaron productos';
+    }
+}
+
 // Get all archived products
 $archived_products = get_archived_products();
 
@@ -282,6 +329,28 @@ $user = get_logged_user();
             font-size: 13px;
         }
 
+        /* Bulk Actions Bar */
+        .bulk-actions-bar {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bulk-actions-bar.show {
+            display: flex;
+        }
+
+        .bulk-actions-bar select {
+            padding: 6px 12px;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .main-content {
@@ -345,14 +414,31 @@ $user = get_logged_user();
                 </div>
             </div>
 
-            <!-- Archived Products List -->
-            <div class="card">
-                <div class="card-header">Productos Archivados</div>
+            <!-- Bulk Actions Bar -->
+            <form method="POST" id="bulkForm">
+                <div class="bulk-actions-bar" id="bulkActionsBar">
+                    <span id="selectedCount">0 productos seleccionados</span>
+                    <select name="bulk_action" id="bulkAction">
+                        <option value="">Seleccionar acción...</option>
+                        <option value="restore">Restaurar</option>
+                        <option value="delete">Eliminar Permanentemente</option>
+                    </select>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="confirmBulkAction()">
+                        Aplicar
+                    </button>
+                </div>
 
-                <table class="products-table">
-                    <thead>
-                        <tr>
-                            <th>Imagen</th>
+                <!-- Archived Products List -->
+                <div class="card">
+                    <div class="card-header">Productos Archivados</div>
+
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+                                </th>
+                                <th>Imagen</th>
                             <th>Nombre</th>
                             <th>Precio</th>
                             <th>Stock</th>
@@ -363,7 +449,7 @@ $user = get_logged_user();
                     <tbody>
                         <?php if (empty($archived_products)): ?>
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                                <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
                                     No hay productos archivados.
                                     <a href="<?php echo url('/admin/productos-listado.php'); ?>" style="color: #4CAF50;">Ir a productos activos</a>
                                 </td>
@@ -371,6 +457,12 @@ $user = get_logged_user();
                         <?php else: ?>
                             <?php foreach ($archived_products as $product): ?>
                                 <tr>
+                                    <td>
+                                        <input type="checkbox" name="selected_products[]"
+                                               value="<?php echo htmlspecialchars($product['id']); ?>"
+                                               class="product-checkbox"
+                                               onchange="updateBulkActions()">
+                                    </td>
                                     <td>
                                         <img src="<?php echo htmlspecialchars(url($product['thumbnail'])); ?>"
                                              alt="<?php echo htmlspecialchars($product['name']); ?>"
@@ -409,7 +501,8 @@ $user = get_logged_user();
                     </tbody>
                 </table>
             </div>
-        </div>
+        </form>
+    </div>
 
     <!-- Modal Component -->
     <?php include __DIR__ . '/includes/modal.php'; ?>
@@ -450,6 +543,107 @@ $user = get_logged_user();
                     window.location.href = `?action=delete&id=${productId}`;
                 }
             });
+        }
+
+        /**
+         * Confirmar acción masiva
+         */
+        function confirmBulkAction() {
+            const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+            const action = document.getElementById('bulkAction').value;
+            const count = checkboxes.length;
+
+            // Validaciones
+            if (count === 0) {
+                showModal({
+                    title: 'Sin Productos Seleccionados',
+                    message: 'Debes seleccionar al menos un producto para realizar una acción masiva.',
+                    icon: '⚠️',
+                    iconClass: 'warning',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    onConfirm: function() {}
+                });
+                return;
+            }
+
+            if (!action) {
+                showModal({
+                    title: 'Acción No Seleccionada',
+                    message: 'Debes seleccionar una acción para aplicar a los productos seleccionados.',
+                    icon: '⚠️',
+                    iconClass: 'warning',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    onConfirm: function() {}
+                });
+                return;
+            }
+
+            // Configurar modal según la acción
+            let title, message, details, icon, iconClass, confirmType, confirmText;
+
+            if (action === 'restore') {
+                title = 'Restaurar Productos';
+                message = `¿Restaurar ${count} producto${count > 1 ? 's' : ''}?`;
+                details = `${count > 1 ? 'Los productos volverán' : 'El producto volverá'} al listado principal de productos activos y ${count > 1 ? 'estarán disponibles' : 'estará disponible'} en el catálogo público.`;
+                icon = '↩️';
+                iconClass = 'info';
+                confirmType = 'primary';
+                confirmText = 'Restaurar';
+            } else if (action === 'delete') {
+                title = '⚠️ Eliminar Permanentemente';
+                message = `¿Estás COMPLETAMENTE SEGURO de que deseas eliminar ${count} producto${count > 1 ? 's' : ''}?`;
+                details = `🚨 ADVERTENCIA: Esta acción es IRREVERSIBLE. Se eliminarán permanentemente todos los datos de ${count > 1 ? 'los productos seleccionados' : 'este producto'}, incluyendo imágenes y estadísticas. Esta acción NO se puede deshacer.`;
+                icon = '🗑️';
+                iconClass = 'danger';
+                confirmType = 'danger';
+                confirmText = 'Sí, Eliminar Permanentemente';
+            }
+
+            showModal({
+                title: title,
+                message: message,
+                details: details,
+                icon: icon,
+                iconClass: iconClass,
+                confirmText: confirmText,
+                cancelText: 'Cancelar',
+                confirmType: confirmType,
+                onConfirm: function() {
+                    document.getElementById('bulkForm').submit();
+                }
+            });
+        }
+
+        /**
+         * Toggle select all checkboxes
+         */
+        function toggleSelectAll(checkbox) {
+            const checkboxes = document.querySelectorAll('.product-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+            updateBulkActions();
+        }
+
+        /**
+         * Update bulk actions bar visibility
+         */
+        function updateBulkActions() {
+            const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+            const count = checkboxes.length;
+            const bulkBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+            const selectAll = document.getElementById('selectAll');
+
+            if (count > 0) {
+                bulkBar.classList.add('show');
+                selectedCount.textContent = `${count} producto${count > 1 ? 's' : ''} seleccionado${count > 1 ? 's' : ''}`;
+            } else {
+                bulkBar.classList.remove('show');
+                selectAll.checked = false;
+            }
         }
     </script>
 </body>
