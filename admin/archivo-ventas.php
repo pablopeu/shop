@@ -573,13 +573,14 @@ $status_labels = [
             <!-- Bulk Actions -->
             <form method="POST" id="bulkForm">
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-                <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+                <div class="bulk-actions-bar" style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
                     <select name="bulk_action" id="bulkAction" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         <option value="">Seleccionar acción...</option>
                         <option value="restore">Restaurar a Ventas Activas</option>
                         <option value="delete">Eliminar Permanentemente</option>
                     </select>
                     <button type="submit" class="btn btn-primary btn-sm" onclick="return confirmBulkAction()">Aplicar a Seleccionadas</button>
+                    <a href="ventas.php" class="btn btn-secondary btn-sm">← Volver a Ventas</a>
                     <span id="selectedCount" style="color: #666; font-size: 13px;"></span>
                 </div>
 
