@@ -218,7 +218,26 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
     <script>
         // Products data for cart panel
-        const products = <?php echo json_encode($products); ?>;
+        const products = <?php
+            // Apply url() to products for JavaScript usage
+            $products_for_js = array_map(function($p) {
+                if (isset($p['thumbnail'])) {
+                    $p['thumbnail'] = url($p['thumbnail']);
+                }
+                if (isset($p['images']) && is_array($p['images'])) {
+                    $p['images'] = array_map(function($img) {
+                        if (is_array($img) && isset($img['url'])) {
+                            $img['url'] = url($img['url']);
+                        } elseif (is_string($img)) {
+                            $img = url($img);
+                        }
+                        return $img;
+                    }, $p['images']);
+                }
+                return $p;
+            }, $products);
+            echo json_encode($products_for_js);
+        ?>;
         const exchangeRate = <?php echo $currency_config['exchange_rate']; ?>;
 
         function addToCart(productId, event) {
