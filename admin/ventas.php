@@ -6,6 +6,7 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/orders.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/email.php';
 
 // Start session
 session_start();
@@ -30,6 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
 
     if (update_order_status($order_id, $new_status, $_SESSION['username'])) {
         $message = 'Estado actualizado exitosamente';
+
+        // Send email notification when order is marked as shipped
+        if ($new_status === 'shipped') {
+            $updated_order = get_order_by_id($order_id);
+            if ($updated_order && !empty($updated_order['customer_email'])) {
+                send_order_shipped_email($updated_order);
+            }
+        }
     } else {
         $error = 'Error al actualizar el estado';
     }
@@ -81,6 +90,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
             } elseif (in_array($action, ['pending', 'confirmed', 'shipped', 'delivered'])) {
                 if (update_order_status($order_id, $action, $_SESSION['username'])) {
                     $success_count++;
+
+                    // Send email notification when order is marked as shipped
+                    if ($action === 'shipped') {
+                        $updated_order = get_order_by_id($order_id);
+                        if ($updated_order && !empty($updated_order['customer_email'])) {
+                            send_order_shipped_email($updated_order);
+                        }
+                    }
                 }
             }
         }
