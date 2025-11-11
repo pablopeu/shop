@@ -20,9 +20,28 @@ $current_page = basename($_SERVER['PHP_SELF']);
         position: fixed;
         height: 100vh;
         overflow-y: auto;
-        padding-bottom: 20px;
+        overflow-x: hidden;
+        padding-bottom: 60px;
         z-index: 1000;
         transition: transform 0.3s ease;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .sidebar::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.2);
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.3);
+        border-radius: 4px;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,0.5);
     }
 
     /* Mobile Sidebar */

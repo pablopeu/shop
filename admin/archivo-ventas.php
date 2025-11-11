@@ -465,7 +465,7 @@ $status_labels = [
             }
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 375px) {
             .stats-grid {
                 grid-template-columns: 1fr !important;
             }
