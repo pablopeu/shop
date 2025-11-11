@@ -821,6 +821,7 @@ $user = get_logged_user();
                                     <input type="checkbox" name="selected_products[]"
                                            value="<?php echo htmlspecialchars($product['id']); ?>"
                                            class="product-checkbox mobile-card-checkbox"
+                                           form="bulkForm"
                                            onchange="updateBulkActions()">
                                     <img src="<?php echo htmlspecialchars(url($product['thumbnail'])); ?>"
                                          alt="<?php echo htmlspecialchars($product['name']); ?>"
