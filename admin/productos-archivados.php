@@ -396,6 +396,21 @@ $user = get_logged_user();
             .actions .btn {
                 width: 100%;
             }
+
+            .bulk-actions-bar {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .bulk-actions-bar select,
+            .bulk-actions-bar .btn {
+                width: 100%;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 8px;
+            }
         }
 
         /* Mobile Cards View */
@@ -635,6 +650,7 @@ $user = get_logged_user();
                                     <input type="checkbox" name="selected_products[]"
                                            value="<?php echo htmlspecialchars($product['id']); ?>"
                                            class="product-checkbox mobile-card-checkbox"
+                                           form="bulkForm"
                                            onchange="updateBulkActions()">
                                     <img src="<?php echo htmlspecialchars(url($product['thumbnail'])); ?>"
                                          alt="<?php echo htmlspecialchars($product['name']); ?>"
