@@ -112,6 +112,37 @@ $current_page = basename($_SERVER['PHP_SELF']);
     .menu-arrow.rotated {
         transform: rotate(90deg);
     }
+
+    /* Nested Submenu Styles */
+    .submenu .submenu {
+        background: rgba(0,0,0,0.3);
+        max-height: 0;
+    }
+
+    .submenu .submenu.open {
+        max-height: 400px;
+    }
+
+    .submenu .submenu li a {
+        padding-left: 65px;
+        font-size: 13px;
+    }
+
+    .submenu .menu-item {
+        padding: 10px 20px 10px 45px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: rgba(255,255,255,0.8);
+    }
+
+    .submenu .menu-item:hover {
+        background: rgba(255,255,255,0.05);
+        color: white;
+    }
 </style>
 
 <aside class="sidebar">
@@ -263,19 +294,30 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <span>⚙️ Configuración</span>
                 <span class="menu-arrow" id="arrow-configuracion">▶</span>
             </div>
-            <ul class="submenu <?php echo in_array($current_page, ['config-sistema.php', 'config-sitio.php', 'config-moneda.php', 'config-hero.php', 'config-carrusel.php', 'config-productos-heading.php', 'config-dashboard.php', 'config-mantenimiento.php', 'config-themes.php', 'config-footer.php']) ? 'open' : ''; ?>"
+            <ul class="submenu <?php echo in_array($current_page, ['config-sistema.php', 'config-sitio.php', 'config-moneda.php', 'config-hero.php', 'config-carrusel.php', 'config-productos-heading.php', 'config-dashboard.php', 'config-mantenimiento.php', 'config-themes.php', 'config-footer.php', 'config-analytics.php']) ? 'open' : ''; ?>"
                 id="submenu-configuracion">
                 <li><a href="<?php echo url('/admin/config-sistema.php'); ?>" <?php echo $current_page === 'config-sistema.php' ? 'class="active"' : ''; ?>>🔐 Configuración del Sistema</a></li>
                 <li><a href="<?php echo url('/admin/config-sitio.php'); ?>" <?php echo $current_page === 'config-sitio.php' ? 'class="active"' : ''; ?>>📄 Información del Sitio</a></li>
                 <li><a href="<?php echo url('/admin/config-moneda.php'); ?>" <?php echo $current_page === 'config-moneda.php' ? 'class="active"' : ''; ?>>💱 Moneda y Cambio</a></li>
                 <li><a href="<?php echo url('/admin/config-mantenimiento.php'); ?>" <?php echo $current_page === 'config-mantenimiento.php' ? 'class="active"' : ''; ?>>🚧 Mantenimiento</a></li>
-                <li style="margin-top: 10px; padding: 8px 20px; font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Ajustes Visuales</li>
-                <li><a href="<?php echo url('/admin/config-themes.php'); ?>" <?php echo $current_page === 'config-themes.php' ? 'class="active"' : ''; ?>>🎨 Themes</a></li>
-                <li><a href="<?php echo url('/admin/config-hero.php'); ?>" <?php echo $current_page === 'config-hero.php' ? 'class="active"' : ''; ?>>🖼️ Hero Principal</a></li>
-                <li><a href="<?php echo url('/admin/config-carrusel.php'); ?>" <?php echo $current_page === 'config-carrusel.php' ? 'class="active"' : ''; ?>>🎠 Carrusel</a></li>
-                <li><a href="<?php echo url('/admin/config-footer.php'); ?>" <?php echo $current_page === 'config-footer.php' ? 'class="active"' : ''; ?>>🦶 Footer</a></li>
-                <li><a href="<?php echo url('/admin/config-dashboard.php'); ?>" <?php echo $current_page === 'config-dashboard.php' ? 'class="active"' : ''; ?>>📊 Dashboard</a></li>
-                <li><a href="<?php echo url('/admin/config-productos-heading.php'); ?>" <?php echo $current_page === 'config-productos-heading.php' ? 'class="active"' : ''; ?>>📝 Encabezado Productos</a></li>
+                <li><a href="<?php echo url('/admin/config-analytics.php'); ?>" <?php echo $current_page === 'config-analytics.php' ? 'class="active"' : ''; ?>>📊 Tracking & Analytics</a></li>
+
+                <!-- Ajustes Visuales (Submenu anidado) -->
+                <li>
+                    <div class="menu-item" onclick="toggleSubmenu('ajustes-visuales')">
+                        <span>🎨 Ajustes Visuales</span>
+                        <span class="menu-arrow" id="arrow-ajustes-visuales">▶</span>
+                    </div>
+                    <ul class="submenu <?php echo in_array($current_page, ['config-themes.php', 'config-hero.php', 'config-carrusel.php', 'config-footer.php', 'config-dashboard.php', 'config-productos-heading.php']) ? 'open' : ''; ?>"
+                        id="submenu-ajustes-visuales">
+                        <li><a href="<?php echo url('/admin/config-themes.php'); ?>" <?php echo $current_page === 'config-themes.php' ? 'class="active"' : ''; ?>>🎨 Themes</a></li>
+                        <li><a href="<?php echo url('/admin/config-hero.php'); ?>" <?php echo $current_page === 'config-hero.php' ? 'class="active"' : ''; ?>>🖼️ Hero Principal</a></li>
+                        <li><a href="<?php echo url('/admin/config-carrusel.php'); ?>" <?php echo $current_page === 'config-carrusel.php' ? 'class="active"' : ''; ?>>🎠 Carrusel</a></li>
+                        <li><a href="<?php echo url('/admin/config-footer.php'); ?>" <?php echo $current_page === 'config-footer.php' ? 'class="active"' : ''; ?>>🦶 Footer</a></li>
+                        <li><a href="<?php echo url('/admin/config-dashboard.php'); ?>" <?php echo $current_page === 'config-dashboard.php' ? 'class="active"' : ''; ?>>📊 Dashboard</a></li>
+                        <li><a href="<?php echo url('/admin/config-productos-heading.php'); ?>" <?php echo $current_page === 'config-productos-heading.php' ? 'class="active"' : ''; ?>>📝 Encabezado Productos</a></li>
+                    </ul>
+                </li>
             </ul>
         </li>
     </ul>
