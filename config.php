@@ -53,8 +53,14 @@ if (!function_exists('url')) {
             return $path;
         }
 
-        // Check if path already starts with BASE_PATH to avoid duplication
-        if (strpos($path, BASE_PATH . '/') === 0 || $path === BASE_PATH) {
+        // Remove any existing BASE_PATH prefixes to avoid duplication
+        // This handles cases where data was saved with BASE_PATH already included
+        while (strpos($path, BASE_PATH . '/') === 0) {
+            $path = substr($path, strlen(BASE_PATH));
+        }
+
+        // Handle edge case where path becomes just BASE_PATH without trailing content
+        if ($path === BASE_PATH) {
             return $path;
         }
 
