@@ -292,25 +292,126 @@ $user = get_logged_user();
             font-size: 13px;
         }
 
+        /* Table Container for Mobile Scroll */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 -15px;
+            padding: 0 15px;
+        }
+
+        @media (min-width: 1025px) {
+            .table-container {
+                overflow-x: visible;
+                margin: 0;
+                padding: 0;
+            }
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .main-content {
                 margin-left: 0;
             }
+            .coupons-table {
+                min-width: 800px;
+            }
         }
 
         @media (max-width: 768px) {
             .coupons-table {
-                font-size: 13px;
+                font-size: 12px;
+                min-width: 700px;
             }
 
             .coupons-table th,
             .coupons-table td {
-                padding: 10px;
+                padding: 8px 6px;
             }
 
             .actions {
                 flex-direction: column;
+            }
+
+            .actions .btn {
+                width: 100%;
+            }
+        }
+
+        /* Mobile Cards View */
+        .mobile-cards {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .table-container {
+                display: none !important;
+            }
+
+            .mobile-cards {
+                display: block;
+            }
+
+            .mobile-card {
+                background: white;
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 12px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+                border-left: 4px solid #3498db;
+            }
+
+            .mobile-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 12px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .mobile-card-title {
+                font-weight: 600;
+                color: #2c3e50;
+                font-size: 15px;
+                flex: 1;
+            }
+
+            .mobile-card-body {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+
+            .mobile-card-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 14px;
+            }
+
+            .mobile-card-label {
+                color: #666;
+                font-weight: 500;
+            }
+
+            .mobile-card-value {
+                color: #2c3e50;
+                text-align: right;
+            }
+
+            .mobile-card-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                padding-top: 10px;
+                border-top: 1px solid #f0f0f0;
+            }
+
+            .mobile-card-actions .btn {
+                width: 100%;
+                margin: 0;
             }
         }
     </style>
@@ -439,6 +540,93 @@ $user = get_logged_user();
                         <?php endif; ?>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Mobile Cards View -->
+            <div class="mobile-cards">
+                <?php if (empty($coupons)): ?>
+                    <div class="card">
+                        <p style="text-align: center; color: #999; padding: 20px;">
+                            No hay cupones.
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($coupons as $coupon):
+                        $is_expired = strtotime($coupon['end_date']) < $now;
+                        $is_maxed = $coupon['max_uses'] > 0 && $coupon['uses_count'] >= $coupon['max_uses'];
+                    ?>
+                        <div class="mobile-card">
+                            <div class="mobile-card-header">
+                                <div class="mobile-card-title">
+                                    <span class="coupon-code"><?php echo htmlspecialchars($coupon['code']); ?></span>
+                                </div>
+                            </div>
+
+                            <div class="mobile-card-body">
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Descuento:</span>
+                                    <span class="mobile-card-value">
+                                        <span class="badge <?php echo $coupon['type']; ?>">
+                                            <?php echo $coupon['type'] === 'percentage' ? '%' : '$'; ?>
+                                        </span>
+                                        <strong>
+                                            <?php
+                                            echo $coupon['type'] === 'percentage'
+                                                ? $coupon['value'] . '% OFF'
+                                                : format_price($coupon['value'], 'ARS') . ' OFF';
+                                            ?>
+                                        </strong>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Vigencia:</span>
+                                    <span class="mobile-card-value">
+                                        <?php echo date('d/m/Y', strtotime($coupon['start_date'])); ?> -
+                                        <?php echo date('d/m/Y', strtotime($coupon['end_date'])); ?><br>
+                                        <?php if ($is_expired): ?>
+                                            <span class="badge expired">Expirado</span>
+                                        <?php else: ?>
+                                            <span class="badge valid">Vigente</span>
+                                        <?php endif; ?>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Usos:</span>
+                                    <span class="mobile-card-value">
+                                        <?php echo $coupon['uses_count']; ?> /
+                                        <?php echo $coupon['max_uses'] > 0 ? $coupon['max_uses'] : '∞'; ?>
+                                        <?php if ($is_maxed): ?>
+                                            <br><span class="badge inactive">Límite alcanzado</span>
+                                        <?php endif; ?>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Estado:</span>
+                                    <span class="mobile-card-value">
+                                        <span class="badge <?php echo $coupon['active'] ? 'active' : 'inactive'; ?>">
+                                            <?php echo $coupon['active'] ? 'Activo' : 'Inactivo'; ?>
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="mobile-card-actions">
+                                <a href="/admin/cupones-editar.php?id=<?php echo urlencode($coupon['id']); ?>"
+                                   class="btn btn-primary btn-sm">Editar</a>
+                                <a href="?action=toggle&id=<?php echo urlencode($coupon['id']); ?>"
+                                   class="btn btn-secondary btn-sm"
+                                   onclick="return confirm('¿Cambiar estado del cupón?')">
+                                    <?php echo $coupon['active'] ? 'Desactivar' : 'Activar'; ?>
+                                </a>
+                                <a href="?action=delete&id=<?php echo urlencode($coupon['id']); ?>"
+                                   class="btn btn-danger btn-sm"
+                                   onclick="return confirm('¿Eliminar este cupón? Esta acción no se puede deshacer.')">
+                                    Eliminar
+                                </a>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>

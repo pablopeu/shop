@@ -470,6 +470,87 @@ $status_labels = [
                 grid-template-columns: 1fr !important;
             }
         }
+
+        /* Mobile Cards View */
+        .mobile-cards {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .table-container {
+                display: none !important;
+            }
+
+            .mobile-cards {
+                display: block;
+            }
+
+            .mobile-card {
+                background: white;
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 12px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+                border-left: 4px solid #3498db;
+            }
+
+            .mobile-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 12px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .mobile-card-title {
+                font-weight: 600;
+                color: #2c3e50;
+                font-size: 15px;
+                flex: 1;
+            }
+
+            .mobile-card-body {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+
+            .mobile-card-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 14px;
+            }
+
+            .mobile-card-label {
+                color: #666;
+                font-weight: 500;
+            }
+
+            .mobile-card-value {
+                color: #2c3e50;
+                text-align: right;
+            }
+
+            .mobile-card-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                padding-top: 10px;
+                border-top: 1px solid #f0f0f0;
+            }
+
+            .mobile-card-actions .btn {
+                width: 100%;
+                margin: 0;
+            }
+
+            .mobile-card-checkbox {
+                margin-right: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -598,6 +679,98 @@ $status_labels = [
                 </table>
                 </div>
             </form>
+
+            <!-- Mobile Cards View -->
+            <div class="mobile-cards">
+                <?php if (empty($archived_orders)): ?>
+                    <div class="card">
+                        <p style="text-align: center; color: #999; padding: 20px;">
+                            No hay órdenes archivadas.
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($archived_orders as $order): ?>
+                        <div class="mobile-card">
+                            <div class="mobile-card-header">
+                                <div style="display: flex; align-items: center; flex: 1;">
+                                    <input type="checkbox" name="selected_orders[]"
+                                           value="<?php echo htmlspecialchars($order['id']); ?>"
+                                           class="order-checkbox mobile-card-checkbox"
+                                           onchange="updateSelectedCount()">
+                                    <div>
+                                        <div class="mobile-card-title">Pedido #<?php echo htmlspecialchars($order['order_number']); ?></div>
+                                        <small style="color: #999;"><?php echo htmlspecialchars($order['customer_name'] ?? 'N/A'); ?></small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mobile-card-body">
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Cliente:</span>
+                                    <span class="mobile-card-value">
+                                        <?php echo htmlspecialchars($order['customer_name'] ?? 'N/A'); ?><br>
+                                        <small><?php echo htmlspecialchars($order['customer_email'] ?? ''); ?></small>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Fecha Original:</span>
+                                    <span class="mobile-card-value">
+                                        <?php echo date('d/m/Y', strtotime($order['date'])); ?><br>
+                                        <small><?php echo date('H:i', strtotime($order['date'])); ?></small>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Fecha Archivo:</span>
+                                    <span class="mobile-card-value">
+                                        <?php
+                                        $archived_date = $order['archived_date'] ?? $order['date'];
+                                        echo date('d/m/Y', strtotime($archived_date));
+                                        ?><br>
+                                        <small><?php echo date('H:i', strtotime($archived_date)); ?></small>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Total:</span>
+                                    <span class="mobile-card-value">
+                                        <strong>
+                                            <?php if ($order['currency'] === 'USD'): ?>
+                                                U$D <?php echo number_format($order['total'], 2, ',', '.'); ?>
+                                            <?php else: ?>
+                                                $ <?php echo number_format($order['total'], 2, ',', '.'); ?>
+                                            <?php endif; ?>
+                                        </strong>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Estado:</span>
+                                    <span class="mobile-card-value">
+                                        <?php
+                                        $status = $order['status'];
+                                        $status_info = $status_labels[$status] ?? ['label' => $status, 'color' => '#666'];
+                                        ?>
+                                        <span class="status-badge" style="background: <?php echo $status_info['color']; ?>">
+                                            <?php echo $status_info['label']; ?>
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="mobile-card-actions">
+                                <a href="#"
+                                   class="btn btn-sm btn-secondary"
+                                   onclick="confirmSingleAction('restore', '<?php echo htmlspecialchars($order['id']); ?>', '<?php echo htmlspecialchars($order['order_number']); ?>'); return false;">
+                                    Restaurar
+                                </a>
+                                <a href="#"
+                                   class="btn btn-sm btn-danger"
+                                   onclick="confirmSingleAction('delete', '<?php echo htmlspecialchars($order['id']); ?>', '<?php echo htmlspecialchars($order['order_number']); ?>'); return false;">
+                                    Eliminar
+                                </a>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
             </div>
         </div>
     </div>
