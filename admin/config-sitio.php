@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
         $config['site_name'] = sanitize_input($_POST['site_name'] ?? '');
         $config['site_description'] = sanitize_input($_POST['site_description'] ?? '');
         $config['site_keywords'] = sanitize_input($_POST['site_keywords'] ?? '');
+        $config['site_owner'] = sanitize_input($_POST['site_owner'] ?? '');
         $config['contact_email'] = sanitize_input($_POST['contact_email'] ?? '');
         $config['contact_phone'] = sanitize_input($_POST['contact_phone'] ?? '');
         $config['footer_text'] = sanitize_input($_POST['footer_text'] ?? '');
@@ -175,6 +176,16 @@ $user = get_logged_user();
                     <textarea id="site_description" name="site_description"><?php echo htmlspecialchars($site_config['site_description'] ?? ''); ?></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label for="site_owner">Nombre del Propietario / Responsable</label>
+                    <input type="text" id="site_owner" name="site_owner"
+                           value="<?php echo htmlspecialchars($site_config['site_owner'] ?? ''); ?>"
+                           placeholder="Ej: Juan Pérez">
+                    <small style="color: #666; font-size: 12px;">
+                        Este nombre se usará en comunicaciones con clientes (ej: "arreglo con Juan Pérez")
+                    </small>
+                </div>
+
                 <!-- Logo Section -->
                 <div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 20px; margin-top: 20px;">
                     <label style="font-size: 16px; margin-bottom: 10px;">🖼️ Logo del Sitio</label>
@@ -191,8 +202,8 @@ $user = get_logged_user();
                                     <small style="color: #666;"><?php echo htmlspecialchars(basename($site_config['logo']['path'])); ?></small>
                                 </div>
                             </div>
-                            <button type="submit" name="delete_logo"
-                                    onclick="return confirm('¿Está seguro de eliminar el logo?')"
+                            <button type="button"
+                                    onclick="confirmDeleteLogo()"
                                     style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
                                 🗑️ Eliminar
                             </button>
@@ -347,6 +358,48 @@ $user = get_logged_user();
             setTimeout(() => {
                 saveBtn.classList.remove('saved');
             }, 3000);
+        }
+    </script>
+
+    <!-- Modal Component -->
+    <?php include __DIR__ . '/includes/modal.php'; ?>
+
+    <script>
+        /**
+         * Confirmar eliminación del logo
+         */
+        function confirmDeleteLogo() {
+            showModal({
+                title: '⚠️ Eliminar Logo',
+                message: '¿Estás seguro de que deseas eliminar el logo del sitio?',
+                details: '🚨 <strong>ADVERTENCIA:</strong> Esta acción es irreversible. Una vez eliminado, no podrás recuperar el archivo del logo.',
+                icon: '🗑️',
+                iconClass: 'danger',
+                confirmText: 'Sí, Eliminar Logo',
+                cancelText: 'No, Conservar',
+                confirmType: 'danger',
+                onConfirm: function() {
+                    // Create a hidden form and submit it
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '';
+
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrf_token';
+                    csrfInput.value = '<?php echo $csrf_token; ?>';
+                    form.appendChild(csrfInput);
+
+                    const deleteInput = document.createElement('input');
+                    deleteInput.type = 'hidden';
+                    deleteInput.name = 'delete_logo';
+                    deleteInput.value = '1';
+                    form.appendChild(deleteInput);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
         }
     </script>
 </body>
