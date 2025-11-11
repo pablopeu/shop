@@ -247,7 +247,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
         // Go to product
         function goToProduct(slug) {
-            window.location.href = '/producto.php?slug=' + encodeURIComponent(slug);
+            window.location.href = '<?php echo url('/producto.php?slug='); ?>' + encodeURIComponent(slug);
         }
 
         // Share wishlist

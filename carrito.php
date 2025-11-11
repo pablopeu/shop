@@ -163,7 +163,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
 
         // Check cart expiration on page load
         if (checkCartExpiration()) {
-            window.location.href = '/carrito.php?msg=expired';
+            window.location.href = '<?php echo url('/carrito.php?msg=expired'); ?>';
         }
 
         // Format product price intelligently
@@ -710,7 +710,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
 
                 if (result.success) {
                     // Redirect to checkout
-                    window.location.href = '/checkout.php';
+                    window.location.href = '<?php echo url('/checkout.php'); ?>';
                 } else {
                     showToast('Error al procesar el carrito', 'error');
                 }

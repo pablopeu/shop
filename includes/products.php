@@ -32,26 +32,8 @@ function get_all_products($active_only = false) {
         return ($a['order'] ?? 999) - ($b['order'] ?? 999);
     });
 
-    // Apply url() to all product images for subdirectory support
-    foreach ($products as &$product) {
-        // Apply url() to thumbnail
-        if (isset($product['thumbnail']) && !empty($product['thumbnail'])) {
-            $product['thumbnail'] = url($product['thumbnail']);
-        }
-
-        // Apply url() to images array
-        if (isset($product['images']) && is_array($product['images'])) {
-            foreach ($product['images'] as &$image) {
-                if (is_array($image) && isset($image['url'])) {
-                    $image['url'] = url($image['url']);
-                } elseif (is_string($image)) {
-                    $image = url($image);
-                }
-            }
-            unset($image); // Break reference
-        }
-    }
-    unset($product); // Break reference
+    // DO NOT apply url() here - PHP views already do it
+    // Only get_product_by_id() applies url() for API responses
 
     return array_values($products);
 }
