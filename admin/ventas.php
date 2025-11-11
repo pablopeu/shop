@@ -455,10 +455,166 @@ $status_labels = [
             border-bottom: 1px solid #e0e0e0;
         }
 
+        /* Table Container for Mobile Scroll */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 -15px;
+            padding: 0 15px;
+        }
+
+        @media (min-width: 1025px) {
+            .table-container {
+                overflow-x: visible;
+                margin: 0;
+                padding: 0;
+            }
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .main-content {
                 margin-left: 0;
+                padding: 15px;
+            }
+
+            .orders-table {
+                min-width: 1000px;
+            }
+
+            .filters-row {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 10px;
+            }
+
+            .orders-table {
+                font-size: 12px;
+                min-width: 900px;
+            }
+
+            .orders-table th,
+            .orders-table td {
+                padding: 8px 6px !important;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+                gap: 8px;
+            }
+
+            .actions {
+                flex-direction: column !important;
+                gap: 5px !important;
+            }
+
+            .actions .btn {
+                width: 100%;
+                padding: 6px 10px;
+            }
+
+            .bulk-actions-bar {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .bulk-actions-bar select,
+            .bulk-actions-bar .btn {
+                width: 100%;
+            }
+
+            /* Better touch targets */
+            .btn {
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+
+        /* Mobile Cards View */
+        .mobile-cards {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .table-container {
+                display: none !important;
+            }
+
+            .mobile-cards {
+                display: block;
+            }
+
+            .mobile-card {
+                background: white;
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 12px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+                border-left: 4px solid #3498db;
+            }
+
+            .mobile-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 12px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .mobile-card-title {
+                font-weight: 600;
+                color: #2c3e50;
+                font-size: 15px;
+                flex: 1;
+            }
+
+            .mobile-card-body {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+
+            .mobile-card-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 14px;
+            }
+
+            .mobile-card-label {
+                color: #666;
+                font-weight: 500;
+            }
+
+            .mobile-card-value {
+                color: #2c3e50;
+                text-align: right;
+            }
+
+            .mobile-card-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                padding-top: 10px;
+                border-top: 1px solid #f0f0f0;
+            }
+
+            .mobile-card-actions .btn {
+                width: 100%;
+                margin: 0;
+            }
+
+            .mobile-card-checkbox {
+                margin-right: 10px;
             }
         }
 
@@ -669,7 +825,8 @@ $status_labels = [
                     </div>
 
                 <!-- Orders Table -->
-                <table class="orders-table">
+                <div class="table-container">
+                    <table class="orders-table">
                     <thead>
                         <tr>
                             <th style="width: 40px;">
@@ -748,7 +905,87 @@ $status_labels = [
                         <?php endif; ?>
                     </tbody>
                 </table>
+                </div>
                 </form>
+
+                <!-- Mobile Cards View -->
+                <div class="mobile-cards">
+                    <?php if (empty($orders)): ?>
+                        <div class="card">
+                            <p style="text-align: center; color: #999; padding: 20px;">
+                                No hay órdenes que coincidan con los filtros.
+                            </p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($orders as $order): ?>
+                            <div class="mobile-card">
+                                <div class="mobile-card-header">
+                                    <div style="display: flex; align-items: center; flex: 1;">
+                                        <input type="checkbox" name="selected_orders[]"
+                                               value="<?php echo htmlspecialchars($order['id']); ?>"
+                                               class="order-checkbox mobile-card-checkbox"
+                                               onchange="updateSelectedCount()">
+                                        <div>
+                                            <div class="mobile-card-title">Pedido #<?php echo htmlspecialchars($order['order_number']); ?></div>
+                                            <small style="color: #999;"><?php echo htmlspecialchars($order['customer_name'] ?? 'N/A'); ?></small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mobile-card-body">
+                                    <div class="mobile-card-row">
+                                        <span class="mobile-card-label">Cliente:</span>
+                                        <span class="mobile-card-value">
+                                            <?php echo htmlspecialchars($order['customer_name'] ?? 'N/A'); ?><br>
+                                            <small><?php echo htmlspecialchars($order['customer_email'] ?? ''); ?></small>
+                                        </span>
+                                    </div>
+                                    <div class="mobile-card-row">
+                                        <span class="mobile-card-label">Fecha:</span>
+                                        <span class="mobile-card-value">
+                                            <?php echo date('d/m/Y', strtotime($order['date'])); ?><br>
+                                            <small><?php echo date('H:i', strtotime($order['date'])); ?></small>
+                                        </span>
+                                    </div>
+                                    <div class="mobile-card-row">
+                                        <span class="mobile-card-label">Total:</span>
+                                        <span class="mobile-card-value"><strong><?php echo format_price($order['total'], $order['currency']); ?></strong></span>
+                                    </div>
+                                    <div class="mobile-card-row">
+                                        <span class="mobile-card-label">Método de Pago:</span>
+                                        <span class="mobile-card-value">
+                                            <?php echo $order['payment_method'] === 'presencial' ? 'Presencial' : 'Mercadopago'; ?>
+                                        </span>
+                                    </div>
+                                    <div class="mobile-card-row">
+                                        <span class="mobile-card-label">Estado:</span>
+                                        <span class="mobile-card-value">
+                                            <?php
+                                            $status_info = $status_labels[$order['status']] ?? ['label' => $order['status'], 'color' => '#999'];
+                                            ?>
+                                            <span class="status-badge" style="background: <?php echo $status_info['color']; ?>">
+                                                <?php echo $status_info['label']; ?>
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="mobile-card-actions">
+                                    <button type="button" onclick="viewOrder('<?php echo $order['id']; ?>')"
+                                            class="btn btn-primary btn-sm">
+                                        Ver Detalles
+                                    </button>
+                                    <?php if ($order['status'] !== 'cancelled'): ?>
+                                        <button type="button" onclick="showCancelModal('<?php echo $order['id']; ?>', '<?php echo $order['order_number']; ?>')"
+                                                class="btn btn-danger btn-sm">
+                                            Cancelar
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>

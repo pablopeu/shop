@@ -20,7 +20,39 @@ $current_page = basename($_SERVER['PHP_SELF']);
         position: fixed;
         height: 100vh;
         overflow-y: auto;
-        padding-bottom: 20px;
+        overflow-x: hidden;
+        padding-bottom: 60px;
+        z-index: 1000;
+        transition: transform 0.3s ease;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .sidebar::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.2);
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.3);
+        border-radius: 4px;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,0.5);
+    }
+
+    /* Mobile Sidebar */
+    @media (max-width: 1024px) {
+        .sidebar {
+            transform: translateX(-100%);
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
     }
 
     .sidebar-header {
@@ -142,6 +174,27 @@ $current_page = basename($_SERVER['PHP_SELF']);
     .submenu .menu-item:hover {
         background: rgba(255,255,255,0.05);
         color: white;
+    }
+
+    /* Sidebar Overlay */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 999;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    @media (max-width: 1024px) {
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+        }
     }
 </style>
 
@@ -323,7 +376,34 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </ul>
 </aside>
 
+<!-- Sidebar Overlay for Mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <script>
+    // Toggle Sidebar for Mobile
+    function toggleSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+
+        // Prevent body scroll when sidebar is open
+        if (sidebar.classList.contains('active')) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    }
+
+    // Close sidebar when clicking overlay
+    document.addEventListener('DOMContentLoaded', function() {
+        const overlay = document.getElementById('sidebarOverlay');
+        if (overlay) {
+            overlay.addEventListener('click', toggleSidebar);
+        }
+    });
+
     function toggleSubmenu(menuId) {
         const submenu = document.getElementById('submenu-' + menuId);
         const arrow = document.getElementById('arrow-' + menuId);

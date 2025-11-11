@@ -429,29 +429,190 @@ $user = get_logged_user();
             font-size: 13px;
         }
 
+        /* Table Container for Mobile Scroll */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 -15px;
+            padding: 0 15px;
+        }
+
+        @media (min-width: 1025px) {
+            .table-container {
+                overflow-x: visible;
+                margin: 0;
+                padding: 0;
+            }
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .main-content {
                 margin-left: 0;
+                padding: 15px;
             }
 
             .filters-row {
                 grid-template-columns: 1fr;
             }
+
+            .products-table {
+                min-width: 900px;
+            }
         }
 
         @media (max-width: 768px) {
+            .main-content {
+                padding: 10px;
+            }
+
             .products-table {
-                font-size: 13px;
+                font-size: 12px;
+                min-width: 800px;
             }
 
             .products-table th,
             .products-table td {
-                padding: 10px;
+                padding: 8px 6px;
             }
 
             .actions {
                 flex-direction: column;
+                gap: 5px;
+            }
+
+            .actions .btn {
+                width: 100%;
+                padding: 6px 10px;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-actions > div {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .header-actions .btn {
+                width: 100%;
+                text-align: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 8px;
+            }
+
+            .bulk-actions-bar {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .bulk-actions-bar select,
+            .bulk-actions-bar .btn {
+                width: 100%;
+            }
+
+            /* Better touch targets */
+            .btn {
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+
+        /* Mobile Cards View */
+        .mobile-cards {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .table-container {
+                display: none !important;
+            }
+
+            .mobile-cards {
+                display: block;
+            }
+
+            .mobile-card {
+                background: white;
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 12px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+                border-left: 4px solid #3498db;
+            }
+
+            .mobile-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 12px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .mobile-card-title {
+                font-weight: 600;
+                color: #2c3e50;
+                font-size: 15px;
+                flex: 1;
+            }
+
+            .mobile-card-body {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+
+            .mobile-card-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 14px;
+            }
+
+            .mobile-card-label {
+                color: #666;
+                font-weight: 500;
+            }
+
+            .mobile-card-value {
+                color: #2c3e50;
+                text-align: right;
+            }
+
+            .mobile-card-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                padding-top: 10px;
+                border-top: 1px solid #f0f0f0;
+            }
+
+            .mobile-card-actions .btn {
+                width: 100%;
+                margin: 0;
+            }
+
+            .mobile-card-checkbox {
+                margin-right: 10px;
+            }
+
+            .mobile-card-thumbnail {
+                width: 60px;
+                height: 60px;
+                object-fit: cover;
+                border-radius: 4px;
+                margin-right: 12px;
             }
         }
     </style>
@@ -564,7 +725,8 @@ $user = get_logged_user();
                         <?php endif; ?>
                     </div>
 
-                    <table class="products-table">
+                    <div class="table-container">
+                        <table class="products-table">
                         <thead>
                             <tr>
                                 <th style="width: 40px;">
@@ -639,8 +801,79 @@ $user = get_logged_user();
                             <?php endif; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </form>
+
+            <!-- Mobile Cards View -->
+            <div class="mobile-cards">
+                <?php if (empty($products)): ?>
+                    <div class="card">
+                        <p style="text-align: center; color: #999; padding: 20px;">
+                            No hay productos que coincidan con los filtros.
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($products as $product): ?>
+                        <div class="mobile-card">
+                            <div class="mobile-card-header">
+                                <div style="display: flex; align-items: center; flex: 1;">
+                                    <input type="checkbox" name="selected_products[]"
+                                           value="<?php echo htmlspecialchars($product['id']); ?>"
+                                           class="product-checkbox mobile-card-checkbox"
+                                           onchange="updateBulkActions()">
+                                    <img src="<?php echo htmlspecialchars(url($product['thumbnail'])); ?>"
+                                         alt="<?php echo htmlspecialchars($product['name']); ?>"
+                                         class="mobile-card-thumbnail">
+                                    <div>
+                                        <div class="mobile-card-title"><?php echo htmlspecialchars($product['name']); ?></div>
+                                        <small style="color: #999;">ID: <?php echo htmlspecialchars($product['id']); ?></small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mobile-card-body">
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Precio:</span>
+                                    <span class="mobile-card-value"><strong><?php echo format_product_price($product, 'ARS'); ?></strong></span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Stock:</span>
+                                    <span class="mobile-card-value">
+                                        <?php echo $product['stock']; ?>
+                                        <?php if ($product['stock'] === 0): ?>
+                                            <span class="badge no-stock">Sin Stock</span>
+                                        <?php elseif ($product['stock'] <= $product['stock_alert']): ?>
+                                            <span class="badge low-stock">Bajo</span>
+                                        <?php endif; ?>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Estado:</span>
+                                    <span class="mobile-card-value">
+                                        <span class="badge <?php echo $product['active'] ? 'active' : 'inactive'; ?>">
+                                            <?php echo $product['active'] ? 'Activo' : 'Inactivo'; ?>
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="mobile-card-actions">
+                                <a href="<?php echo url('/admin/productos-editar.php?id=' . urlencode($product['id'])); ?>"
+                                   class="btn btn-primary btn-sm">Editar</a>
+                                <button type="button" class="btn btn-secondary btn-sm"
+                                   onclick="confirmToggleProduct('<?php echo urlencode($product['id']); ?>', <?php echo $product['active'] ? 'true' : 'false'; ?>)">
+                                    <?php echo $product['active'] ? 'Desactivar' : 'Activar'; ?>
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm"
+                                        onclick="confirmArchiveProduct('<?php echo $product['id']; ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
+                                    Archivar
+                                </button>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
         </div>
 
     <!-- Modal Component -->

@@ -95,7 +95,121 @@ $user = get_logged_user();
         .badge.expired { background: #f8d7da; color: #721c24; }
         .badge.valid { background: #d4edda; color: #155724; }
         .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        @media (max-width: 1024px) { .main-content { margin-left: 0; } }
+
+        /* Table Container for Mobile Scroll */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 -15px;
+            padding: 0 15px;
+        }
+
+        @media (min-width: 1025px) {
+            .table-container {
+                overflow-x: visible;
+                margin: 0;
+                padding: 0;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .main-content { margin-left: 0; }
+            .promotions-table { min-width: 800px; }
+        }
+
+        @media (max-width: 768px) {
+            .promotions-table {
+                font-size: 12px;
+                min-width: 700px;
+            }
+            .promotions-table th,
+            .promotions-table td {
+                padding: 8px 6px;
+            }
+            .actions {
+                flex-direction: column;
+            }
+            .actions .btn {
+                width: 100%;
+            }
+        }
+
+        /* Mobile Cards View */
+        .mobile-cards {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .table-container {
+                display: none !important;
+            }
+
+            .mobile-cards {
+                display: block;
+            }
+
+            .mobile-card {
+                background: white;
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 12px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+                border-left: 4px solid #3498db;
+            }
+
+            .mobile-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 12px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .mobile-card-title {
+                font-weight: 600;
+                color: #2c3e50;
+                font-size: 15px;
+                flex: 1;
+            }
+
+            .mobile-card-body {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+
+            .mobile-card-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 14px;
+            }
+
+            .mobile-card-label {
+                color: #666;
+                font-weight: 500;
+            }
+
+            .mobile-card-value {
+                color: #2c3e50;
+                text-align: right;
+            }
+
+            .mobile-card-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                padding-top: 10px;
+                border-top: 1px solid #f0f0f0;
+            }
+
+            .mobile-card-actions .btn {
+                width: 100%;
+                margin: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -120,74 +234,156 @@ $user = get_logged_user();
         <!-- Promotions List -->
         <div class="card">
             <div class="card-header">Todas las Promociones</div>
-            <table class="promotions-table">
-                <thead>
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Tipo / Descuento</th>
-                        <th>Aplicación</th>
-                        <th>Período</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($promotions)): ?>
+            <div class="table-container">
+                <table class="promotions-table">
+                    <thead>
                         <tr>
-                            <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
-                                No hay promociones.
-                                <a href="/admin/promociones-nuevo.php" style="color: #4CAF50;">Crear tu primera promoción</a>
-                            </td>
+                            <th>Nombre</th>
+                            <th>Tipo / Descuento</th>
+                            <th>Aplicación</th>
+                            <th>Período</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
                         </tr>
-                    <?php else: ?>
-                        <?php foreach ($promotions as $promo):
-                            $is_expired = $promo['period_type'] === 'limited' && strtotime($promo['end_date']) < $now;
-                        ?>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($promotions)): ?>
                             <tr>
-                                <td><strong><?php echo htmlspecialchars($promo['name']); ?></strong></td>
-                                <td>
-                                    <span class="badge <?php echo $promo['type']; ?>">
-                                        <?php echo $promo['type'] === 'percentage' ? '%' : '$'; ?>
-                                    </span>
-                                    <strong>
-                                        <?php echo $promo['type'] === 'percentage'
-                                            ? $promo['value'] . '% OFF'
-                                            : format_price($promo['value'], 'ARS') . ' OFF'; ?>
-                                    </strong>
-                                </td>
-                                <td><?php echo $promo['application'] === 'all' ? 'Todo el sitio' : count($promo['products']) . ' productos'; ?></td>
-                                <td>
-                                    <?php if ($promo['period_type'] === 'permanent'): ?>
-                                        Permanente
-                                    <?php else: ?>
-                                        <?php echo date('d/m/Y', strtotime($promo['start_date'])); ?> - <?php echo date('d/m/Y', strtotime($promo['end_date'])); ?>
-                                        <br>
-                                        <?php if ($is_expired): ?>
-                                            <span class="badge expired">Expirado</span>
-                                        <?php else: ?>
-                                            <span class="badge valid">Vigente</span>
-                                        <?php endif; ?>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <span class="badge <?php echo $promo['active'] ? 'active' : 'inactive'; ?>">
-                                        <?php echo $promo['active'] ? 'Activa' : 'Inactiva'; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="actions">
-                                        <a href="/admin/promociones-editar.php?id=<?php echo urlencode($promo['id']); ?>" class="btn btn-primary btn-sm">✏️ Editar</a>
-                                        <a href="?action=toggle&id=<?php echo urlencode($promo['id']); ?>" class="btn btn-secondary btn-sm" onclick="return confirm('¿Cambiar estado de la promoción?')">
-                                            <?php echo $promo['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
-                                        </a>
-                                        <a href="?action=delete&id=<?php echo urlencode($promo['id']); ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar esta promoción?')">🗑️ Eliminar</a>
-                                    </div>
+                                <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                                    No hay promociones.
+                                    <a href="/admin/promociones-nuevo.php" style="color: #4CAF50;">Crear tu primera promoción</a>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                        <?php else: ?>
+                            <?php foreach ($promotions as $promo):
+                                $is_expired = $promo['period_type'] === 'limited' && strtotime($promo['end_date']) < $now;
+                            ?>
+                                <tr>
+                                    <td><strong><?php echo htmlspecialchars($promo['name']); ?></strong></td>
+                                    <td>
+                                        <span class="badge <?php echo $promo['type']; ?>">
+                                            <?php echo $promo['type'] === 'percentage' ? '%' : '$'; ?>
+                                        </span>
+                                        <strong>
+                                            <?php echo $promo['type'] === 'percentage'
+                                                ? $promo['value'] . '% OFF'
+                                                : format_price($promo['value'], 'ARS') . ' OFF'; ?>
+                                        </strong>
+                                    </td>
+                                    <td><?php echo $promo['application'] === 'all' ? 'Todo el sitio' : count($promo['products']) . ' productos'; ?></td>
+                                    <td>
+                                        <?php if ($promo['period_type'] === 'permanent'): ?>
+                                            Permanente
+                                        <?php else: ?>
+                                            <?php echo date('d/m/Y', strtotime($promo['start_date'])); ?> - <?php echo date('d/m/Y', strtotime($promo['end_date'])); ?>
+                                            <br>
+                                            <?php if ($is_expired): ?>
+                                                <span class="badge expired">Expirado</span>
+                                            <?php else: ?>
+                                                <span class="badge valid">Vigente</span>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <span class="badge <?php echo $promo['active'] ? 'active' : 'inactive'; ?>">
+                                            <?php echo $promo['active'] ? 'Activa' : 'Inactiva'; ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="actions">
+                                            <a href="/admin/promociones-editar.php?id=<?php echo urlencode($promo['id']); ?>" class="btn btn-primary btn-sm">✏️ Editar</a>
+                                            <a href="?action=toggle&id=<?php echo urlencode($promo['id']); ?>" class="btn btn-secondary btn-sm" onclick="return confirm('¿Cambiar estado de la promoción?')">
+                                                <?php echo $promo['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
+                                            </a>
+                                            <a href="?action=delete&id=<?php echo urlencode($promo['id']); ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar esta promoción?')">🗑️ Eliminar</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile Cards View -->
+            <div class="mobile-cards">
+                <?php if (empty($promotions)): ?>
+                    <div class="card">
+                        <p style="text-align: center; color: #999; padding: 20px;">
+                            No hay promociones.
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($promotions as $promo):
+                        $is_expired = $promo['period_type'] === 'limited' && strtotime($promo['end_date']) < $now;
+                    ?>
+                        <div class="mobile-card">
+                            <div class="mobile-card-header">
+                                <div class="mobile-card-title"><?php echo htmlspecialchars($promo['name']); ?></div>
+                            </div>
+
+                            <div class="mobile-card-body">
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Descuento:</span>
+                                    <span class="mobile-card-value">
+                                        <span class="badge <?php echo $promo['type']; ?>">
+                                            <?php echo $promo['type'] === 'percentage' ? '%' : '$'; ?>
+                                        </span>
+                                        <strong>
+                                            <?php echo $promo['type'] === 'percentage'
+                                                ? $promo['value'] . '% OFF'
+                                                : format_price($promo['value'], 'ARS') . ' OFF'; ?>
+                                        </strong>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Aplicación:</span>
+                                    <span class="mobile-card-value">
+                                        <?php echo $promo['application'] === 'all' ? 'Todo el sitio' : count($promo['products']) . ' productos'; ?>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Período:</span>
+                                    <span class="mobile-card-value">
+                                        <?php if ($promo['period_type'] === 'permanent'): ?>
+                                            Permanente
+                                        <?php else: ?>
+                                            <?php echo date('d/m/Y', strtotime($promo['start_date'])); ?> -
+                                            <?php echo date('d/m/Y', strtotime($promo['end_date'])); ?><br>
+                                            <?php if ($is_expired): ?>
+                                                <span class="badge expired">Expirado</span>
+                                            <?php else: ?>
+                                                <span class="badge valid">Vigente</span>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Estado:</span>
+                                    <span class="mobile-card-value">
+                                        <span class="badge <?php echo $promo['active'] ? 'active' : 'inactive'; ?>">
+                                            <?php echo $promo['active'] ? 'Activa' : 'Inactiva'; ?>
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="mobile-card-actions">
+                                <a href="/admin/promociones-editar.php?id=<?php echo urlencode($promo['id']); ?>"
+                                   class="btn btn-primary btn-sm">Editar</a>
+                                <a href="?action=toggle&id=<?php echo urlencode($promo['id']); ?>"
+                                   class="btn btn-secondary btn-sm"
+                                   onclick="return confirm('¿Cambiar estado de la promoción?')">
+                                    <?php echo $promo['active'] ? 'Desactivar' : 'Activar'; ?>
+                                </a>
+                                <a href="?action=delete&id=<?php echo urlencode($promo['id']); ?>"
+                                   class="btn btn-danger btn-sm"
+                                   onclick="return confirm('¿Eliminar esta promoción?')">Eliminar</a>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </body>
