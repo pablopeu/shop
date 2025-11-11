@@ -197,10 +197,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
     // Get form data
     $customer_name = sanitize_input($_POST['customer_name'] ?? '');
     $customer_email = sanitize_input($_POST['customer_email'] ?? '');
+    $country_code = sanitize_input($_POST['country_code'] ?? '+54');
     $customer_phone = sanitize_input($_POST['customer_phone'] ?? '');
     $contact_preference = sanitize_input($_POST['contact_preference'] ?? 'whatsapp');
     $delivery_method = sanitize_input($_POST['delivery_method'] ?? 'pickup');
     $payment_method = sanitize_input($_POST['payment_method'] ?? '');
+
+    // Combine country code and phone
+    $full_phone = $country_code . ' ' . $customer_phone;
 
     // Validate required fields
     if (empty($customer_name)) {
@@ -215,7 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         $errors[] = 'El teléfono es requerido';
     }
 
-    if (!in_array($contact_preference, ['whatsapp', 'phone'])) {
+    if (!in_array($contact_preference, ['whatsapp', 'email'])) {
         $errors[] = 'Preferencia de contacto inválida';
     }
 
@@ -233,8 +237,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
 
     if ($needs_shipping) {
         $address = sanitize_input($_POST['address'] ?? '');
+        $address_line2 = sanitize_input($_POST['address_line2'] ?? '');
         $city = sanitize_input($_POST['city'] ?? '');
         $postal_code = sanitize_input($_POST['postal_code'] ?? '');
+        $state = sanitize_input($_POST['state'] ?? '');
+        $country = sanitize_input($_POST['country'] ?? '');
 
         if (empty($address)) {
             $errors[] = 'La dirección es requerida para envío';
@@ -248,13 +255,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             $errors[] = 'El código postal es requerido para envío';
         }
 
+        if (empty($state)) {
+            $errors[] = 'La provincia/estado es requerida para envío';
+        }
+
+        if (empty($country)) {
+            $errors[] = 'El país es requerido para envío';
+        }
+
         if (empty($errors)) {
             $shipping_address = [
                 'name' => $customer_name,
                 'address' => $address,
+                'address_line2' => $address_line2,
                 'city' => $city,
                 'postal_code' => $postal_code,
-                'phone' => $customer_phone
+                'state' => $state,
+                'country' => $country,
+                'phone' => $full_phone
             ];
         }
     }
@@ -286,7 +304,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             'shipping_address' => $shipping_address,
             'customer_name' => $customer_name,
             'customer_email' => $customer_email,
-            'customer_phone' => $customer_phone,
+            'customer_phone' => $full_phone,
             'contact_preference' => $contact_preference,
             'delivery_method' => $delivery_method,
             'notes' => sanitize_input($_POST['notes'] ?? '')
@@ -422,10 +440,31 @@ $csrf_token = generate_csrf_token();
 
                             <div class="form-group">
                                 <label for="customer_phone">Teléfono / WhatsApp *</label>
-                                <input type="tel" id="customer_phone" name="customer_phone"
-                                       value="<?php echo htmlspecialchars($_POST['customer_phone'] ?? ''); ?>"
-                                       placeholder="+54 9 11 1234-5678" required>
-                                <small style="color: #666;">Formato WhatsApp preferido</small>
+                                <div class="phone-input-group">
+                                    <select id="country_code" name="country_code" class="country-select" required>
+                                        <option value="+54" data-flag="🇦🇷" selected>🇦🇷 +54</option>
+                                        <option value="+1" data-flag="🇺🇸">🇺🇸 +1</option>
+                                        <option value="+52" data-flag="🇲🇽">🇲🇽 +52</option>
+                                        <option value="+34" data-flag="🇪🇸">🇪🇸 +34</option>
+                                        <option value="+55" data-flag="🇧🇷">🇧🇷 +55</option>
+                                        <option value="+56" data-flag="🇨🇱">🇨🇱 +56</option>
+                                        <option value="+57" data-flag="🇨🇴">🇨🇴 +57</option>
+                                        <option value="+51" data-flag="🇵🇪">🇵🇪 +51</option>
+                                        <option value="+598" data-flag="🇺🇾">🇺🇾 +598</option>
+                                        <option value="+595" data-flag="🇵🇾">🇵🇾 +595</option>
+                                        <option value="+591" data-flag="🇧🇴">🇧🇴 +591</option>
+                                        <option value="+593" data-flag="🇪🇨">🇪🇨 +593</option>
+                                        <option value="+58" data-flag="🇻🇪">🇻🇪 +58</option>
+                                        <option value="+44" data-flag="🇬🇧">🇬🇧 +44</option>
+                                        <option value="+33" data-flag="🇫🇷">🇫🇷 +33</option>
+                                        <option value="+49" data-flag="🇩🇪">🇩🇪 +49</option>
+                                        <option value="+39" data-flag="🇮🇹">🇮🇹 +39</option>
+                                    </select>
+                                    <input type="tel" id="customer_phone" name="customer_phone"
+                                           value="<?php echo htmlspecialchars($_POST['customer_phone'] ?? ''); ?>"
+                                           placeholder="11 1234-5678" required>
+                                </div>
+                                <small style="color: #666;">Ingresa tu número sin el código de país</small>
                             </div>
 
                             <div class="form-group">
@@ -437,16 +476,16 @@ $csrf_token = generate_csrf_token();
                                         <span>📱 Prefiero WhatsApp</span>
                                     </label>
                                     <label class="radio-option">
-                                        <input type="radio" name="contact_preference" value="phone"
-                                               <?php echo (isset($_POST['contact_preference']) && $_POST['contact_preference'] === 'phone') ? 'checked' : ''; ?>>
-                                        <span>📞 Prefiero llamada telefónica</span>
+                                        <input type="radio" name="contact_preference" value="email"
+                                               <?php echo (isset($_POST['contact_preference']) && $_POST['contact_preference'] === 'email') ? 'checked' : ''; ?>>
+                                        <span>✉️ Prefiero Email</span>
                                     </label>
                                 </div>
                             </div>
                         </div>
 
                         <div class="step-navigation">
-                            <button type="button" class="btn btn-primary" onclick="nextStep()">
+                            <button type="button" class="btn btn-primary" onclick="validateAndProceedStep1()">
                                 Siguiente →
                             </button>
                         </div>
@@ -489,19 +528,55 @@ $csrf_token = generate_csrf_token();
                                 <div class="form-group">
                                     <label for="address">Dirección *</label>
                                     <input type="text" id="address" name="address"
-                                           value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>">
+                                           value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>"
+                                           placeholder="Calle y número">
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="city">Ciudad *</label>
-                                    <input type="text" id="city" name="city"
-                                           value="<?php echo htmlspecialchars($_POST['city'] ?? ''); ?>">
+                                    <label for="address_line2">Depto / Piso / Barrio (opcional)</label>
+                                    <input type="text" id="address_line2" name="address_line2"
+                                           value="<?php echo htmlspecialchars($_POST['address_line2'] ?? ''); ?>"
+                                           placeholder="Ej: Depto 4B, Piso 3, Barrio Norte">
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="postal_code">Código Postal *</label>
+                                        <input type="text" id="postal_code" name="postal_code"
+                                               value="<?php echo htmlspecialchars($_POST['postal_code'] ?? ''); ?>">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="city">Ciudad *</label>
+                                        <input type="text" id="city" name="city"
+                                               value="<?php echo htmlspecialchars($_POST['city'] ?? ''); ?>">
+                                    </div>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="postal_code">Código Postal *</label>
-                                    <input type="text" id="postal_code" name="postal_code"
-                                           value="<?php echo htmlspecialchars($_POST['postal_code'] ?? ''); ?>">
+                                    <label for="state">Provincia / Estado *</label>
+                                    <input type="text" id="state" name="state"
+                                           value="<?php echo htmlspecialchars($_POST['state'] ?? ''); ?>">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="country">País *</label>
+                                    <select id="country" name="country" required>
+                                        <option value="Argentina" selected>Argentina</option>
+                                        <option value="Chile">Chile</option>
+                                        <option value="Uruguay">Uruguay</option>
+                                        <option value="Paraguay">Paraguay</option>
+                                        <option value="Brasil">Brasil</option>
+                                        <option value="Bolivia">Bolivia</option>
+                                        <option value="Perú">Perú</option>
+                                        <option value="Colombia">Colombia</option>
+                                        <option value="Ecuador">Ecuador</option>
+                                        <option value="Venezuela">Venezuela</option>
+                                        <option value="México">México</option>
+                                        <option value="España">España</option>
+                                        <option value="Estados Unidos">Estados Unidos</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -675,15 +750,47 @@ $csrf_token = generate_csrf_token();
         </div>
     </div>
 
-    <!-- Warning Modal -->
+    <!-- WhatsApp Validation Modal -->
+    <div id="whatsapp-validation-modal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h3>📱 Validar WhatsApp</h3>
+            <p>Vamos a enviar un mensaje de prueba a tu WhatsApp:</p>
+            <p class="phone-display"><strong id="whatsapp-phone-display"></strong></p>
+            <p style="color: #ff9800; font-weight: bold;">⚠️ Por favor revisa si te llegó el mensaje, ya que es la única forma que tendremos de avisarte sobre tu compra.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeWhatsAppModal()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="sendWhatsAppTest()">Enviar mensaje de prueba</button>
+            </div>
+            <div id="whatsapp-status" style="margin-top: 15px; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Email Validation Modal -->
+    <div id="email-validation-modal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h3>✉️ Validar Email</h3>
+            <p>Vamos a enviar un correo de prueba a:</p>
+            <p class="email-display"><strong id="email-display"></strong></p>
+            <p style="color: #ff9800; font-weight: bold;">⚠️ Por favor revisa tu bandeja de entrada y spam, ya que es la única forma que tendremos de avisarte sobre tu compra.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeEmailModal()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="sendEmailTest()">Enviar email de prueba</button>
+            </div>
+            <div id="email-status" style="margin-top: 15px; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Payment Warning Modal -->
     <div id="payment-warning-modal" class="modal" style="display: none;">
-        <div class="modal-overlay" onclick="closeModal()"></div>
+        <div class="modal-overlay"></div>
         <div class="modal-content">
             <h3>⚠️ Importante</h3>
             <p>Tu orden fue recibida pero el producto sigue disponible en el shop. <strong>Alguien más puede comprarlo y pagarlo antes que vos.</strong></p>
             <p>La única forma de garantizar la disponibilidad es pagando y avisándole a <strong><?php echo htmlspecialchars($site_config['site_owner']); ?></strong>.</p>
             <div class="modal-actions">
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">Entendido</button>
+                <button type="button" class="btn btn-primary" onclick="closePaymentWarningModal()">Entendido</button>
             </div>
         </div>
     </div>
@@ -866,33 +973,155 @@ $csrf_token = generate_csrf_token();
             }
         }
 
+        // Validate and proceed to Step 2 from Step 1
+        let contactValidated = false;
+
+        function validateAndProceedStep1() {
+            if (!validateStep(1)) {
+                return;
+            }
+
+            // If already validated, proceed
+            if (contactValidated) {
+                nextStep();
+                return;
+            }
+
+            const contactPref = document.querySelector('input[name="contact_preference"]:checked').value;
+
+            if (contactPref === 'whatsapp') {
+                showWhatsAppValidationModal();
+            } else if (contactPref === 'email') {
+                showEmailValidationModal();
+            }
+        }
+
+        // WhatsApp Validation Modal functions
+        function showWhatsAppValidationModal() {
+            const countryCode = document.getElementById('country_code').value;
+            const phone = document.getElementById('customer_phone').value;
+            const fullPhone = countryCode + ' ' + phone;
+
+            document.getElementById('whatsapp-phone-display').textContent = fullPhone;
+            document.getElementById('whatsapp-validation-modal').style.display = 'flex';
+        }
+
+        function closeWhatsAppModal() {
+            document.getElementById('whatsapp-validation-modal').style.display = 'none';
+            document.getElementById('whatsapp-status').style.display = 'none';
+        }
+
+        function sendWhatsAppTest() {
+            const countryCode = document.getElementById('country_code').value;
+            const phone = document.getElementById('customer_phone').value;
+            const name = document.getElementById('customer_name').value;
+
+            // Show loading status
+            const statusDiv = document.getElementById('whatsapp-status');
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = '<p style="color: #007bff;">Enviando mensaje...</p>';
+
+            // Send test message via WhatsApp link
+            const message = encodeURIComponent(`Hola ${name}, este es un mensaje de prueba de ${<?php echo json_encode($site_config['site_name']); ?>}. Si recibiste este mensaje, tu WhatsApp está correctamente configurado para recibir notificaciones de tu pedido. ✅`);
+            const whatsappURL = `https://wa.me/${countryCode.replace('+', '')}${phone}?text=${message}`;
+
+            // Open WhatsApp in new window
+            window.open(whatsappURL, '_blank');
+
+            statusDiv.innerHTML = `
+                <p style="color: #28a745;">✅ Se abrió WhatsApp con el mensaje de prueba.</p>
+                <p><strong>¿Recibiste el mensaje?</strong></p>
+                <button type="button" class="btn btn-primary" onclick="confirmWhatsAppValidation()">Sí, lo recibí</button>
+                <button type="button" class="btn btn-secondary" onclick="closeWhatsAppModal()">No, intentar de nuevo</button>
+            `;
+        }
+
+        function confirmWhatsAppValidation() {
+            contactValidated = true;
+            closeWhatsAppModal();
+            nextStep();
+        }
+
+        // Email Validation Modal functions
+        function showEmailValidationModal() {
+            const email = document.getElementById('customer_email').value;
+            document.getElementById('email-display').textContent = email;
+            document.getElementById('email-validation-modal').style.display = 'flex';
+        }
+
+        function closeEmailModal() {
+            document.getElementById('email-validation-modal').style.display = 'none';
+            document.getElementById('email-status').style.display = 'none';
+        }
+
+        function sendEmailTest() {
+            const email = document.getElementById('customer_email').value;
+            const name = document.getElementById('customer_name').value;
+
+            // Show loading status
+            const statusDiv = document.getElementById('email-status');
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = '<p style="color: #007bff;">Enviando email...</p>';
+
+            // Send test email via AJAX
+            fetch('<?php echo url('/api/send-test-email.php'); ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email,
+                    name: name
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    statusDiv.innerHTML = `
+                        <p style="color: #28a745;">✅ Email enviado correctamente.</p>
+                        <p><strong>¿Recibiste el email?</strong> (Revisa también la carpeta de spam)</p>
+                        <button type="button" class="btn btn-primary" onclick="confirmEmailValidation()">Sí, lo recibí</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeEmailModal()">No, intentar de nuevo</button>
+                    `;
+                } else {
+                    statusDiv.innerHTML = '<p style="color: #dc3545;">❌ Error al enviar el email. Por favor verifica la dirección.</p>';
+                }
+            })
+            .catch(error => {
+                statusDiv.innerHTML = '<p style="color: #dc3545;">❌ Error al enviar el email. Intenta de nuevo.</p>';
+            });
+        }
+
+        function confirmEmailValidation() {
+            contactValidated = true;
+            closeEmailModal();
+            nextStep();
+        }
+
         // Form submission handler
+        let formSubmitAllowed = false;
+
         document.getElementById('checkout-form').addEventListener('submit', function(e) {
             const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
 
             // Show warning modal for non-mercadopago payments
-            if (paymentMethod && paymentMethod.value !== 'mercadopago') {
+            if (paymentMethod && paymentMethod.value !== 'mercadopago' && !formSubmitAllowed) {
                 e.preventDefault();
-                showModal();
-
-                // After modal is closed, allow form submission
-                setTimeout(() => {
-                    // Remove this event listener to prevent infinite loop
-                    const form = document.getElementById('checkout-form');
-                    const newForm = form.cloneNode(true);
-                    form.parentNode.replaceChild(newForm, form);
-                    newForm.submit();
-                }, 100);
+                showPaymentWarningModal();
+                return false;
             }
         });
 
-        // Modal functions
-        function showModal() {
+        // Payment Warning Modal functions
+        function showPaymentWarningModal() {
             document.getElementById('payment-warning-modal').style.display = 'flex';
         }
 
-        function closeModal() {
+        function closePaymentWarningModal() {
             document.getElementById('payment-warning-modal').style.display = 'none';
+            // Allow form submission after modal is closed
+            formSubmitAllowed = true;
+            document.getElementById('checkout-form').submit();
         }
 
         // Switch currency display
@@ -1130,6 +1359,51 @@ $csrf_token = generate_csrf_token();
             text-align: center;
         }
 
+        /* Phone input group */
+        .phone-input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .country-select {
+            flex: 0 0 auto;
+            width: 130px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .phone-input-group input[type="tel"] {
+            flex: 1;
+        }
+
+        /* Form row for side-by-side fields */
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        /* Modal styling improvements */
+        .phone-display, .email-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
         /* Mobile responsive */
         @media (max-width: 768px) {
             .step-indicators {
@@ -1152,6 +1426,20 @@ $csrf_token = generate_csrf_token();
 
             .radio-option {
                 padding: 10px;
+            }
+
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .phone-input-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .country-select {
+                width: 100%;
             }
         }
     </style>
