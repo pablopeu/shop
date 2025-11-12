@@ -47,13 +47,21 @@ data/newsletters.json
 data/products/prod-*.json
 
 # ===== UPLOADED IMAGES =====
-# Comment out if you want to version control images
+# All images uploaded via backoffice should not be in Git
 images/products/*
 !images/products/.gitkeep
 images/hero/*
 !images/hero/.gitkeep
 images/carousel/*
 !images/carousel/.gitkeep
+
+# Logos and assets uploaded from backoffice
+assets/logos/*
+!assets/logos/.gitkeep
+
+# Footer images uploaded from backoffice
+uploads/footer/*
+!uploads/footer/.gitkeep
 
 # ===== LOGS =====
 *.log
