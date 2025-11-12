@@ -140,12 +140,39 @@ Total Acreditado: $474.50
 3. **Revisar el log** `/shop/mp_debug.log` para ver qué pasó
 4. **Verificar** que las notificaciones se envíen correctamente
 
-## En caso de emergencia: Reprocesar webhook manualmente
+## 🚨 SOLUCIÓN INMEDIATA: Reprocesar el Pago Actual
 
-Si necesitas reprocesar un pago que quedó en "pendiente":
+Para el pago que quedó pendiente (Payment ID: **133535068062**):
 
-1. Obtener el Payment ID desde los logs de PHP o desde MercadoPago
-2. Llamar manualmente al webhook:
+### Opción 1: Desde el navegador (recomendado)
+
+1. **PRIMERO**: Cambiar la clave secreta en `/shop/reprocesar-pago.php` (línea 25):
+   ```php
+   define('REPROCESS_SECRET_KEY', 'tu_clave_segura_aqui');
+   ```
+
+2. Acceder a esta URL (reemplazar `TU_CLAVE` con la clave que pusiste):
+   ```
+   https://peu.net/shop/reprocesar-pago.php?payment_id=133535068062&key=TU_CLAVE
+   ```
+
+3. El script automáticamente:
+   - ✅ Obtiene los detalles del pago desde MercadoPago
+   - ✅ Actualiza la orden a "cobrada"
+   - ✅ Registra comisiones y monto neto
+   - ✅ Reduce el stock
+   - ✅ Envía email al cliente
+   - ✅ Envía notificación de Telegram
+   - ✅ Registra todo en `mp_debug.log`
+
+### Opción 2: Desde línea de comandos (SSH)
+
+```bash
+cd /home/user/shop
+php reprocesar-pago.php 133535068062
+```
+
+### Opción 3: Manualmente con curl (solo si validate_ip está desactivado)
 
 ```bash
 curl -X POST https://peu.net/shop/webhook.php \
@@ -153,12 +180,16 @@ curl -X POST https://peu.net/shop/webhook.php \
   -d '{
     "type": "payment",
     "data": {
-      "id": "PAYMENT_ID_AQUI"
+      "id": "133535068062"
     }
   }'
 ```
 
-**Nota**: Esto solo funcionará si la validación de IP está desactivada.
+**⚠️ IMPORTANTE**:
+- El script `reprocesar-pago.php` es seguro y está protegido por clave
+- Solo procesa el pago, NO cobra nuevamente al cliente
+- Se puede ejecutar múltiples veces sin problemas (es idempotente)
+- Registra todo en los logs para auditoría
 
 ## Soporte
 
