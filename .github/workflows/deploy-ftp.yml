@@ -3,7 +3,8 @@ name: 🚀 Deploy to FTP
 on:
   push:
     branches:
-      - '**'  # Deploy desde todos los branches
+      - main  # SOLO deploy desde main, NO desde otros branches
+  workflow_dispatch:  # Permitir deploy manual
 
 jobs:
   deploy:
