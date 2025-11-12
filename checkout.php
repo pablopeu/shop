@@ -355,9 +355,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                 send_telegram_new_order($order);
             }
 
-            // Clear cart and coupon
-            unset($_SESSION['cart']);
-            unset($_SESSION['coupon_code']);
+            // Clear cart and coupon only for non-Mercadopago payments
+            // For Mercadopago: cart will be cleared when payment is confirmed (webhook)
+            if ($payment_method !== 'mercadopago') {
+                unset($_SESSION['cart']);
+                unset($_SESSION['coupon_code']);
+            }
 
             // Redirect based on payment method
             if ($payment_method === 'mercadopago') {

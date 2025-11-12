@@ -12,6 +12,17 @@ header('Content-Type: application/json');
 
 session_start();
 
+/**
+ * Generate absolute URL with protocol, domain and BASE_PATH
+ * Required for Mercadopago back_urls which need full URLs
+ */
+function get_absolute_url($path = '') {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $relative_url = url($path);
+    return $protocol . '://' . $host . $relative_url;
+}
+
 try {
     // Get order ID and token from request
     $input = file_get_contents('php://input');
@@ -109,13 +120,13 @@ try {
             ]
         ],
         'back_urls' => [
-            'success' => url('/gracias.php?order=' . $order_id . '&token=' . $tracking_token),
-            'failure' => url('/error.php?order=' . $order_id . '&token=' . $tracking_token),
-            'pending' => url('/pendiente.php?order=' . $order_id . '&token=' . $tracking_token)
+            'success' => get_absolute_url('/gracias.php?order=' . $order_id . '&token=' . $tracking_token),
+            'failure' => get_absolute_url('/error.php?order=' . $order_id . '&token=' . $tracking_token),
+            'pending' => get_absolute_url('/pendiente.php?order=' . $order_id . '&token=' . $tracking_token)
         ],
         'auto_return' => 'approved',
         'external_reference' => $order_id,
-        'notification_url' => url('/webhook.php'),
+        'notification_url' => get_absolute_url('/webhook.php'),
         'statement_descriptor' => substr($site_config['site_name'], 0, 22), // Max 22 chars
         'metadata' => [
             'order_id' => $order_id,

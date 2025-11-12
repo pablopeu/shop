@@ -30,6 +30,15 @@ if (!$order || $order['id'] !== $order_id) {
     exit;
 }
 
+// Clear cart and coupon for successful orders
+// This handles Mercadopago payments where cart wasn't cleared at checkout
+if (isset($_SESSION['cart'])) {
+    unset($_SESSION['cart']);
+}
+if (isset($_SESSION['coupon_code'])) {
+    unset($_SESSION['coupon_code']);
+}
+
 // Get configurations
 $site_config = read_json(__DIR__ . '/config/site.json');
 $footer_config = read_json(__DIR__ . '/config/footer.json');
