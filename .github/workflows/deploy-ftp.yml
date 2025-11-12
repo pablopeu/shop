@@ -3,7 +3,7 @@ name: 🚀 Deploy to FTP
 on:
   push:
     branches:
-      - main  # SOLO deploy desde main, NO desde otros branches
+      - '**'  # Deploy desde todos los branches
   workflow_dispatch:  # Permitir deploy manual
 
 jobs:
@@ -38,3 +38,14 @@ jobs:
             node_modules/**
             docs/**
             mcp-server/**
+            config/**
+            data/**
+            assets/logos/**
+            uploads/footer/**
+            images/products/**
+            images/hero/**
+            images/carousel/**
+            *.log
+            *.example
+            .env
+            .env.*
