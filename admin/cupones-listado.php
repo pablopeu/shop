@@ -4,6 +4,7 @@
  */
 
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/coupons.php';
 require_once __DIR__ . '/../includes/auth.php';
 
 // Start session
