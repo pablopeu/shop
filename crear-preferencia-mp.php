@@ -154,31 +154,59 @@ try {
     // Limit name to 256 chars
     $customer_name = mb_substr($customer_name, 0, 256);
 
-    // Clean phone number (remove non-numeric characters except +)
+    // Clean phone number (remove ALL non-numeric characters including +)
     $phone = $order['customer_phone'] ?? '';
-    $phone_cleaned = preg_replace('/[^0-9+]/', '', $phone);
+    $phone_cleaned = preg_replace('/[^0-9]/', '', $phone);
 
     // Extract area code and number
-    // Example: "+54 1154099160" -> area_code: "11", number: "54099160"
+    // Example: "+54 11 5409 9160" -> "541154099160" -> area_code: "11", number: "54099160"
     $area_code = '';
-    $phone_number = $phone_cleaned;
+    $phone_number = '';
 
-    // If phone starts with +, extract country code
-    if (strpos($phone_cleaned, '+') === 0) {
-        // Remove the + and country code
-        $phone_cleaned = ltrim($phone_cleaned, '+');
-        // For Argentina (+54), extract area code from remaining digits
+    // Only process if we have a valid-length phone (at least 10 digits)
+    if (strlen($phone_cleaned) >= 10) {
+        // For Argentina (+54): usually 2 country + 2-4 area + 6-8 number
+        // Try to extract: skip country code (54), take area code (2-4 digits), rest is number
+
+        // Remove country code (54) if present at start
+        if (strpos($phone_cleaned, '54') === 0 && strlen($phone_cleaned) > 10) {
+            $phone_cleaned = substr($phone_cleaned, 2); // Remove "54"
+        }
+
+        // Now extract area code and number
+        // Common formats: 11XXXXXXXX (CABA), 3XXXXXXXXX (provinces)
         if (strlen($phone_cleaned) >= 10) {
-            // Skip country code (first 2 digits for Argentina)
-            $phone_without_country = substr($phone_cleaned, 2);
-            if (strlen($phone_without_country) >= 10) {
-                $area_code = substr($phone_without_country, 0, 2);
-                $phone_number = substr($phone_without_country, 2);
+            // Extract area code (first 2-4 digits depending on format)
+            if (substr($phone_cleaned, 0, 2) === '11') {
+                // CABA: area code is 11
+                $area_code = '11';
+                $phone_number = substr($phone_cleaned, 2);
+            } elseif (substr($phone_cleaned, 0, 1) === '9') {
+                // Mobile with 9 prefix: next 2-3 digits are area code
+                $phone_cleaned = substr($phone_cleaned, 1); // Remove 9
+                if (substr($phone_cleaned, 0, 2) === '11') {
+                    $area_code = '11';
+                    $phone_number = substr($phone_cleaned, 2);
+                } else {
+                    // Province: area code is 3-4 digits
+                    $area_code = substr($phone_cleaned, 0, 3);
+                    $phone_number = substr($phone_cleaned, 3);
+                }
             } else {
-                $phone_number = $phone_without_country;
+                // Province: first 3-4 digits are area code
+                $area_code = substr($phone_cleaned, 0, 3);
+                $phone_number = substr($phone_cleaned, 3);
             }
         }
     }
+
+    // Validate final phone data (must have valid number without special chars)
+    // Phone number must be at least 6 digits and area code at least 2
+    $phone_is_valid = !empty($phone_number) &&
+                      strlen($phone_number) >= 6 &&
+                      strlen($area_code) >= 2 &&
+                      preg_match('/^[0-9]+$/', $phone_number) &&
+                      preg_match('/^[0-9]+$/', $area_code);
 
     // Prepare preference data
     $preference_data = [
@@ -204,9 +232,9 @@ try {
     ];
 
     // Only add phone if we have valid data
-    if (!empty($phone_number)) {
+    if ($phone_is_valid) {
         $preference_data['payer']['phone'] = [
-            'area_code' => $area_code ?: '',
+            'area_code' => $area_code,
             'number' => $phone_number
         ];
     }
