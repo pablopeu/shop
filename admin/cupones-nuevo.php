@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_coupon'])) {
                 ]);
 
                 // Redirect to list after 2 seconds
-                header("refresh:2;url=/admin/cupones-listado.php");
+                header("refresh:2;url=" . url('/admin/cupones-listado.php'));
             } else {
                 $error = $result['error'] ?? 'Error al crear el cupón';
             }
@@ -313,7 +313,8 @@ $user = get_logged_user();
             <form method="POST" action="">
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
 
-                <!-- Basic Information -->\n                <div class="section-divider">🎫 Información del Cupón</div>
+                <!-- Basic Information -->
+                <div class="section-divider">🎫 Información del Cupón</div>
 
                 <div class="form-grid">
                     <div class="form-group full-width">
@@ -451,7 +452,7 @@ $user = get_logged_user();
                     <button type="submit" name="save_coupon" class="btn btn-primary">
                         💾 Crear Cupón
                     </button>
-                    <a href="/admin/cupones-listado.php" class="btn btn-secondary">
+                    <a href="<?php echo url('/admin/cupones-listado.php'); ?>" class="btn btn-secondary">
                         ❌ Cancelar
                     </a>
                 </div>

@@ -575,9 +575,9 @@ $user = get_logged_user();
                                         <?php if ($index === 0): ?>
                                             <span class="image-badge">PRINCIPAL</span>
                                         <?php endif; ?>
-                                        <a href="?id=<?php echo $product_id; ?>&action=delete_image&index=<?php echo $index; ?>"
+                                        <a href="javascript:void(0)"
                                            class="btn-delete-image"
-                                           onclick="return confirm('¿Eliminar esta imagen?')">✕</a>
+                                           onclick="confirmDeleteImage('<?php echo $product_id; ?>', <?php echo $index; ?>)">✕</a>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -715,21 +715,9 @@ $user = get_logged_user();
             }
         });
 
-        // Initialize SortableJS if gallery exists
-        if (gallery) {
-            Sortable.create(gallery, {
-                animation: 150,
-                handle: '.drag-handle',
-                ghostClass: 'sortable-ghost',
-                onEnd: function() {
-                    markChanged();
-                    updateBadges();
-                }
-            });
-        }
-
         // Update "PRINCIPAL" badge
         function updateBadges() {
+            if (!gallery) return;
             const items = gallery.querySelectorAll('.image-item');
             items.forEach((item, index) => {
                 const existingBadge = item.querySelector('.image-badge');
@@ -741,6 +729,19 @@ $user = get_logged_user();
                     badge.className = 'image-badge';
                     badge.textContent = 'PRINCIPAL';
                     item.appendChild(badge);
+                }
+            });
+        }
+
+        // Initialize SortableJS if gallery exists
+        if (gallery) {
+            Sortable.create(gallery, {
+                animation: 150,
+                handle: '.drag-handle',
+                ghostClass: 'sortable-ghost',
+                onEnd: function() {
+                    markChanged();
+                    updateBadges();
                 }
             });
         }
@@ -874,9 +875,28 @@ $user = get_logged_user();
 
         // Initial UI state
         updateUIForChanges();
+
+        // Confirm delete image
+        function confirmDeleteImage(productId, imageIndex) {
+            showModal({
+                title: 'Eliminar Imagen',
+                message: '¿Estás seguro de que deseas eliminar esta imagen?',
+                details: 'Esta acción no se puede deshacer.',
+                icon: '🗑️',
+                confirmText: 'Eliminar',
+                cancelText: 'Cancelar',
+                confirmType: 'danger',
+                onConfirm: function() {
+                    window.location.href = `?id=${productId}&action=delete_image&index=${imageIndex}`;
+                }
+            });
+        }
     </script>
 
     <!-- Unsaved Changes Warning -->
     <script src="<?php echo url('/admin/includes/unsaved-changes-warning.js'); ?>"></script>
+
+    <!-- Modal Component -->
+    <?php include __DIR__ . '/includes/modal.php'; ?>
 </body>
 </html>

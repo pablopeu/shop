@@ -208,7 +208,7 @@ $user = get_logged_user();
 
                 <div style="display: flex; gap: 10px; margin-top: 30px;">
                     <button type="submit" name="save_coupon" class="btn btn-primary">💾 Guardar Cambios</button>
-                    <a href="/admin/cupones-listado.php" class="btn btn-secondary">❌ Cancelar</a>
+                    <a href="<?php echo url('/admin/cupones-listado.php'); ?>" class="btn btn-secondary">❌ Cancelar</a>
                 </div>
             </form>
         </div>

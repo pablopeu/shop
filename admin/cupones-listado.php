@@ -4,6 +4,7 @@
  */
 
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/coupons.php';
 require_once __DIR__ . '/../includes/auth.php';
 
 // Start session
@@ -57,6 +58,51 @@ if (isset($_GET['action']) && $_GET['action'] === 'toggle' && isset($_GET['id'])
             'coupon_id' => $coupon_id,
             'new_status' => $new_status
         ]);
+    }
+}
+
+// Archive coupon
+if (isset($_GET['action']) && $_GET['action'] === 'archive' && isset($_GET['id'])) {
+    $coupon_id = $_GET['id'];
+
+    if (archive_coupon($coupon_id)) {
+        $message = 'Cupón archivado exitosamente';
+        log_admin_action('coupon_archived', $_SESSION['username'], ['coupon_id' => $coupon_id]);
+    } else {
+        $error = 'Error al archivar el cupón';
+    }
+}
+
+// Handle bulk actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
+    $action = $_POST['bulk_action'];
+    $selected_coupons = $_POST['selected_coupons'] ?? [];
+
+    if (!empty($selected_coupons)) {
+        $success_count = 0;
+        foreach ($selected_coupons as $coupon_id) {
+            if ($action === 'archive') {
+                if (archive_coupon($coupon_id)) {
+                    $success_count++;
+                }
+            } elseif ($action === 'activate') {
+                if (update_coupon($coupon_id, ['active' => true])) {
+                    $success_count++;
+                }
+            } elseif ($action === 'deactivate') {
+                if (update_coupon($coupon_id, ['active' => false])) {
+                    $success_count++;
+                }
+            }
+        }
+
+        $message = "$success_count cupón(es) procesado(s) exitosamente";
+        log_admin_action('bulk_coupons_action', $_SESSION['username'], [
+            'action' => $action,
+            'count' => $success_count
+        ]);
+    } else {
+        $error = 'No se seleccionaron cupones';
     }
 }
 
@@ -292,6 +338,41 @@ $user = get_logged_user();
             font-size: 13px;
         }
 
+        /* Bulk Actions Bar */
+        .bulk-actions-bar {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bulk-actions-bar.show {
+            display: flex;
+        }
+
+        .bulk-actions-bar select {
+            padding: 6px 12px;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+        }
+
+        /* Header Actions */
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .header-actions .btn {
+            font-size: 13px;
+        }
+
         /* Table Container for Mobile Scroll */
         .table-container {
             overflow-x: auto;
@@ -432,6 +513,18 @@ $user = get_logged_user();
             <div class="message error"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
 
+        <!-- Header Actions -->
+        <div class="header-actions">
+            <div>
+                <a href="<?php echo url('/admin/cupones-nuevo.php'); ?>" class="btn btn-primary">
+                    ➕ Nuevo Cupón
+                </a>
+                <a href="<?php echo url('/admin/cupones-archivados.php'); ?>" class="btn btn-secondary">
+                    📦 Ver Archivados
+                </a>
+            </div>
+        </div>
+
         <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-card">
@@ -452,14 +545,32 @@ $user = get_logged_user();
             </div>
         </div>
 
-        <!-- Coupons List -->
-        <div class="card">
-            <div class="card-header">Todos los Cupones</div>
+        <!-- Bulk Actions Bar -->
+        <form method="POST" id="bulkForm">
+            <div class="bulk-actions-bar" id="bulkActionsBar">
+                <span id="selectedCount">0 cupones seleccionados</span>
+                <select name="bulk_action" id="bulkAction">
+                    <option value="">Seleccionar acción...</option>
+                    <option value="activate">Activar</option>
+                    <option value="deactivate">Desactivar</option>
+                    <option value="archive">Archivar</option>
+                </select>
+                <button type="button" class="btn btn-sm btn-primary" onclick="confirmBulkAction()">
+                    Aplicar
+                </button>
+            </div>
 
-            <div class="table-container">
+            <!-- Coupons List -->
+            <div class="card">
+                <div class="card-header">Todos los Cupones</div>
+
+                <div class="table-container">
                 <table class="coupons-table">
                     <thead>
                         <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+                            </th>
                             <th>Código</th>
                             <th>Tipo / Descuento</th>
                             <th>Vigencia</th>
@@ -471,7 +582,7 @@ $user = get_logged_user();
                     <tbody>
                         <?php if (empty($coupons)): ?>
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                                <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
                                     No hay cupones.
                                     <a href="/admin/cupones-nuevo.php" style="color: #4CAF50;">Crear tu primer cupón</a>
                                 </td>
@@ -482,6 +593,12 @@ $user = get_logged_user();
                                 $is_maxed = $coupon['max_uses'] > 0 && $coupon['uses_count'] >= $coupon['max_uses'];
                             ?>
                                 <tr>
+                                    <td>
+                                        <input type="checkbox" name="selected_coupons[]"
+                                               value="<?php echo htmlspecialchars($coupon['id']); ?>"
+                                               class="coupon-checkbox"
+                                               onchange="updateBulkActions()">
+                                    </td>
                                     <td>
                                         <span class="coupon-code"><?php echo htmlspecialchars($coupon['code']); ?></span>
                                     </td>
@@ -521,17 +638,17 @@ $user = get_logged_user();
                                     </td>
                                     <td>
                                         <div class="actions">
-                                            <a href="/admin/cupones-editar.php?id=<?php echo urlencode($coupon['id']); ?>"
+                                            <a href="<?php echo url('/admin/cupones-editar.php?id=' . urlencode($coupon['id'])); ?>"
                                                class="btn btn-primary btn-sm">✏️ Editar</a>
-                                            <a href="?action=toggle&id=<?php echo urlencode($coupon['id']); ?>"
+                                            <a href="javascript:void(0)"
                                                class="btn btn-secondary btn-sm"
-                                               onclick="return confirm('¿Cambiar estado del cupón?')">
+                                               onclick="confirmToggleCoupon('<?php echo urlencode($coupon['id']); ?>', <?php echo $coupon['active'] ? 'true' : 'false'; ?>)">
                                                 <?php echo $coupon['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
                                             </a>
-                                            <a href="?action=delete&id=<?php echo urlencode($coupon['id']); ?>"
+                                            <a href="javascript:void(0)"
                                                class="btn btn-danger btn-sm"
-                                               onclick="return confirm('¿Eliminar este cupón? Esta acción no se puede deshacer.')">
-                                                🗑️ Eliminar
+                                               onclick="confirmArchiveCoupon('<?php echo urlencode($coupon['id']); ?>', '<?php echo htmlspecialchars($coupon['code'], ENT_QUOTES); ?>')">
+                                                📦 Archivar
                                             </a>
                                         </div>
                                     </td>
@@ -541,8 +658,10 @@ $user = get_logged_user();
                     </tbody>
                 </table>
             </div>
+        </div>
+    </form>
 
-            <!-- Mobile Cards View -->
+    <!-- Mobile Cards View -->
             <div class="mobile-cards">
                 <?php if (empty($coupons)): ?>
                     <div class="card">
@@ -611,17 +730,17 @@ $user = get_logged_user();
                             </div>
 
                             <div class="mobile-card-actions">
-                                <a href="/admin/cupones-editar.php?id=<?php echo urlencode($coupon['id']); ?>"
+                                <a href="<?php echo url('/admin/cupones-editar.php?id=' . urlencode($coupon['id'])); ?>"
                                    class="btn btn-primary btn-sm">Editar</a>
-                                <a href="?action=toggle&id=<?php echo urlencode($coupon['id']); ?>"
+                                <a href="javascript:void(0)"
                                    class="btn btn-secondary btn-sm"
-                                   onclick="return confirm('¿Cambiar estado del cupón?')">
+                                   onclick="confirmToggleCoupon('<?php echo urlencode($coupon['id']); ?>', <?php echo $coupon['active'] ? 'true' : 'false'; ?>)">
                                     <?php echo $coupon['active'] ? 'Desactivar' : 'Activar'; ?>
                                 </a>
-                                <a href="?action=delete&id=<?php echo urlencode($coupon['id']); ?>"
+                                <a href="javascript:void(0)"
                                    class="btn btn-danger btn-sm"
-                                   onclick="return confirm('¿Eliminar este cupón? Esta acción no se puede deshacer.')">
-                                    Eliminar
+                                   onclick="confirmArchiveCoupon('<?php echo urlencode($coupon['id']); ?>', '<?php echo htmlspecialchars($coupon['code'], ENT_QUOTES); ?>')">
+                                    Archivar
                                 </a>
                             </div>
                         </div>
@@ -630,5 +749,129 @@ $user = get_logged_user();
             </div>
         </div>
     </div>
+
+    <script>
+        function confirmToggleCoupon(id, isActive) {
+            const action = isActive ? 'desactivar' : 'activar';
+            showModal({
+                title: isActive ? 'Desactivar Cupón' : 'Activar Cupón',
+                message: `¿Estás seguro de que deseas ${action} este cupón?`,
+                icon: isActive ? '❌' : '✅',
+                confirmText: isActive ? 'Desactivar' : 'Activar',
+                confirmType: 'warning',
+                onConfirm: function() {
+                    window.location.href = `?action=toggle&id=${id}`;
+                }
+            });
+        }
+
+        function confirmArchiveCoupon(id, code) {
+            showModal({
+                title: 'Archivar Cupón',
+                message: `¿Estás seguro de que deseas archivar el cupón "${code}"?`,
+                details: 'El cupón se moverá al archivo y no aparecerá en el listado principal. Podrás restaurarlo desde la sección de Cupones Archivados.',
+                icon: '📦',
+                confirmText: 'Archivar',
+                confirmType: 'danger',
+                onConfirm: function() {
+                    window.location.href = `?action=archive&id=${id}`;
+                }
+            });
+        }
+
+        /**
+         * Confirmar acción masiva
+         */
+        function confirmBulkAction() {
+            const checkboxes = document.querySelectorAll('.coupon-checkbox:checked');
+            const action = document.getElementById('bulkAction').value;
+            const count = checkboxes.length;
+
+            // Validaciones
+            if (count === 0) {
+                showModal({
+                    title: 'Sin Cupones Seleccionados',
+                    message: 'Debes seleccionar al menos un cupón para realizar una acción masiva.',
+                    icon: '⚠️',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    onConfirm: function() {}
+                });
+                return;
+            }
+
+            if (!action) {
+                showModal({
+                    title: 'Acción No Seleccionada',
+                    message: 'Debes seleccionar una acción para aplicar a los cupones seleccionados.',
+                    icon: '⚠️',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    onConfirm: function() {}
+                });
+                return;
+            }
+
+            // Configurar modal según la acción
+            let title, message, icon, confirmType;
+
+            if (action === 'activate') {
+                title = 'Activar Cupones';
+                message = `¿Activar ${count} cupón${count > 1 ? 'es' : ''}?`;
+                icon = '✅';
+                confirmType = 'primary';
+            } else if (action === 'deactivate') {
+                title = 'Desactivar Cupones';
+                message = `¿Desactivar ${count} cupón${count > 1 ? 'es' : ''}?`;
+                icon = '❌';
+                confirmType = 'warning';
+            } else if (action === 'archive') {
+                title = 'Archivar Cupones';
+                message = `¿Archivar ${count} cupón${count > 1 ? 'es' : ''}?`;
+                icon = '📦';
+                confirmType = 'danger';
+            }
+
+            showModal({
+                title: title,
+                message: message,
+                details: `Esta acción se aplicará a ${count} cupón${count > 1 ? 'es seleccionados' : ' seleccionado'}.`,
+                icon: icon,
+                confirmText: 'Confirmar',
+                confirmType: confirmType,
+                onConfirm: function() {
+                    document.getElementById('bulkForm').submit();
+                }
+            });
+        }
+
+        // Handle checkbox selection for bulk actions
+        function toggleSelectAll(checkbox) {
+            const checkboxes = document.querySelectorAll('.coupon-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+            updateBulkActions();
+        }
+
+        function updateBulkActions() {
+            const checkboxes = document.querySelectorAll('.coupon-checkbox:checked');
+            const count = checkboxes.length;
+            const bulkBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+            const selectAll = document.getElementById('selectAll');
+
+            if (count > 0) {
+                bulkBar.classList.add('show');
+                selectedCount.textContent = `${count} cupón${count > 1 ? 'es' : ''} seleccionado${count > 1 ? 's' : ''}`;
+            } else {
+                bulkBar.classList.remove('show');
+                selectAll.checked = false;
+            }
+        }
+    </script>
+
+    <!-- Modal Component -->
+    <?php include __DIR__ . '/includes/modal.php'; ?>
 </body>
 </html>

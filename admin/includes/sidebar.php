@@ -276,10 +276,16 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <span>🎯 Promociones y Cupones</span>
                 <span class="menu-arrow" id="arrow-promociones-cupones">▶</span>
             </div>
-            <ul class="submenu <?php echo in_array($current_page, ['promociones-listado.php', 'promociones-nuevo.php', 'promociones-editar.php', 'cupones-listado.php', 'cupones-nuevo.php', 'cupones-editar.php']) ? 'open' : ''; ?>"
+            <ul class="submenu <?php echo in_array($current_page, ['promociones-listado.php', 'promociones-nuevo.php', 'promociones-editar.php', 'promociones-archivados.php', 'cupones-listado.php', 'cupones-nuevo.php', 'cupones-editar.php', 'cupones-archivados.php']) ? 'open' : ''; ?>"
                 id="submenu-promociones-cupones">
                 <li><a href="<?php echo url('/admin/promociones-listado.php'); ?>" <?php echo $current_page === 'promociones-listado.php' ? 'class="active"' : ''; ?>>📋 Listado de Promociones</a></li>
                 <li><a href="<?php echo url('/admin/promociones-nuevo.php'); ?>" <?php echo $current_page === 'promociones-nuevo.php' ? 'class="active"' : ''; ?>>➕ Nueva Promoción</a></li>
+                <li>
+                    <a href="<?php echo url('/admin/promociones-archivados.php'); ?>"
+                       class="<?php echo $current_page === 'promociones-archivados.php' ? 'active' : ''; ?>">
+                        📦 Promociones Archivadas
+                    </a>
+                </li>
                 <li>
                     <a href="<?php echo url('/admin/cupones-listado.php'); ?>"
                        class="<?php echo $current_page === 'cupones-listado.php' ? 'active' : ''; ?>">
@@ -290,6 +296,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <a href="<?php echo url('/admin/cupones-nuevo.php'); ?>"
                        class="<?php echo $current_page === 'cupones-nuevo.php' ? 'active' : ''; ?>">
                         ➕ Nuevo Cupón
+                    </a>
+                </li>
+                <li>
+                    <a href="<?php echo url('/admin/cupones-archivados.php'); ?>"
+                       class="<?php echo $current_page === 'cupones-archivados.php' ? 'active' : ''; ?>">
+                        📦 Cupones Archivados
                     </a>
                 </li>
             </ul>

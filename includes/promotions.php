@@ -101,7 +101,7 @@ function update_promotion($promotion_id, $promotion_data) {
             $promotion['period_type'] = $promotion_data['period_type'];
             $promotion['start_date'] = $promotion_data['start_date'] ?? null;
             $promotion['end_date'] = $promotion_data['end_date'] ?? null;
-            $promotion['active'] = isset($promotion_data['active']) ? true : false;
+            $promotion['active'] = (bool)($promotion_data['active'] ?? false);
             $promotion['updated_at'] = gmdate('Y-m-d\TH:i:s\Z');
 
             return write_json(__DIR__ . '/../data/promotions.json', $promotions_data);
@@ -125,6 +125,93 @@ function delete_promotion($promotion_id) {
     $promotions_data['promotions'] = array_values($promotions_data['promotions']);
 
     return write_json(__DIR__ . '/../data/promotions.json', $promotions_data);
+}
+
+/**
+ * Archive promotion
+ */
+function archive_promotion($promotion_id) {
+    $promotion = get_promotion_by_id($promotion_id);
+    if (!$promotion) return false;
+
+    // Add to archived promotions
+    $archived_file = __DIR__ . '/../data/archived_promotions.json';
+    $archived_data = read_json($archived_file);
+    if (!isset($archived_data['promotions'])) {
+        $archived_data = ['promotions' => []];
+    }
+
+    $promotion['archived_at'] = gmdate('Y-m-d\TH:i:s\Z');
+    $archived_data['promotions'][] = $promotion;
+    write_json($archived_file, $archived_data);
+
+    // Remove from active promotions
+    return delete_promotion($promotion_id);
+}
+
+/**
+ * Get archived promotions
+ */
+function get_archived_promotions() {
+    $archived_file = __DIR__ . '/../data/archived_promotions.json';
+    $archived_data = read_json($archived_file);
+    return $archived_data['promotions'] ?? [];
+}
+
+/**
+ * Restore archived promotion
+ */
+function restore_promotion($promotion_id) {
+    $archived_file = __DIR__ . '/../data/archived_promotions.json';
+    $archived_data = read_json($archived_file);
+
+    $promotion_to_restore = null;
+    foreach ($archived_data['promotions'] ?? [] as $index => $promotion) {
+        if ($promotion['id'] === $promotion_id) {
+            $promotion_to_restore = $promotion;
+            unset($archived_data['promotions'][$index]);
+            break;
+        }
+    }
+
+    if (!$promotion_to_restore) return false;
+
+    // Remove archived_at field
+    unset($promotion_to_restore['archived_at']);
+    $archived_data['promotions'] = array_values($archived_data['promotions']);
+    write_json($archived_file, $archived_data);
+
+    // Add back to active promotions
+    $promotions_file = __DIR__ . '/../data/promotions.json';
+    $promotions_data = read_json($promotions_file);
+    if (!isset($promotions_data['promotions'])) {
+        $promotions_data = ['promotions' => []];
+    }
+    $promotions_data['promotions'][] = $promotion_to_restore;
+
+    return write_json($promotions_file, $promotions_data);
+}
+
+/**
+ * Delete archived promotion permanently
+ */
+function delete_archived_promotion($promotion_id) {
+    $archived_file = __DIR__ . '/../data/archived_promotions.json';
+    $archived_data = read_json($archived_file);
+
+    $initial_count = count($archived_data['promotions'] ?? []);
+    $archived_data['promotions'] = array_filter($archived_data['promotions'] ?? [], function($p) use ($promotion_id) {
+        return $p['id'] !== $promotion_id;
+    });
+    $archived_data['promotions'] = array_values($archived_data['promotions']);
+
+    $deleted = count($archived_data['promotions']) < $initial_count;
+
+    if ($deleted && write_json($archived_file, $archived_data)) {
+        return ['success' => true, 'message' => 'Promoción eliminada permanentemente'];
+    }
+
+    return ['success' => false, 'message' => 'Error al eliminar la promoción'];
 }
 
 /**
