@@ -299,9 +299,14 @@ log_webhook('Webhook received', [
 // Also log with detailed MP logger
 log_webhook_received($data, $headers, $client_ip);
 
-// Validate webhook
-if (!$data || !isset($data['type'])) {
-    log_webhook('Invalid webhook data', ['data' => $data, 'raw_input' => $input]);
+// Validate webhook - accept either 'type' or 'topic' field (MercadoPago uses both)
+if (!$data || (!isset($data['type']) && !isset($data['topic']))) {
+    log_webhook('Invalid webhook data - missing type/topic field', [
+        'data' => $data,
+        'raw_input' => $input,
+        'has_type' => isset($data['type']),
+        'has_topic' => isset($data['topic'])
+    ]);
     http_response_code(400);
     exit('Invalid data');
 }
@@ -400,16 +405,49 @@ if ($security_config['validate_timestamp'] ?? true) {
 
 log_webhook('All security validations passed - processing webhook');
 
-// Handle payment notification
-if ($data['type'] === 'payment') {
+// Get notification type - MercadoPago uses 'type' (newer) or 'topic' (legacy)
+$notification_type = $data['type'] ?? $data['topic'] ?? 'unknown';
+$notification_action = $data['action'] ?? 'unknown';
+
+log_webhook('Determining notification type', [
+    'type_field' => $data['type'] ?? null,
+    'topic_field' => $data['topic'] ?? null,
+    'action_field' => $notification_action,
+    'final_type' => $notification_type,
+    'full_data_keys' => array_keys($data)
+]);
+
+log_mp_debug('WEBHOOK_TYPE_DETECTION', 'Detectando tipo de notificación', [
+    'type' => $data['type'] ?? null,
+    'topic' => $data['topic'] ?? null,
+    'action' => $notification_action,
+    'resolved_type' => $notification_type
+]);
+
+// Handle payment notification (check both 'payment' and 'payments' for compatibility)
+if ($notification_type === 'payment' || $notification_type === 'payments') {
     try {
-        $payment_id = $data['data']['id'] ?? null;
+        // Extract payment ID - support both nested (data.id) and flat (id) formats
+        $payment_id = $data['data']['id'] ?? $data['id'] ?? null;
 
         if (!$payment_id) {
-            log_webhook('No payment ID in webhook');
+            log_webhook('No payment ID in webhook', [
+                'has_data' => isset($data['data']),
+                'has_data_id' => isset($data['data']['id']),
+                'has_id' => isset($data['id']),
+                'data_keys' => array_keys($data),
+                'full_data' => $data
+            ]);
+            log_mp_debug('WEBHOOK_ERROR', 'Webhook de pago sin payment_id', $data);
             http_response_code(400);
             exit('No payment ID');
         }
+
+        log_mp_debug('PAYMENT_WEBHOOK', "Procesando webhook de pago - Payment ID: $payment_id", [
+            'payment_id' => $payment_id,
+            'notification_type' => $notification_type,
+            'action' => $notification_action
+        ]);
 
         // Get payment details from Mercadopago
         $mp = new MercadoPago($access_token, $sandbox_mode);
@@ -722,7 +760,7 @@ if ($data['type'] === 'payment') {
 }
 
 // Handle chargeback notification
-if ($data['type'] === 'chargebacks') {
+if ($notification_type === 'chargebacks' || $notification_type === 'chargeback') {
     try {
         $chargeback_id = $data['data']['id'] ?? null;
 
@@ -852,7 +890,7 @@ if ($data['type'] === 'chargebacks') {
 }
 
 // Handle merchant_order notification
-if ($data['type'] === 'merchant_order') {
+if ($notification_type === 'merchant_order' || $notification_type === 'merchant_orders') {
     try {
         $merchant_order_id = $data['data']['id'] ?? null;
 
@@ -882,7 +920,20 @@ if ($data['type'] === 'merchant_order') {
 }
 
 // Acknowledge other notification types
-log_webhook('Other notification type', ['type' => $data['type']]);
+log_webhook('Unrecognized notification type - webhook ignored', [
+    'notification_type' => $notification_type,
+    'type_field' => $data['type'] ?? null,
+    'topic_field' => $data['topic'] ?? null,
+    'action' => $notification_action,
+    'full_data' => $data
+]);
+
+log_mp_debug('WEBHOOK_IGNORED', "Tipo de notificación no reconocido: $notification_type", [
+    'notification_type' => $notification_type,
+    'action' => $notification_action,
+    'data' => $data
+]);
+
 http_response_code(200);
 exit('OK');
 
