@@ -14,7 +14,18 @@ config/email.json
 config/telegram.json
 config/payment.json
 config/currency.json
+config/analytics.json
+config/carousel.json
+config/hero.json
+config/products-heading.json
+config/theme.json
+config/dashboard.json
+config/maintenance.json
 data/products.json
+data/webhook_log.json
+data/webhook_rate_limit.json
+data/archived_orders.json
+data/mp_preference_log.json
 
 # ===== USER DATA (PRODUCTION) =====
 data/passwords/
