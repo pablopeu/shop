@@ -4,6 +4,46 @@ require_once __DIR__ . '/../includes/auth.php';
 session_start();
 require_admin();
 
+// Create default dashboard.json if it doesn't exist
+$dashboard_config_file = __DIR__ . '/../config/dashboard.json';
+if (!file_exists($dashboard_config_file)) {
+    $default_config = [
+        'widgets_order' => [
+            'stock_bajo',
+            'productos_activos',
+            'sin_stock',
+            'ordenes_totales',
+            'promociones',
+            'cupones',
+            'reviews_pendientes'
+        ],
+        'widgets' => [
+            'productos_activos' => true,
+            'stock_bajo' => true,
+            'sin_stock' => true,
+            'ordenes_totales' => true,
+            'promociones' => true,
+            'cupones' => true,
+            'reviews_pendientes' => true
+        ],
+        'quick_actions_order' => [
+            'productos',
+            'ventas',
+            'cupones',
+            'reviews',
+            'config'
+        ],
+        'quick_actions' => [
+            'productos' => true,
+            'ventas' => true,
+            'cupones' => true,
+            'reviews' => true,
+            'config' => true
+        ]
+    ];
+    write_json($dashboard_config_file, $default_config);
+}
+
 $message = $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
     if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {

@@ -134,6 +134,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
     <script>
         const CURRENCY = '<?php echo $selected_currency; ?>';
         const EXCHANGE_RATE = <?php echo $currency_config['exchange_rate']; ?>;
+        const BASE_URL = '<?php echo url('/'); ?>';
         let displayCurrency = 'ARS'; // Currency for display purposes only
 
         let cartData = {
@@ -240,7 +241,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'expired') {
                     <div class="empty-cart">
                         <h2>Tu carrito está vacío</h2>
                         <p>Agrega productos para comenzar tu compra</p>
-                        <a href="/" class="btn">Ir a la Tienda</a>
+                        <a href="${BASE_URL}" class="btn">Ir a la Tienda</a>
                     </div>
                 `;
                 document.getElementById('cartSummary').style.display = 'none';
