@@ -188,6 +188,16 @@ function send_telegram_payment_approved($order) {
         $message .= "📊 Cuotas: {$order['mercadopago_data']['installments']}x\n";
     }
 
+    // Show fees and net amount if available
+    if (isset($order['mercadopago_data']['total_fees']) && $order['mercadopago_data']['total_fees'] > 0) {
+        $fees = number_format($order['mercadopago_data']['total_fees'], 2);
+        $net = number_format($order['mercadopago_data']['net_received_amount'], 2);
+        $message .= "\n💵 <b>Detalles Financieros:</b>\n";
+        $message .= "   • Cobro: {$currency} {$total}\n";
+        $message .= "   • Comisión MP: -{$currency} {$fees}\n";
+        $message .= "   • <b>Acreditado: {$currency} {$net}</b>\n";
+    }
+
     $message .= "\n✨ ¡Procesar y preparar para envío!";
 
     return send_telegram_message($message);

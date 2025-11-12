@@ -9,6 +9,7 @@ require_once __DIR__ . '/includes/mercadopago.php';
 require_once __DIR__ . '/includes/orders.php';
 require_once __DIR__ . '/includes/email.php';
 require_once __DIR__ . '/includes/telegram.php';
+require_once __DIR__ . '/includes/mp-logger.php';
 
 // Log webhook for debugging
 function log_webhook($message, $data = []) {
@@ -295,6 +296,9 @@ log_webhook('Webhook received', [
     'has_signature' => !empty($headers['x-signature'] ?? '')
 ]);
 
+// Also log with detailed MP logger
+log_webhook_received($data, $headers, $client_ip);
+
 // Validate webhook
 if (!$data || !isset($data['type'])) {
     log_webhook('Invalid webhook data', ['data' => $data, 'raw_input' => $input]);
@@ -340,14 +344,30 @@ if (!check_rate_limit(100, 60)) {
 
 // 2. IP Validation (if enabled)
 if ($security_config['validate_ip'] ?? true) {
-    if (!validate_mercadopago_ip($client_ip, $mp_mode)) {
+    $ip_valid = validate_mercadopago_ip($client_ip, $mp_mode);
+    log_webhook_validation('IP_VALIDATION', $ip_valid, [
+        'client_ip' => $client_ip,
+        'mode' => $mp_mode,
+        'validation_enabled' => true
+    ]);
+
+    if (!$ip_valid) {
         log_webhook('IP validation failed - rejecting webhook', [
             'ip' => $client_ip,
+            'mode' => $mp_mode
+        ]);
+        log_mp_error('WEBHOOK_VALIDATION', 'Validación de IP falló', [
+            'client_ip' => $client_ip,
             'mode' => $mp_mode
         ]);
         http_response_code(403);
         exit('Forbidden');
     }
+} else {
+    log_webhook_validation('IP_VALIDATION', true, [
+        'validation_enabled' => false,
+        'reason' => 'IP validation disabled in config'
+    ]);
 }
 
 // 3. X-Signature Validation (if enabled and secret is configured)
@@ -401,12 +421,19 @@ if ($data['type'] === 'payment') {
                 'payment_id' => $payment_id,
                 'error' => $e->getMessage()
             ]);
+            log_mp_error('WEBHOOK', 'Error al obtener pago de MP API', [
+                'payment_id' => $payment_id,
+                'error' => $e->getMessage()
+            ]);
             // If it's a test payment that doesn't exist, return 200 to avoid retries
             http_response_code(200);
             exit('Payment not found in MP');
         }
 
         log_webhook('Payment details retrieved', ['payment' => $payment]);
+
+        // Log complete payment details with our detailed logger
+        log_payment_details($payment_id, $payment);
 
         // Find order by external_reference (order ID)
         $order_id = $payment['external_reference'] ?? null;
@@ -514,10 +541,36 @@ if ($data['type'] === 'payment') {
 
         if ($new_order_status && $order['status'] !== $new_order_status) {
             // Update order status
+            $old_status = $order['status'];
             $orders_data['orders'][$order_index]['status'] = $new_order_status;
             $orders_data['orders'][$order_index]['payment_status'] = $payment_status;
             $orders_data['orders'][$order_index]['payment_status_detail'] = $status_detail;
             $orders_data['orders'][$order_index]['payment_id'] = $payment_id;
+
+            // Extract fee details and net amount
+            $fee_details = $payment['fee_details'] ?? [];
+            $transaction_details = $payment['transaction_details'] ?? [];
+
+            // Calculate total fees from fee_details
+            $total_fees = 0;
+            $fee_breakdown = [];
+            foreach ($fee_details as $fee) {
+                $fee_amount = floatval($fee['amount'] ?? 0);
+                $total_fees += $fee_amount;
+                $fee_breakdown[] = [
+                    'type' => $fee['type'] ?? 'unknown',
+                    'amount' => $fee_amount,
+                    'fee_payer' => $fee['fee_payer'] ?? 'collector'
+                ];
+            }
+
+            // Get net amount (what merchant receives after fees)
+            $net_received_amount = floatval($transaction_details['net_received_amount'] ?? 0);
+
+            // If net_received_amount is not provided, calculate it
+            if ($net_received_amount == 0 && isset($payment['transaction_amount'])) {
+                $net_received_amount = floatval($payment['transaction_amount']) - $total_fees;
+            }
 
             // Update/create complete Mercadopago data
             $orders_data['orders'][$order_index]['mercadopago_data'] = [
@@ -539,6 +592,18 @@ if ($data['type'] === 'payment') {
                 'payer_identification' => $payment['payer']['identification']['number'] ?? null,
                 'card_last_four_digits' => $payment['card']['last_four_digits'] ?? null,
                 'card_first_six_digits' => $payment['card']['first_six_digits'] ?? null,
+
+                // NUEVO: Fees and net amount
+                'total_paid_amount' => floatval($payment['transaction_amount'] ?? 0),
+                'fee_details' => $fee_breakdown,
+                'total_fees' => $total_fees,
+                'net_received_amount' => $net_received_amount,
+
+                // Transaction details
+                'operation_number' => $transaction_details['external_resource_url'] ?? null,
+                'payment_method_reference_id' => $transaction_details['payment_method_reference_id'] ?? null,
+                'acquirer_reference' => $transaction_details['acquirer_reference'] ?? null,
+
                 'webhook_received_at' => date('Y-m-d H:i:s'),
             ];
 
@@ -580,24 +645,66 @@ if ($data['type'] === 'payment') {
                 'payment_status' => $payment_status
             ]);
 
+            // Log order update with detailed logger
+            log_order_update($order_id, $old_status, $new_order_status, $payment_status);
+
             // Send notifications based on new status
             $updated_order = $orders_data['orders'][$order_index];
 
             if ($new_order_status === 'cobrada') {
                 // Payment approved
-                send_payment_approved_email($updated_order);
-                send_telegram_payment_approved($updated_order);
+                $email_sent = send_payment_approved_email($updated_order);
+                log_notification_sent('EMAIL_PAYMENT_APPROVED', $updated_order['customer_email'], $email_sent, $order_id);
+
+                $telegram_sent = send_telegram_payment_approved($updated_order);
+                log_notification_sent('TELEGRAM_PAYMENT_APPROVED', 'admin', $telegram_sent, $order_id);
+
+                log_mp_debug('PAYMENT_APPROVED', "Pago aprobado - Orden: $order_id", [
+                    'order_id' => $order_id,
+                    'payment_id' => $payment_id,
+                    'amount' => $payment['transaction_amount'] ?? 0,
+                    'fees' => $total_fees,
+                    'net_amount' => $net_received_amount,
+                    'payment_method' => $payment['payment_method_id'] ?? 'unknown',
+                    'email_sent' => $email_sent,
+                    'telegram_sent' => $telegram_sent
+                ]);
             } elseif ($new_order_status === 'pendiente' && in_array($payment_status, ['pending', 'in_process', 'authorized', 'in_mediation'])) {
                 // Payment pending
-                send_payment_pending_email($updated_order);
+                $email_sent = send_payment_pending_email($updated_order);
+                log_notification_sent('EMAIL_PAYMENT_PENDING', $updated_order['customer_email'], $email_sent, $order_id);
+
+                log_mp_debug('PAYMENT_PENDING', "Pago pendiente - Orden: $order_id", [
+                    'order_id' => $order_id,
+                    'payment_id' => $payment_id,
+                    'payment_status' => $payment_status,
+                    'status_detail' => $status_detail,
+                    'email_sent' => $email_sent
+                ]);
             } elseif ($new_order_status === 'rechazada') {
                 // Payment rejected
-                send_payment_rejected_email($updated_order, $status_detail);
-                send_telegram_payment_rejected($updated_order);
+                $email_sent = send_payment_rejected_email($updated_order, $status_detail);
+                log_notification_sent('EMAIL_PAYMENT_REJECTED', $updated_order['customer_email'], $email_sent, $order_id);
+
+                $telegram_sent = send_telegram_payment_rejected($updated_order);
+                log_notification_sent('TELEGRAM_PAYMENT_REJECTED', 'admin', $telegram_sent, $order_id);
+
+                log_mp_debug('PAYMENT_REJECTED', "Pago rechazado - Orden: $order_id", [
+                    'order_id' => $order_id,
+                    'payment_id' => $payment_id,
+                    'status_detail' => $status_detail,
+                    'email_sent' => $email_sent,
+                    'telegram_sent' => $telegram_sent
+                ]);
             } elseif ($new_order_status === 'cancelada' && in_array($payment_status, ['refunded', 'charged_back'])) {
                 // Refunded or charged back - don't send regular rejection email
                 // Chargeback notification will be sent separately
                 log_webhook('Order cancelled due to refund/chargeback - no customer notification sent');
+                log_mp_debug('PAYMENT_REFUNDED_OR_CHARGEBACK', "Pago reembolsado o contracargo - Orden: $order_id", [
+                    'order_id' => $order_id,
+                    'payment_id' => $payment_id,
+                    'payment_status' => $payment_status
+                ]);
             }
 
             http_response_code(200);
