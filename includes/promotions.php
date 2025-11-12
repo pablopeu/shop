@@ -193,6 +193,28 @@ function restore_promotion($promotion_id) {
 }
 
 /**
+ * Delete archived promotion permanently
+ */
+function delete_archived_promotion($promotion_id) {
+    $archived_file = __DIR__ . '/../data/archived_promotions.json';
+    $archived_data = read_json($archived_file);
+
+    $initial_count = count($archived_data['promotions'] ?? []);
+    $archived_data['promotions'] = array_filter($archived_data['promotions'] ?? [], function($p) use ($promotion_id) {
+        return $p['id'] !== $promotion_id;
+    });
+    $archived_data['promotions'] = array_values($archived_data['promotions']);
+
+    $deleted = count($archived_data['promotions']) < $initial_count;
+
+    if ($deleted && write_json($archived_file, $archived_data)) {
+        return ['success' => true, 'message' => 'Promoción eliminada permanentemente'];
+    }
+
+    return ['success' => false, 'message' => 'Error al eliminar la promoción'];
+}
+
+/**
  * Get applicable promotions for a cart
  * @param array $cart_items
  * @param float $subtotal

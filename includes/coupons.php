@@ -251,6 +251,28 @@ function restore_coupon($coupon_id) {
 }
 
 /**
+ * Delete archived coupon permanently
+ */
+function delete_archived_coupon($coupon_id) {
+    $archived_file = __DIR__ . '/../data/archived_coupons.json';
+    $archived_data = read_json($archived_file);
+
+    $initial_count = count($archived_data['coupons'] ?? []);
+    $archived_data['coupons'] = array_filter($archived_data['coupons'] ?? [], function($c) use ($coupon_id) {
+        return $c['id'] !== $coupon_id;
+    });
+    $archived_data['coupons'] = array_values($archived_data['coupons']);
+
+    $deleted = count($archived_data['coupons']) < $initial_count;
+
+    if ($deleted && write_json($archived_file, $archived_data)) {
+        return ['success' => true, 'message' => 'Cupón eliminado permanentemente'];
+    }
+
+    return ['success' => false, 'message' => 'Error al eliminar el cupón'];
+}
+
+/**
  * Increment coupon usage
  */
 function increment_coupon_usage($coupon_id) {
