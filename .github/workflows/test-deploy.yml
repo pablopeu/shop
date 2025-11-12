@@ -1,14 +1,11 @@
-name: 🚀 Deploy to FTP
+name: 🧪 Test Deploy (Dry Run)
 
 on:
-  push:
-    branches:
-      - '**'  # Deploy desde todos los branches
-  workflow_dispatch:  # Permitir deploy manual
+  workflow_dispatch:  # Solo manual
 
 jobs:
-  deploy:
-    name: 🌐 FTP Deploy
+  test-deploy:
+    name: 🧪 Test Deploy - No hace cambios
     runs-on: ubuntu-latest
 
     steps:
@@ -17,17 +14,15 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: 📂 Sync files to FTP
+      - name: 🔍 Dry Run - Ver qué archivos se subirían
         uses: SamKirkland/FTP-Deploy-Action@4.3.0
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FTP_REMOTE_PATH }}
-          # Protección: NO borrar archivos remotos que no están en Git
           dangerous-clean-slate: false
-          # Nota: FTP_REMOTE_PATH debe configurarse en GitHub Secrets
-          # Ejemplos comunes: /public_html/ o /httpdocs/ o /www/ o /
+          dry-run: true  # NO hace cambios, solo muestra qué haría
           exclude: |
             **/.git*
             **/.git*/**
