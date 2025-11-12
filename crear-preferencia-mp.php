@@ -7,6 +7,7 @@
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/orders.php';
 require_once __DIR__ . '/includes/mercadopago.php';
+require_once __DIR__ . '/includes/mp-logger.php';
 
 header('Content-Type: application/json');
 
@@ -298,6 +299,9 @@ try {
 
     // Log preference creation
     error_log("Preference created: " . $preference['id'] . " for order " . $order_id);
+
+    // Log with detailed logger
+    log_preference_created($order_id, $preference['id'], $preference_data);
 
     echo json_encode([
         'success' => true,

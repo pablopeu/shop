@@ -80,6 +80,20 @@ $site_url = $site_config['site_url'] ?? 'https://tienda.com';
                                                     <?= $order['currency'] === 'USD' ? 'USD' : '$' ?> <?= number_format($order['total'], 2) ?>
                                                 </td>
                                             </tr>
+                                            <?php if (isset($order['mercadopago_data']['total_fees']) && $order['mercadopago_data']['total_fees'] > 0): ?>
+                                            <tr>
+                                                <td style="color: #666666; font-size: 13px; font-weight: 500;">Comisiones MP:</td>
+                                                <td style="color: #dc3545; font-size: 14px; text-align: right;">
+                                                    - $<?= number_format($order['mercadopago_data']['total_fees'], 2) ?>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666666; font-size: 13px; font-weight: 600; border-top: 1px solid #e0e0e0; padding-top: 8px;">Total Acreditado:</td>
+                                                <td style="color: #28a745; font-size: 15px; font-weight: 700; text-align: right; border-top: 1px solid #e0e0e0; padding-top: 8px;">
+                                                    $<?= number_format($order['mercadopago_data']['net_received_amount'], 2) ?>
+                                                </td>
+                                            </tr>
+                                            <?php endif; ?>
                                             <?php if (isset($order['mercadopago_data']['payment_method_id'])): ?>
                                             <tr>
                                                 <td style="color: #666666; font-size: 14px; font-weight: 600;">Método de Pago:</td>

@@ -9,6 +9,7 @@ require_once __DIR__ . '/includes/mercadopago.php';
 require_once __DIR__ . '/includes/orders.php';
 require_once __DIR__ . '/includes/email.php';
 require_once __DIR__ . '/includes/telegram.php';
+require_once __DIR__ . '/includes/mp-logger.php';
 
 header('Content-Type: application/json');
 
@@ -107,14 +108,50 @@ try {
     // Log payment data for debugging (without sensitive data)
     error_log("Creating payment - Amount: $total_ars ARS, Payment method: {$data['payment_method_id']}, Token length: " . strlen($card_token));
 
+    log_mp_debug('PAYMENT_CREATE_REQUEST', "Creando pago directo con API - Orden: $order_id", [
+        'order_id' => $order_id,
+        'amount_ars' => $total_ars,
+        'payment_method_id' => $data['payment_method_id'],
+        'installments' => $data['installments'] ?? 1,
+        'payer_email' => $data['payer']['email']
+    ]);
+
     // Process payment with Mercadopago
     $mp = new MercadoPago($access_token, $sandbox_mode);
     $payment = $mp->createPayment($payment_data);
+
+    // Log payment result
+    log_payment_details($payment['id'], $payment);
 
     // Update order with payment info
     $orders_data['orders'][$order_index]['payment_id'] = $payment['id'];
     $orders_data['orders'][$order_index]['payment_status'] = $payment['status'];
     $orders_data['orders'][$order_index]['payment_status_detail'] = $payment['status_detail'];
+
+    // Extract fee details and net amount
+    $fee_details = $payment['fee_details'] ?? [];
+    $transaction_details = $payment['transaction_details'] ?? [];
+
+    // Calculate total fees from fee_details
+    $total_fees = 0;
+    $fee_breakdown = [];
+    foreach ($fee_details as $fee) {
+        $fee_amount = floatval($fee['amount'] ?? 0);
+        $total_fees += $fee_amount;
+        $fee_breakdown[] = [
+            'type' => $fee['type'] ?? 'unknown',
+            'amount' => $fee_amount,
+            'fee_payer' => $fee['fee_payer'] ?? 'collector'
+        ];
+    }
+
+    // Get net amount (what merchant receives after fees)
+    $net_received_amount = floatval($transaction_details['net_received_amount'] ?? 0);
+
+    // If net_received_amount is not provided, calculate it
+    if ($net_received_amount == 0 && isset($payment['transaction_amount'])) {
+        $net_received_amount = floatval($payment['transaction_amount']) - $total_fees;
+    }
 
     // Save complete Mercadopago data for reference
     $orders_data['orders'][$order_index]['mercadopago_data'] = [
@@ -136,6 +173,17 @@ try {
         'payer_identification' => $payment['payer']['identification']['number'] ?? null,
         'card_last_four_digits' => $payment['card']['last_four_digits'] ?? null,
         'card_first_six_digits' => $payment['card']['first_six_digits'] ?? null,
+
+        // NUEVO: Fees and net amount
+        'total_paid_amount' => floatval($payment['transaction_amount'] ?? 0),
+        'fee_details' => $fee_breakdown,
+        'total_fees' => $total_fees,
+        'net_received_amount' => $net_received_amount,
+
+        // Transaction details
+        'operation_number' => $transaction_details['external_resource_url'] ?? null,
+        'payment_method_reference_id' => $transaction_details['payment_method_reference_id'] ?? null,
+        'acquirer_reference' => $transaction_details['acquirer_reference'] ?? null,
     ];
 
     // Update order status based on payment status
