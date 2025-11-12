@@ -888,3 +888,51 @@ function delete_archived_product($product_id) {
         'message' => 'Producto eliminado permanentemente.'
     ];
 }
+
+/**
+ * Update products display order
+ * @param array $product_order Array of product IDs in desired order
+ * @return array ['success' => bool, 'message' => string]
+ */
+function update_products_display_order($product_order) {
+    $products_file = __DIR__ . '/../data/products.json';
+    $products_data = read_json($products_file);
+
+    if (!isset($products_data['products']) || !is_array($products_data['products'])) {
+        return [
+            'success' => false,
+            'message' => 'Error al acceder a la lista de productos'
+        ];
+    }
+
+    // Create a mapping of product_id => display_order
+    $order_map = [];
+    foreach ($product_order as $index => $product_id) {
+        $order_map[$product_id] = $index;
+    }
+
+    // Update display_order for each product
+    $updated_count = 0;
+    foreach ($products_data['products'] as &$product) {
+        if (isset($order_map[$product['id']])) {
+            $product['display_order'] = $order_map[$product['id']];
+            $updated_count++;
+        } elseif (!isset($product['display_order'])) {
+            // Assign a high order number to products not in the order array
+            $product['display_order'] = 9999;
+        }
+    }
+
+    // Save the updated products file
+    if (write_json($products_file, $products_data)) {
+        return [
+            'success' => true,
+            'message' => "$updated_count productos reordenados exitosamente"
+        ];
+    }
+
+    return [
+        'success' => false,
+        'message' => 'Error al guardar el nuevo orden'
+    ];
+}
