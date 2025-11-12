@@ -10,6 +10,7 @@ config/*.key
 # Use the .example files as templates
 config/site.json
 config/footer.json
+config/footer.json[0-9]*
 config/email.json
 config/telegram.json
 config/payment.json
