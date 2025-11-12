@@ -129,6 +129,62 @@ function write_json($file, $data, $pretty = true) {
 }
 
 /**
+ * Get default JSON structure for known files
+ * @param string $file Path to JSON file
+ * @return mixed Default structure or null if unknown
+ */
+function get_default_json_structure($file) {
+    $basename = basename($file);
+
+    switch ($basename) {
+        case 'reviews.json':
+            return ['reviews' => []];
+
+        case 'archived_orders.json':
+            return ['orders' => []];
+
+        case 'orders.json':
+            return ['orders' => []];
+
+        case 'products.json':
+            return ['products' => []];
+
+        case 'coupons.json':
+            return ['coupons' => []];
+
+        case 'promotions.json':
+            return ['promotions' => []];
+
+        case 'wishlists.json':
+            return ['wishlists' => []];
+
+        case 'newsletters.json':
+            return ['subscribers' => []];
+
+        case 'admin_logs.json':
+            return ['logs' => []];
+
+        case 'stock_logs.json':
+            return ['logs' => []];
+
+        case 'visits.json':
+            return ['visits' => []];
+
+        case 'webhook_log.json':
+            return ['logs' => []];
+
+        case 'webhook_rate_limit.json':
+            return ['limits' => []];
+
+        case 'mp_preference_log.json':
+            return ['preferences' => []];
+
+        default:
+            return null;
+    }
+}
+
+/**
  * Sanitize input string
  * @param string $input Input string
  * @return string Sanitized string
