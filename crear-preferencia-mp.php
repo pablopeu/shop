@@ -169,7 +169,8 @@ try {
         // Try to extract: skip country code (54), take area code (2-4 digits), rest is number
 
         // Remove country code (54) if present at start
-        if (strpos($phone_cleaned, '54') === 0 && strlen($phone_cleaned) > 10) {
+        if (strpos($phone_cleaned, '54') === 0 && strlen($phone_cleaned) >= 12) {
+            // Full format: 54 + area (2-4) + number (6-8) = 10-14 digits
             $phone_cleaned = substr($phone_cleaned, 2); // Remove "54"
         }
 
