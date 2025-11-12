@@ -80,32 +80,74 @@ try {
     // Prepare items for preference
     $items = [];
     foreach ($order['items'] as $item) {
+        // Convert price to ARS if order is in USD
+        $item_price_ars = floatval($item['price']);
+        if ($order['currency'] === 'USD') {
+            $item_price_ars = $item_price_ars * $exchange_rate;
+        }
+
         $items[] = [
             'title' => $item['name'],
-            'quantity' => $item['quantity'],
-            'unit_price' => floatval($item['price']),
+            'quantity' => intval($item['quantity']),
+            'unit_price' => round($item_price_ars, 2),
             'currency_id' => 'ARS'
         ];
     }
 
     // Add shipping if exists
     if (isset($order['shipping_cost']) && $order['shipping_cost'] > 0) {
+        $shipping_ars = floatval($order['shipping_cost']);
+        if ($order['currency'] === 'USD') {
+            $shipping_ars = $shipping_ars * $exchange_rate;
+        }
+
         $items[] = [
             'title' => 'Envío',
             'quantity' => 1,
-            'unit_price' => floatval($order['shipping_cost']),
+            'unit_price' => round($shipping_ars, 2),
             'currency_id' => 'ARS'
         ];
     }
 
     // Apply discount if exists
     if (isset($order['discount']) && $order['discount'] > 0) {
+        $discount_ars = floatval($order['discount']);
+        if ($order['currency'] === 'USD') {
+            $discount_ars = $discount_ars * $exchange_rate;
+        }
+
         $items[] = [
             'title' => 'Descuento (cupón: ' . ($order['coupon_code'] ?? 'N/A') . ')',
             'quantity' => 1,
-            'unit_price' => -floatval($order['discount']),
+            'unit_price' => -round($discount_ars, 2),
             'currency_id' => 'ARS'
         ];
+    }
+
+    // Clean phone number (remove non-numeric characters except +)
+    $phone = $order['customer']['phone'] ?? '';
+    $phone_cleaned = preg_replace('/[^0-9+]/', '', $phone);
+
+    // Extract area code and number
+    // Example: "+54 1154099160" -> area_code: "11", number: "54099160"
+    $area_code = '';
+    $phone_number = $phone_cleaned;
+
+    // If phone starts with +, extract country code
+    if (strpos($phone_cleaned, '+') === 0) {
+        // Remove the + and country code
+        $phone_cleaned = ltrim($phone_cleaned, '+');
+        // For Argentina (+54), extract area code from remaining digits
+        if (strlen($phone_cleaned) >= 10) {
+            // Skip country code (first 2 digits for Argentina)
+            $phone_without_country = substr($phone_cleaned, 2);
+            if (strlen($phone_without_country) >= 10) {
+                $area_code = substr($phone_without_country, 0, 2);
+                $phone_number = substr($phone_without_country, 2);
+            } else {
+                $phone_number = $phone_without_country;
+            }
+        }
     }
 
     // Prepare preference data
@@ -114,10 +156,7 @@ try {
         'payer' => [
             'name' => $order['customer']['name'] ?? '',
             'surname' => '',
-            'email' => $order['customer']['email'] ?? '',
-            'phone' => [
-                'number' => $order['customer']['phone'] ?? ''
-            ]
+            'email' => $order['customer']['email'] ?? ''
         ],
         'back_urls' => [
             'success' => get_absolute_url('/gracias.php?order=' . $order_id . '&token=' . $tracking_token),
@@ -133,6 +172,18 @@ try {
             'tracking_token' => $tracking_token
         ]
     ];
+
+    // Only add phone if we have valid data
+    if (!empty($phone_number)) {
+        $preference_data['payer']['phone'] = [
+            'area_code' => $area_code ?: '',
+            'number' => $phone_number
+        ];
+    }
+
+    // Log preference data being sent (for debugging)
+    error_log("Creating MP preference for order " . $order_id . " - Items: " . count($items) . ", Total ARS: " . $total_ars);
+    error_log("Preference data: " . json_encode($preference_data, JSON_PRETTY_PRINT));
 
     // Create preference in Mercadopago
     $ch = curl_init();
@@ -150,8 +201,13 @@ try {
     curl_close($ch);
 
     if ($http_code !== 201) {
-        error_log("Error creating preference: " . $response);
-        throw new Exception('Error al crear preferencia de pago');
+        $error_details = json_decode($response, true);
+        error_log("MP API Error (HTTP $http_code): " . $response);
+        $error_message = 'Error al crear preferencia de pago';
+        if (isset($error_details['message'])) {
+            $error_message .= ': ' . $error_details['message'];
+        }
+        throw new Exception($error_message);
     }
 
     $preference = json_decode($response, true);
