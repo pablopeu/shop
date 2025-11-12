@@ -86,8 +86,17 @@ try {
             $item_price_ars = $item_price_ars * $exchange_rate;
         }
 
+        // Validate unit price (must be > 0)
+        if ($item_price_ars <= 0) {
+            throw new Exception("Item '{$item['name']}' tiene precio inválido: {$item_price_ars}");
+        }
+
+        // Sanitize and truncate title (max 256 chars for Mercadopago)
+        $title = strip_tags($item['name']);
+        $title = mb_substr($title, 0, 256);
+
         $items[] = [
-            'title' => $item['name'],
+            'title' => $title,
             'quantity' => intval($item['quantity']),
             'unit_price' => round($item_price_ars, 2),
             'currency_id' => 'ARS'
@@ -124,8 +133,29 @@ try {
         ];
     }
 
+    // Validate total items value
+    $calculated_total = 0;
+    foreach ($items as $item) {
+        $calculated_total += $item['unit_price'] * $item['quantity'];
+    }
+    $calculated_total = round($calculated_total, 2);
+
+    // Validate email (Mercadopago requirement)
+    $customer_email = $order['customer_email'] ?? '';
+    if (empty($customer_email) || !filter_var($customer_email, FILTER_VALIDATE_EMAIL)) {
+        throw new Exception("Email inválido: " . $customer_email);
+    }
+
+    // Validate customer name
+    $customer_name = trim($order['customer_name'] ?? '');
+    if (empty($customer_name)) {
+        throw new Exception("Nombre de cliente requerido");
+    }
+    // Limit name to 256 chars
+    $customer_name = mb_substr($customer_name, 0, 256);
+
     // Clean phone number (remove non-numeric characters except +)
-    $phone = $order['customer']['phone'] ?? '';
+    $phone = $order['customer_phone'] ?? '';
     $phone_cleaned = preg_replace('/[^0-9+]/', '', $phone);
 
     // Extract area code and number
@@ -154,9 +184,9 @@ try {
     $preference_data = [
         'items' => $items,
         'payer' => [
-            'name' => $order['customer']['name'] ?? '',
+            'name' => $customer_name,
             'surname' => '',
-            'email' => $order['customer']['email'] ?? ''
+            'email' => $customer_email
         ],
         'back_urls' => [
             'success' => get_absolute_url('/gracias.php?order=' . $order_id . '&token=' . $tracking_token),
@@ -166,7 +196,7 @@ try {
         'auto_return' => 'approved',
         'external_reference' => $order_id,
         'notification_url' => get_absolute_url('/webhook.php'),
-        'statement_descriptor' => substr($site_config['site_name'], 0, 22), // Max 22 chars
+        'statement_descriptor' => mb_substr($site_config['site_name'], 0, 22), // Max 22 chars
         'metadata' => [
             'order_id' => $order_id,
             'tracking_token' => $tracking_token
@@ -184,6 +214,27 @@ try {
     // Log preference data being sent (for debugging)
     error_log("Creating MP preference for order " . $order_id . " - Items: " . count($items) . ", Total ARS: " . $total_ars);
     error_log("Preference data: " . json_encode($preference_data, JSON_PRETTY_PRINT));
+
+    // Also save to data directory for easy access
+    $log_file = __DIR__ . '/data/mp_preference_log.json';
+    $log_data = [
+        'timestamp' => date('Y-m-d H:i:s'),
+        'order_id' => $order_id,
+        'total_ars' => $total_ars,
+        'calculated_total' => $calculated_total,
+        'preference_data' => $preference_data
+    ];
+
+    $existing_logs = file_exists($log_file) ? json_decode(file_get_contents($log_file), true) : [];
+    if (!is_array($existing_logs)) $existing_logs = [];
+
+    $existing_logs[] = $log_data;
+    // Keep only last 20 logs
+    if (count($existing_logs) > 20) {
+        $existing_logs = array_slice($existing_logs, -20);
+    }
+
+    file_put_contents($log_file, json_encode($existing_logs, JSON_PRETTY_PRINT));
 
     // Create preference in Mercadopago
     $ch = curl_init();
