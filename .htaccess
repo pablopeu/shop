@@ -1,4 +1,4 @@
-# Security: Block access to sensitive files and directories
+# Security: Block access to sensitive files only
 
 # Block access to composer files
 <FilesMatch "^composer\.(json|lock)$">
@@ -48,34 +48,7 @@
 # Prevent directory listing
 Options -Indexes
 
-# Protect specific directories from direct access
-RewriteEngine On
-
-# Block direct access to config directory
-RewriteCond %{REQUEST_URI} ^/shop/config/ [NC]
-RewriteRule ^ - [F,L]
-
-# Block direct access to data directory
-RewriteCond %{REQUEST_URI} ^/shop/data/ [NC]
-RewriteRule ^ - [F,L]
-
-# Block direct access to includes directory
-RewriteCond %{REQUEST_URI} ^/shop/includes/ [NC]
-RewriteRule ^ - [F,L]
-
-# Block direct access to mcp-server directory
-RewriteCond %{REQUEST_URI} ^/shop/mcp-server/ [NC]
-RewriteRule ^ - [F,L]
-
-# Block direct access to vendor directory
-RewriteCond %{REQUEST_URI} ^/shop/vendor/ [NC]
-RewriteRule ^ - [F,L]
-
-# Block direct access to node_modules directory
-RewriteCond %{REQUEST_URI} ^/shop/node_modules/ [NC]
-RewriteRule ^ - [F,L]
-
-# Security headers (if mod_headers is available, otherwise ignored)
+# Security headers (if mod_headers is available)
 <IfModule mod_headers.c>
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set X-XSS-Protection "1; mode=block"
