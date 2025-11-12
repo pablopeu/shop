@@ -134,18 +134,54 @@ function validate_timestamp($signature_header, $max_age_minutes = 5) {
 
 /**
  * Validate IP address is from Mercadopago
+ *
+ * NOTE: Mercadopago recommends using signature validation instead of IP whitelisting
+ * because their IPs are dynamic and change frequently. This validation is optional.
+ *
+ * @param string $ip Client IP address
+ * @param string $mode 'sandbox' or 'production'
+ * @return bool True if IP is valid
  */
-function validate_mercadopago_ip($ip) {
-    // Official Mercadopago IP ranges
-    // Source: https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications/webhooks
-    $allowed_ranges = [
+function validate_mercadopago_ip($ip, $mode = 'production') {
+    // Mercadopago legacy IP ranges (documented in 2021, may be outdated)
+    $legacy_ranges = [
         '209.225.49.0/24',
         '216.33.197.0/24',
         '216.33.196.0/24',
-        '52.67.0.0/16',      // AWS South America (São Paulo)
-        '54.94.0.0/16',      // AWS South America (São Paulo)
-        '54.232.0.0/16',     // AWS South America (São Paulo)
+        '63.128.82.0/24',
+        '63.128.83.0/24',
+        '63.128.94.0/24',
     ];
+
+    // AWS South America (São Paulo) - Used for sandbox and some production
+    $aws_sa_ranges = [
+        '52.67.0.0/16',
+        '54.94.0.0/16',
+        '54.232.0.0/16',
+    ];
+
+    // AWS US East (N. Virginia & Ohio) - Used primarily for production
+    // Based on observed IPs: 54.88.x.x, 18.206.x.x, 18.215.x.x
+    $aws_us_ranges = [
+        '54.88.0.0/16',      // AWS US East
+        '18.206.0.0/16',     // AWS US East
+        '18.215.0.0/16',     // AWS US East
+        '52.0.0.0/12',       // AWS US East (broader range)
+        '18.208.0.0/13',     // AWS US East (broader range)
+    ];
+
+    // Google Cloud Platform ranges - Sometimes used by Mercadopago
+    $gcp_ranges = [
+        '35.245.0.0/16',     // GCP (observed: 35.245.91.34)
+    ];
+
+    // Combine ranges based on mode
+    $allowed_ranges = array_merge($legacy_ranges, $aws_sa_ranges);
+
+    // Production mode includes additional AWS US ranges
+    if ($mode === 'production') {
+        $allowed_ranges = array_merge($allowed_ranges, $aws_us_ranges, $gcp_ranges);
+    }
 
     foreach ($allowed_ranges as $range) {
         if (ip_in_range($ip, $range)) {
@@ -153,7 +189,11 @@ function validate_mercadopago_ip($ip) {
         }
     }
 
-    log_webhook('IP not in Mercadopago whitelist', ['ip' => $ip]);
+    log_webhook('IP not in Mercadopago whitelist', [
+        'ip' => $ip,
+        'mode' => $mode,
+        'note' => 'Consider disabling IP validation and relying on signature validation instead'
+    ]);
     return false;
 }
 
@@ -266,8 +306,8 @@ if (!$data || !isset($data['type'])) {
 $payment_config = read_json(__DIR__ . '/config/payment.json');
 $payment_credentials = get_payment_credentials();
 
-$sandbox_mode = $payment_config['mercadopago']['mode'] ?? 'sandbox';
-$sandbox_mode = ($sandbox_mode === 'sandbox');
+$mp_mode = $payment_config['mercadopago']['mode'] ?? 'sandbox';
+$sandbox_mode = ($mp_mode === 'sandbox');
 
 $access_token = $sandbox_mode ?
     ($payment_credentials['mercadopago']['access_token_sandbox'] ?? '') :
@@ -300,8 +340,11 @@ if (!check_rate_limit(100, 60)) {
 
 // 2. IP Validation (if enabled)
 if ($security_config['validate_ip'] ?? true) {
-    if (!validate_mercadopago_ip($client_ip)) {
-        log_webhook('IP validation failed - rejecting webhook', ['ip' => $client_ip]);
+    if (!validate_mercadopago_ip($client_ip, $mp_mode)) {
+        log_webhook('IP validation failed - rejecting webhook', [
+            'ip' => $client_ip,
+            'mode' => $mp_mode
+        ]);
         http_response_code(403);
         exit('Forbidden');
     }

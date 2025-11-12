@@ -57,6 +57,7 @@ $site_config = read_json(__DIR__ . '/config/site.json');
 $footer_config = read_json(__DIR__ . '/config/footer.json');
 $currency_config = read_json(__DIR__ . '/config/currency.json');
 $payment_config = read_json(__DIR__ . '/config/payment.json');
+$payment_credentials = get_payment_credentials();
 $theme_config = read_json(__DIR__ . '/config/theme.json');
 
 $active_theme = $theme_config['active_theme'] ?? 'minimal';
@@ -189,6 +190,18 @@ if ($checkout_currency === 'ARS') {
 // Process checkout form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
 
+    // Check if this is an AJAX request
+    $is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+
+    // Clean output buffer for AJAX requests to ensure clean JSON response
+    if ($is_ajax) {
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        ob_start();
+    }
+
     // Validate CSRF token
     if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Token de seguridad inválido';
@@ -197,10 +210,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
     // Get form data
     $customer_name = sanitize_input($_POST['customer_name'] ?? '');
     $customer_email = sanitize_input($_POST['customer_email'] ?? '');
+    $country_code = sanitize_input($_POST['country_code'] ?? '+54');
     $customer_phone = sanitize_input($_POST['customer_phone'] ?? '');
     $contact_preference = sanitize_input($_POST['contact_preference'] ?? 'whatsapp');
     $delivery_method = sanitize_input($_POST['delivery_method'] ?? 'pickup');
     $payment_method = sanitize_input($_POST['payment_method'] ?? '');
+
+    // Combine country code and phone
+    $full_phone = $country_code . ' ' . $customer_phone;
 
     // Validate required fields
     if (empty($customer_name)) {
@@ -215,7 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         $errors[] = 'El teléfono es requerido';
     }
 
-    if (!in_array($contact_preference, ['whatsapp', 'phone'])) {
+    if (!in_array($contact_preference, ['whatsapp', 'email'])) {
         $errors[] = 'Preferencia de contacto inválida';
     }
 
@@ -233,8 +250,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
 
     if ($needs_shipping) {
         $address = sanitize_input($_POST['address'] ?? '');
+        $address_line2 = sanitize_input($_POST['address_line2'] ?? '');
         $city = sanitize_input($_POST['city'] ?? '');
         $postal_code = sanitize_input($_POST['postal_code'] ?? '');
+        $state = sanitize_input($_POST['state'] ?? '');
+        $country = sanitize_input($_POST['country'] ?? '');
 
         if (empty($address)) {
             $errors[] = 'La dirección es requerida para envío';
@@ -248,15 +268,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             $errors[] = 'El código postal es requerido para envío';
         }
 
+        if (empty($state)) {
+            $errors[] = 'La provincia/estado es requerida para envío';
+        }
+
+        if (empty($country)) {
+            $errors[] = 'El país es requerido para envío';
+        }
+
         if (empty($errors)) {
             $shipping_address = [
                 'name' => $customer_name,
                 'address' => $address,
+                'address_line2' => $address_line2,
                 'city' => $city,
                 'postal_code' => $postal_code,
-                'phone' => $customer_phone
+                'state' => $state,
+                'country' => $country,
+                'phone' => $full_phone
             ];
         }
+    }
+
+    // If there are errors and this is AJAX, return JSON
+    if (!empty($errors) && $is_ajax) {
+        ob_clean();
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'error' => implode(', ', $errors)
+        ]);
+        exit;
     }
 
     // If no errors, create order
@@ -286,7 +328,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             'shipping_address' => $shipping_address,
             'customer_name' => $customer_name,
             'customer_email' => $customer_email,
-            'customer_phone' => $customer_phone,
+            'customer_phone' => $full_phone,
             'contact_preference' => $contact_preference,
             'delivery_method' => $delivery_method,
             'notes' => sanitize_input($_POST['notes'] ?? '')
@@ -313,14 +355,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                 send_telegram_new_order($order);
             }
 
-            // Clear cart and coupon
-            unset($_SESSION['cart']);
-            unset($_SESSION['coupon_code']);
+            // Clear cart and coupon only for non-Mercadopago payments
+            // For Mercadopago: cart will be cleared when payment is confirmed (webhook)
+            if ($payment_method !== 'mercadopago') {
+                unset($_SESSION['cart']);
+                unset($_SESSION['coupon_code']);
+            }
 
             // Redirect based on payment method
             if ($payment_method === 'mercadopago') {
-                // Redirect to Checkout Bricks payment page
-                // Payment will be processed using embedded form
+                // If AJAX request, return JSON for modal
+                if ($is_ajax) {
+                    ob_clean();
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'success' => true,
+                        'order_id' => $order['id'],
+                        'order_number' => $order['order_number'],
+                        'tracking_token' => $order['tracking_token'],
+                        'total' => $order['total'],
+                        'currency' => $order['currency'],
+                        'items' => $order['items']
+                    ]);
+                    exit;
+                }
+
+                // Normal redirect to payment page
                 header("Location: " . url("/pagar-mercadopago.php?order={$order['id']}&token={$order['tracking_token']}"));
                 exit;
             } else {
@@ -330,6 +390,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             }
         } else {
             $errors[] = $result['error'] ?? 'Error al procesar la orden';
+
+            // If AJAX, return error as JSON
+            if ($is_ajax) {
+                ob_clean();
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false,
+                    'error' => $result['error'] ?? 'Error al procesar la orden'
+                ]);
+                exit;
+            }
         }
     }
 }
@@ -422,10 +493,31 @@ $csrf_token = generate_csrf_token();
 
                             <div class="form-group">
                                 <label for="customer_phone">Teléfono / WhatsApp *</label>
-                                <input type="tel" id="customer_phone" name="customer_phone"
-                                       value="<?php echo htmlspecialchars($_POST['customer_phone'] ?? ''); ?>"
-                                       placeholder="+54 9 11 1234-5678" required>
-                                <small style="color: #666;">Formato WhatsApp preferido</small>
+                                <div class="phone-input-group">
+                                    <select id="country_code" name="country_code" class="country-select" required>
+                                        <option value="+54" data-flag="🇦🇷" selected>🇦🇷 +54</option>
+                                        <option value="+1" data-flag="🇺🇸">🇺🇸 +1</option>
+                                        <option value="+52" data-flag="🇲🇽">🇲🇽 +52</option>
+                                        <option value="+34" data-flag="🇪🇸">🇪🇸 +34</option>
+                                        <option value="+55" data-flag="🇧🇷">🇧🇷 +55</option>
+                                        <option value="+56" data-flag="🇨🇱">🇨🇱 +56</option>
+                                        <option value="+57" data-flag="🇨🇴">🇨🇴 +57</option>
+                                        <option value="+51" data-flag="🇵🇪">🇵🇪 +51</option>
+                                        <option value="+598" data-flag="🇺🇾">🇺🇾 +598</option>
+                                        <option value="+595" data-flag="🇵🇾">🇵🇾 +595</option>
+                                        <option value="+591" data-flag="🇧🇴">🇧🇴 +591</option>
+                                        <option value="+593" data-flag="🇪🇨">🇪🇨 +593</option>
+                                        <option value="+58" data-flag="🇻🇪">🇻🇪 +58</option>
+                                        <option value="+44" data-flag="🇬🇧">🇬🇧 +44</option>
+                                        <option value="+33" data-flag="🇫🇷">🇫🇷 +33</option>
+                                        <option value="+49" data-flag="🇩🇪">🇩🇪 +49</option>
+                                        <option value="+39" data-flag="🇮🇹">🇮🇹 +39</option>
+                                    </select>
+                                    <input type="tel" id="customer_phone" name="customer_phone"
+                                           value="<?php echo htmlspecialchars($_POST['customer_phone'] ?? ''); ?>"
+                                           placeholder="11 1234-5678" required>
+                                </div>
+                                <small style="color: #666;">Ingresa tu número sin el código de país</small>
                             </div>
 
                             <div class="form-group">
@@ -437,16 +529,16 @@ $csrf_token = generate_csrf_token();
                                         <span>📱 Prefiero WhatsApp</span>
                                     </label>
                                     <label class="radio-option">
-                                        <input type="radio" name="contact_preference" value="phone"
-                                               <?php echo (isset($_POST['contact_preference']) && $_POST['contact_preference'] === 'phone') ? 'checked' : ''; ?>>
-                                        <span>📞 Prefiero llamada telefónica</span>
+                                        <input type="radio" name="contact_preference" value="email"
+                                               <?php echo (isset($_POST['contact_preference']) && $_POST['contact_preference'] === 'email') ? 'checked' : ''; ?>>
+                                        <span>✉️ Prefiero Email</span>
                                     </label>
                                 </div>
                             </div>
                         </div>
 
                         <div class="step-navigation">
-                            <button type="button" class="btn btn-primary" onclick="nextStep()">
+                            <button type="button" class="btn btn-primary" onclick="validateAndProceedStep1()">
                                 Siguiente →
                             </button>
                         </div>
@@ -489,19 +581,55 @@ $csrf_token = generate_csrf_token();
                                 <div class="form-group">
                                     <label for="address">Dirección *</label>
                                     <input type="text" id="address" name="address"
-                                           value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>">
+                                           value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>"
+                                           placeholder="Calle y número">
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="city">Ciudad *</label>
-                                    <input type="text" id="city" name="city"
-                                           value="<?php echo htmlspecialchars($_POST['city'] ?? ''); ?>">
+                                    <label for="address_line2">Depto / Piso / Barrio (opcional)</label>
+                                    <input type="text" id="address_line2" name="address_line2"
+                                           value="<?php echo htmlspecialchars($_POST['address_line2'] ?? ''); ?>"
+                                           placeholder="Ej: Depto 4B, Piso 3, Barrio Norte">
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="postal_code">Código Postal *</label>
+                                        <input type="text" id="postal_code" name="postal_code"
+                                               value="<?php echo htmlspecialchars($_POST['postal_code'] ?? ''); ?>">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="city">Ciudad *</label>
+                                        <input type="text" id="city" name="city"
+                                               value="<?php echo htmlspecialchars($_POST['city'] ?? ''); ?>">
+                                    </div>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="postal_code">Código Postal *</label>
-                                    <input type="text" id="postal_code" name="postal_code"
-                                           value="<?php echo htmlspecialchars($_POST['postal_code'] ?? ''); ?>">
+                                    <label for="state">Provincia / Estado *</label>
+                                    <input type="text" id="state" name="state"
+                                           value="<?php echo htmlspecialchars($_POST['state'] ?? ''); ?>">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="country">País *</label>
+                                    <select id="country" name="country" required>
+                                        <option value="Argentina" selected>Argentina</option>
+                                        <option value="Chile">Chile</option>
+                                        <option value="Uruguay">Uruguay</option>
+                                        <option value="Paraguay">Paraguay</option>
+                                        <option value="Brasil">Brasil</option>
+                                        <option value="Bolivia">Bolivia</option>
+                                        <option value="Perú">Perú</option>
+                                        <option value="Colombia">Colombia</option>
+                                        <option value="Ecuador">Ecuador</option>
+                                        <option value="Venezuela">Venezuela</option>
+                                        <option value="México">México</option>
+                                        <option value="España">España</option>
+                                        <option value="Estados Unidos">Estados Unidos</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -675,20 +803,101 @@ $csrf_token = generate_csrf_token();
         </div>
     </div>
 
-    <!-- Warning Modal -->
+    <!-- WhatsApp Validation Modal -->
+    <div id="whatsapp-validation-modal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h3>📱 Validar WhatsApp</h3>
+            <p>Vamos a enviar un mensaje de prueba a tu WhatsApp:</p>
+            <p class="phone-display"><strong id="whatsapp-phone-display"></strong></p>
+            <p style="color: #ff9800; font-weight: bold;">⚠️ Por favor revisa si te llegó el mensaje, ya que es la única forma que tendremos de avisarte sobre tu compra.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="skipWhatsAppValidation()">Omitir verificación</button>
+                <button type="button" class="btn btn-primary" onclick="sendWhatsAppTest()">Enviar mensaje de prueba</button>
+            </div>
+            <div id="whatsapp-status" style="margin-top: 15px; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Email Validation Modal -->
+    <div id="email-validation-modal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h3>✉️ Validar Email</h3>
+            <p>Vamos a enviar un correo de prueba a:</p>
+            <p class="email-display"><strong id="email-display"></strong></p>
+            <p style="color: #ff9800; font-weight: bold;">⚠️ Por favor revisa tu bandeja de entrada y spam, ya que es la única forma que tendremos de avisarte sobre tu compra.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="skipEmailValidation()">Omitir verificación</button>
+                <button type="button" class="btn btn-primary" onclick="sendEmailTest()">Enviar email de prueba</button>
+            </div>
+            <div id="email-status" style="margin-top: 15px; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Payment Warning Modal -->
     <div id="payment-warning-modal" class="modal" style="display: none;">
-        <div class="modal-overlay" onclick="closeModal()"></div>
+        <div class="modal-overlay"></div>
         <div class="modal-content">
             <h3>⚠️ Importante</h3>
             <p>Tu orden fue recibida pero el producto sigue disponible en el shop. <strong>Alguien más puede comprarlo y pagarlo antes que vos.</strong></p>
             <p>La única forma de garantizar la disponibilidad es pagando y avisándole a <strong><?php echo htmlspecialchars($site_config['site_owner']); ?></strong>.</p>
             <div class="modal-actions">
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">Entendido</button>
+                <button type="button" class="btn btn-primary" onclick="closePaymentWarningModal()">Entendido, finalizar compra</button>
+                <button type="button" class="btn btn-secondary" onclick="backToPaymentMethod()">Prefiero volver y cambiar el método de pago</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mercadopago Payment Modal -->
+    <div id="mercadopago-modal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeMercadopagoModal()"></div>
+        <div class="modal-content mercadopago-modal-content">
+            <button class="modal-close-btn" onclick="closeMercadopagoModal()">✕</button>
+            <div class="header">
+                <h2>💳 Pagar con Mercadopago</h2>
+                <p style="color: #666; font-size: 14px; margin-top: 5px;">Orden <span id="mp-order-number"></span></p>
+            </div>
+
+            <div class="order-summary-modal">
+                <h3 style="margin-bottom: 12px; color: #333;">Resumen de la orden</h3>
+                <div id="mp-order-items"></div>
+                <div class="order-row total" style="border-top: 2px solid #ddd; margin-top: 12px; padding-top: 12px; font-weight: bold;">
+                    <span>Total a pagar</span>
+                    <span id="mp-total"></span>
+                </div>
+            </div>
+
+            <div class="payment-form-modal">
+                <div class="loading" id="mp-loading">
+                    <div class="spinner"></div>
+                    <p>Preparando pago...</p>
+                </div>
+
+                <div id="walletBrick_container"></div>
+
+                <div class="error" id="mp-error-message" style="display: none;"></div>
+            </div>
+
+            <div class="payment-info-modal">
+                <p style="margin: 0 0 10px 0;"><strong>💳 Pago seguro con Mercadopago</strong></p>
+                <p style="margin: 0; line-height: 1.6; font-size: 14px; color: #666;">
+                    Al hacer clic en "Pagar", serás redirigido a Mercadopago para completar tu pago de forma segura.
+                </p>
             </div>
         </div>
     </div>
 
     <script>
+        // Mercadopago configuration
+        <?php
+        $mp_mode = $payment_config['mercadopago']['mode'] ?? 'sandbox';
+        $mp_public_key = $mp_mode === 'sandbox' ?
+            ($payment_credentials['mercadopago']['public_key_sandbox'] ?? '') :
+            ($payment_credentials['mercadopago']['public_key_prod'] ?? '');
+        ?>
+        const MERCADOPAGO_PUBLIC_KEY = '<?php echo $mp_public_key; ?>';
+
         // Step management
         let currentStep = 1;
 
@@ -866,33 +1075,370 @@ $csrf_token = generate_csrf_token();
             }
         }
 
+        // Validate and proceed to Step 2 from Step 1
+        let contactValidated = false;
+
+        function validateAndProceedStep1() {
+            if (!validateStep(1)) {
+                return;
+            }
+
+            // Check if user already validated or skipped in this session
+            const whatsappValidated = sessionStorage.getItem('whatsappValidated');
+            const emailValidated = sessionStorage.getItem('emailValidated');
+            const contactPref = document.querySelector('input[name="contact_preference"]:checked').value;
+
+            // If already validated or skipped for this preference, proceed
+            if ((contactPref === 'whatsapp' && whatsappValidated) ||
+                (contactPref === 'email' && emailValidated)) {
+                contactValidated = true;
+                nextStep();
+                return;
+            }
+
+            // If already validated in this page load, proceed
+            if (contactValidated) {
+                nextStep();
+                return;
+            }
+
+            // Show validation modal
+            if (contactPref === 'whatsapp') {
+                showWhatsAppValidationModal();
+            } else if (contactPref === 'email') {
+                showEmailValidationModal();
+            }
+        }
+
+        // WhatsApp Validation Modal functions
+        function showWhatsAppValidationModal() {
+            const countryCode = document.getElementById('country_code').value;
+            const phone = document.getElementById('customer_phone').value;
+            const fullPhone = countryCode + ' ' + phone;
+
+            document.getElementById('whatsapp-phone-display').textContent = fullPhone;
+            document.getElementById('whatsapp-validation-modal').style.display = 'flex';
+        }
+
+        function closeWhatsAppModal() {
+            document.getElementById('whatsapp-validation-modal').style.display = 'none';
+            document.getElementById('whatsapp-status').style.display = 'none';
+        }
+
+        function skipWhatsAppValidation() {
+            sessionStorage.setItem('whatsappValidated', 'skipped');
+            contactValidated = true;
+            closeWhatsAppModal();
+            nextStep();
+        }
+
+        function sendWhatsAppTest() {
+            const countryCode = document.getElementById('country_code').value;
+            const phone = document.getElementById('customer_phone').value;
+            const name = document.getElementById('customer_name').value;
+
+            // Show loading status
+            const statusDiv = document.getElementById('whatsapp-status');
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = '<p style="color: #007bff;">Enviando mensaje...</p>';
+
+            // Send test message via WhatsApp link
+            const message = encodeURIComponent(`Hola ${name}, este es un mensaje de prueba de ${<?php echo json_encode($site_config['site_name']); ?>}. Si recibiste este mensaje, tu WhatsApp está correctamente configurado para recibir notificaciones de tu pedido. ✅`);
+            const whatsappURL = `https://wa.me/${countryCode.replace('+', '')}${phone}?text=${message}`;
+
+            // Open WhatsApp in new window
+            window.open(whatsappURL, '_blank');
+
+            statusDiv.innerHTML = `
+                <p style="color: #28a745;">✅ Se abrió WhatsApp con el mensaje de prueba.</p>
+                <p><strong>¿Recibiste el mensaje?</strong></p>
+                <button type="button" class="btn btn-primary" onclick="confirmWhatsAppValidation()">Sí, lo recibí</button>
+                <button type="button" class="btn btn-secondary" onclick="closeWhatsAppModal()">No, intentar de nuevo</button>
+            `;
+        }
+
+        function confirmWhatsAppValidation() {
+            sessionStorage.setItem('whatsappValidated', 'confirmed');
+            contactValidated = true;
+            closeWhatsAppModal();
+            nextStep();
+        }
+
+        // Email Validation Modal functions
+        function showEmailValidationModal() {
+            const email = document.getElementById('customer_email').value;
+            document.getElementById('email-display').textContent = email;
+            document.getElementById('email-validation-modal').style.display = 'flex';
+        }
+
+        function closeEmailModal() {
+            document.getElementById('email-validation-modal').style.display = 'none';
+            document.getElementById('email-status').style.display = 'none';
+        }
+
+        function skipEmailValidation() {
+            sessionStorage.setItem('emailValidated', 'skipped');
+            contactValidated = true;
+            closeEmailModal();
+            nextStep();
+        }
+
+        function sendEmailTest() {
+            const email = document.getElementById('customer_email').value;
+            const name = document.getElementById('customer_name').value;
+
+            // Show loading status
+            const statusDiv = document.getElementById('email-status');
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = '<p style="color: #007bff;">Enviando email...</p>';
+
+            // Send test email via AJAX
+            fetch('<?php echo url('/api/send-test-email.php'); ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email,
+                    name: name
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    statusDiv.innerHTML = `
+                        <p style="color: #28a745;">✅ Email enviado correctamente.</p>
+                        <p><strong>¿Recibiste el email?</strong> (Revisa también la carpeta de spam)</p>
+                        <button type="button" class="btn btn-primary" onclick="confirmEmailValidation()">Sí, lo recibí</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeEmailModal()">No, intentar de nuevo</button>
+                    `;
+                } else {
+                    statusDiv.innerHTML = '<p style="color: #dc3545;">❌ Error al enviar el email. Por favor verifica la dirección.</p>';
+                }
+            })
+            .catch(error => {
+                statusDiv.innerHTML = '<p style="color: #dc3545;">❌ Error al enviar el email. Intenta de nuevo.</p>';
+            });
+        }
+
+        function confirmEmailValidation() {
+            sessionStorage.setItem('emailValidated', 'confirmed');
+            contactValidated = true;
+            closeEmailModal();
+            nextStep();
+        }
+
         // Form submission handler
+        let formSubmitAllowed = false;
+        let mercadopagoOrder = null;
+
         document.getElementById('checkout-form').addEventListener('submit', function(e) {
             const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
 
-            // Show warning modal for non-mercadopago payments
-            if (paymentMethod && paymentMethod.value !== 'mercadopago') {
+            // If Mercadopago, create order via AJAX and show modal
+            if (paymentMethod && paymentMethod.value === 'mercadopago' && !formSubmitAllowed) {
                 e.preventDefault();
-                showModal();
+                createOrderAndShowMercadopagoModal();
+                return false;
+            }
 
-                // After modal is closed, allow form submission
-                setTimeout(() => {
-                    // Remove this event listener to prevent infinite loop
-                    const form = document.getElementById('checkout-form');
-                    const newForm = form.cloneNode(true);
-                    form.parentNode.replaceChild(newForm, form);
-                    newForm.submit();
-                }, 100);
+            // Show warning modal for non-mercadopago payments
+            if (paymentMethod && paymentMethod.value !== 'mercadopago' && !formSubmitAllowed) {
+                e.preventDefault();
+                showPaymentWarningModal();
+                return false;
             }
         });
 
-        // Modal functions
-        function showModal() {
+        // Create order via AJAX and show Mercadopago modal
+        function createOrderAndShowMercadopagoModal() {
+            // Get form data
+            const formData = new FormData(document.getElementById('checkout-form'));
+
+            // IMPORTANT: Add the place_order parameter manually
+            // When using FormData constructor, button values are not included
+            formData.append('place_order', '1');
+
+            // Show loading
+            const submitBtn = document.querySelector('button[name="place_order"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ Creando orden...';
+
+            // Submit form via AJAX with XMLHttpRequest header
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers.get('Content-Type'));
+
+                // Clone response to read it twice
+                return response.clone().text().then(text => {
+                    console.log('Raw response:', text);
+
+                    if (!response.ok) {
+                        throw new Error('Error en la respuesta del servidor (HTTP ' + response.status + ')');
+                    }
+
+                    // Try to parse as JSON
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('JSON parse error:', e);
+                        throw new Error('La respuesta no es un JSON válido. Respuesta: ' + text.substring(0, 200));
+                    }
+                });
+            })
+            .then(data => {
+                console.log('Parsed data:', data);
+                if (data.success) {
+                    // Store order data
+                    mercadopagoOrder = data;
+
+                    // Show Mercadopago modal
+                    showMercadopagoModal(data);
+
+                    // Re-enable button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                } else {
+                    alert('Error al crear la orden: ' + (data.error || 'Error desconocido'));
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error completo:', error);
+                alert('Error al procesar la orden. Por favor intenta nuevamente.\n\nDetalle: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        }
+
+        // Show Mercadopago modal with Wallet Brick
+        function showMercadopagoModal(orderData) {
+            // Populate modal with order data
+            document.getElementById('mp-order-number').textContent = '#' + orderData.order_number;
+
+            // Format items
+            let itemsHTML = '';
+            orderData.items.forEach(item => {
+                itemsHTML += `
+                    <div class="order-row" style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; color: #666;">
+                        <span>${item.name} x${item.quantity}</span>
+                        <span>$${parseFloat(item.final_price).toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            document.getElementById('mp-order-items').innerHTML = itemsHTML;
+
+            // Format total
+            const currency = orderData.currency === 'USD' ? 'U$D' : '$';
+            document.getElementById('mp-total').textContent = currency + ' ' + parseFloat(orderData.total).toFixed(2);
+
+            // Show modal
+            document.getElementById('mercadopago-modal').style.display = 'flex';
+
+            // Load Mercadopago Wallet Brick
+            loadMercadopagoWalletBrick(orderData.order_id, orderData.tracking_token);
+        }
+
+        // Load Mercadopago Wallet Brick
+        function loadMercadopagoWalletBrick(orderId, trackingToken) {
+            const loading = document.getElementById('mp-loading');
+            const errorMessage = document.getElementById('mp-error-message');
+
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
+
+            // Create preference
+            fetch('<?php echo url('/crear-preferencia-mp.php'); ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    order_id: orderId,
+                    tracking_token: trackingToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success || !data.preference_id) {
+                    throw new Error(data.error || 'Error al crear preferencia de pago');
+                }
+
+                // Initialize Mercadopago SDK
+                const mp = new MercadoPago(MERCADOPAGO_PUBLIC_KEY, {
+                    locale: 'es-AR'
+                });
+
+                const bricksBuilder = mp.bricks();
+
+                // Clear container first
+                document.getElementById('walletBrick_container').innerHTML = '';
+
+                // Render Wallet Brick
+                bricksBuilder.create('wallet', 'walletBrick_container', {
+                    initialization: {
+                        preferenceId: data.preference_id,
+                    },
+                    customization: {
+                        texts: {
+                            valueProp: 'security_safety',
+                        },
+                    },
+                    callbacks: {
+                        onReady: () => {
+                            loading.style.display = 'none';
+                        },
+                        onError: (error) => {
+                            console.error('Error en Wallet Brick:', error);
+                            errorMessage.textContent = 'Error al cargar el pago. Intenta nuevamente.';
+                            errorMessage.style.display = 'block';
+                            loading.style.display = 'none';
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error creating preference:', error);
+                errorMessage.textContent = 'Error al preparar el pago. Intenta nuevamente.';
+                errorMessage.style.display = 'block';
+                loading.style.display = 'none';
+            });
+        }
+
+        // Payment Warning Modal functions
+        function showPaymentWarningModal() {
             document.getElementById('payment-warning-modal').style.display = 'flex';
         }
 
-        function closeModal() {
+        function closePaymentWarningModal() {
             document.getElementById('payment-warning-modal').style.display = 'none';
+            // Allow form submission after modal is closed
+            formSubmitAllowed = true;
+            document.getElementById('checkout-form').submit();
+        }
+
+        function backToPaymentMethod() {
+            document.getElementById('payment-warning-modal').style.display = 'none';
+            // Go back to step 3 (payment method)
+            currentStep = 3;
+            updateStepDisplay();
+            window.scrollTo(0, 0);
+        }
+
+        // Mercadopago Modal functions
+        function closeMercadopagoModal() {
+            document.getElementById('mercadopago-modal').style.display = 'none';
+            // Optionally reload or redirect
+            window.location.href = '<?php echo url('/'); ?>';
         }
 
         // Switch currency display
@@ -1130,6 +1676,51 @@ $csrf_token = generate_csrf_token();
             text-align: center;
         }
 
+        /* Phone input group */
+        .phone-input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .country-select {
+            flex: 0 0 auto;
+            width: 130px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .phone-input-group input[type="tel"] {
+            flex: 1;
+        }
+
+        /* Form row for side-by-side fields */
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        /* Modal styling improvements */
+        .phone-display, .email-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
         /* Mobile responsive */
         @media (max-width: 768px) {
             .step-indicators {
@@ -1153,8 +1744,102 @@ $csrf_token = generate_csrf_token();
             .radio-option {
                 padding: 10px;
             }
+
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .phone-input-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .country-select {
+                width: 100%;
+            }
+        }
+        /* Mercadopago Modal specific styles */
+        .mercadopago-modal-content {
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .modal-close-btn:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .order-summary-modal {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .order-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .payment-form-modal {
+            margin: 20px 0;
+        }
+
+        .payment-info-modal {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
+
+    <!-- Mercadopago SDK -->
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+
     <!-- Mobile Menu -->
     <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
