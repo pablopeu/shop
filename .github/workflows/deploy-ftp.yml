@@ -30,21 +30,10 @@ jobs:
             **/.git*/**
             .github/**
             .payment_credentials_path
-            test-checkout-flow.php
-            test-production.php
-            run-tests.sh
-            run-production-test.sh
-            production-test-log.json
-            test-results-*.html
-            *.md
-            README.md
-            TESTING.md
-            TESTING-PRODUCTION.md
             .gitignore
             .editorconfig
-            node_modules/**
             .DS_Store
             Thumbs.db
-            *.log
-            .env
-            .env.*
+            node_modules/**
+            docs/**
+            mcp-server/**
