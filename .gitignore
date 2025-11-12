@@ -28,20 +28,25 @@ data/archived_orders.json
 data/mp_preference_log.json
 
 # ===== USER DATA (PRODUCTION) =====
+# All production data should be managed via backoffice, not Git
 data/passwords/
 data/rate_limits/
 data/backups/
 data/admin_logs.json
 data/stock_logs.json
 data/visits.json
-
-# Keep structure but ignore content
 data/orders.json
 data/reviews.json
 data/coupons.json
 data/promotions.json
 data/wishlists.json
 data/newsletters.json
+
+# Individual product files (created from backoffice)
+data/products/prod-*.json
+
+# Keep only .example files for reference
+!data/*.example
 
 # ===== UPLOADED IMAGES =====
 # Comment out if you want to version control images
