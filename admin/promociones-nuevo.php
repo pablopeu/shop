@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_promotion'])) {
                 ]);
 
                 // Redirect to list after 2 seconds
-                header("refresh:2;url=/admin/promociones-listado.php");
+                header("refresh:2;url=" . url('/admin/promociones-listado.php'));
             } else {
                 $error = 'Error al crear la promoción';
             }
@@ -448,7 +448,7 @@ $user = get_logged_user();
                     <button type="submit" name="save_promotion" class="btn btn-primary">
                         Crear Promoción
                     </button>
-                    <a href="/admin/promociones-listado.php" class="btn btn-secondary">
+                    <a href="<?php echo url('/admin/promociones-listado.php'); ?>" class="btn btn-secondary">
                         Cancelar
                     </a>
                 </div>

@@ -292,10 +292,10 @@ $user = get_logged_user();
                                     <td>
                                         <div class="actions">
                                             <a href="/admin/promociones-editar.php?id=<?php echo urlencode($promo['id']); ?>" class="btn btn-primary btn-sm">✏️ Editar</a>
-                                            <a href="?action=toggle&id=<?php echo urlencode($promo['id']); ?>" class="btn btn-secondary btn-sm" onclick="return confirm('¿Cambiar estado de la promoción?')">
+                                            <a href="javascript:void(0)" class="btn btn-secondary btn-sm" onclick="confirmTogglePromotion('<?php echo urlencode($promo['id']); ?>', <?php echo $promo['active'] ? 'true' : 'false'; ?>)">
                                                 <?php echo $promo['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
                                             </a>
-                                            <a href="?action=delete&id=<?php echo urlencode($promo['id']); ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar esta promoción?')">🗑️ Eliminar</a>
+                                            <a href="javascript:void(0)" class="btn btn-danger btn-sm" onclick="confirmDeletePromotion('<?php echo urlencode($promo['id']); ?>', '<?php echo htmlspecialchars($promo['name'], ENT_QUOTES); ?>')">🗑️ Eliminar</a>
                                         </div>
                                     </td>
                                 </tr>
@@ -371,14 +371,14 @@ $user = get_logged_user();
                             <div class="mobile-card-actions">
                                 <a href="/admin/promociones-editar.php?id=<?php echo urlencode($promo['id']); ?>"
                                    class="btn btn-primary btn-sm">Editar</a>
-                                <a href="?action=toggle&id=<?php echo urlencode($promo['id']); ?>"
+                                <a href="javascript:void(0)"
                                    class="btn btn-secondary btn-sm"
-                                   onclick="return confirm('¿Cambiar estado de la promoción?')">
+                                   onclick="confirmTogglePromotion('<?php echo urlencode($promo['id']); ?>', <?php echo $promo['active'] ? 'true' : 'false'; ?>)">
                                     <?php echo $promo['active'] ? 'Desactivar' : 'Activar'; ?>
                                 </a>
-                                <a href="?action=delete&id=<?php echo urlencode($promo['id']); ?>"
+                                <a href="javascript:void(0)"
                                    class="btn btn-danger btn-sm"
-                                   onclick="return confirm('¿Eliminar esta promoción?')">Eliminar</a>
+                                   onclick="confirmDeletePromotion('<?php echo urlencode($promo['id']); ?>', '<?php echo htmlspecialchars($promo['name'], ENT_QUOTES); ?>')">Eliminar</a>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -386,5 +386,38 @@ $user = get_logged_user();
             </div>
         </div>
     </div>
+
+    <script>
+        function confirmTogglePromotion(id, isActive) {
+            const action = isActive ? 'desactivar' : 'activar';
+            showModal({
+                title: isActive ? 'Desactivar Promoción' : 'Activar Promoción',
+                message: `¿Estás seguro de que deseas ${action} esta promoción?`,
+                icon: isActive ? '❌' : '✅',
+                confirmText: isActive ? 'Desactivar' : 'Activar',
+                confirmType: 'warning',
+                onConfirm: function() {
+                    window.location.href = `?action=toggle&id=${id}`;
+                }
+            });
+        }
+
+        function confirmDeletePromotion(id, name) {
+            showModal({
+                title: 'Eliminar Promoción',
+                message: `¿Estás seguro de que deseas eliminar la promoción "${name}"?`,
+                details: 'Esta acción no se puede deshacer.',
+                icon: '🗑️',
+                confirmText: 'Eliminar',
+                confirmType: 'danger',
+                onConfirm: function() {
+                    window.location.href = `?action=delete&id=${id}`;
+                }
+            });
+        }
+    </script>
+
+    <!-- Modal Component -->
+    <?php include __DIR__ . '/includes/modal.php'; ?>
 </body>
 </html>

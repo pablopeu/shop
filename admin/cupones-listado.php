@@ -523,14 +523,14 @@ $user = get_logged_user();
                                         <div class="actions">
                                             <a href="/admin/cupones-editar.php?id=<?php echo urlencode($coupon['id']); ?>"
                                                class="btn btn-primary btn-sm">✏️ Editar</a>
-                                            <a href="?action=toggle&id=<?php echo urlencode($coupon['id']); ?>"
+                                            <a href="javascript:void(0)"
                                                class="btn btn-secondary btn-sm"
-                                               onclick="return confirm('¿Cambiar estado del cupón?')">
+                                               onclick="confirmToggleCoupon('<?php echo urlencode($coupon['id']); ?>', <?php echo $coupon['active'] ? 'true' : 'false'; ?>)">
                                                 <?php echo $coupon['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
                                             </a>
-                                            <a href="?action=delete&id=<?php echo urlencode($coupon['id']); ?>"
+                                            <a href="javascript:void(0)"
                                                class="btn btn-danger btn-sm"
-                                               onclick="return confirm('¿Eliminar este cupón? Esta acción no se puede deshacer.')">
+                                               onclick="confirmDeleteCoupon('<?php echo urlencode($coupon['id']); ?>', '<?php echo htmlspecialchars($coupon['code'], ENT_QUOTES); ?>')">
                                                 🗑️ Eliminar
                                             </a>
                                         </div>
@@ -613,14 +613,14 @@ $user = get_logged_user();
                             <div class="mobile-card-actions">
                                 <a href="/admin/cupones-editar.php?id=<?php echo urlencode($coupon['id']); ?>"
                                    class="btn btn-primary btn-sm">Editar</a>
-                                <a href="?action=toggle&id=<?php echo urlencode($coupon['id']); ?>"
+                                <a href="javascript:void(0)"
                                    class="btn btn-secondary btn-sm"
-                                   onclick="return confirm('¿Cambiar estado del cupón?')">
+                                   onclick="confirmToggleCoupon('<?php echo urlencode($coupon['id']); ?>', <?php echo $coupon['active'] ? 'true' : 'false'; ?>)">
                                     <?php echo $coupon['active'] ? 'Desactivar' : 'Activar'; ?>
                                 </a>
-                                <a href="?action=delete&id=<?php echo urlencode($coupon['id']); ?>"
+                                <a href="javascript:void(0)"
                                    class="btn btn-danger btn-sm"
-                                   onclick="return confirm('¿Eliminar este cupón? Esta acción no se puede deshacer.')">
+                                   onclick="confirmDeleteCoupon('<?php echo urlencode($coupon['id']); ?>', '<?php echo htmlspecialchars($coupon['code'], ENT_QUOTES); ?>')">
                                     Eliminar
                                 </a>
                             </div>
@@ -630,5 +630,38 @@ $user = get_logged_user();
             </div>
         </div>
     </div>
+
+    <script>
+        function confirmToggleCoupon(id, isActive) {
+            const action = isActive ? 'desactivar' : 'activar';
+            showModal({
+                title: isActive ? 'Desactivar Cupón' : 'Activar Cupón',
+                message: `¿Estás seguro de que deseas ${action} este cupón?`,
+                icon: isActive ? '❌' : '✅',
+                confirmText: isActive ? 'Desactivar' : 'Activar',
+                confirmType: 'warning',
+                onConfirm: function() {
+                    window.location.href = `?action=toggle&id=${id}`;
+                }
+            });
+        }
+
+        function confirmDeleteCoupon(id, code) {
+            showModal({
+                title: 'Eliminar Cupón',
+                message: `¿Estás seguro de que deseas eliminar el cupón "${code}"?`,
+                details: 'Esta acción no se puede deshacer.',
+                icon: '🗑️',
+                confirmText: 'Eliminar',
+                confirmType: 'danger',
+                onConfirm: function() {
+                    window.location.href = `?action=delete&id=${id}`;
+                }
+            });
+        }
+    </script>
+
+    <!-- Modal Component -->
+    <?php include __DIR__ . '/includes/modal.php'; ?>
 </body>
 </html>

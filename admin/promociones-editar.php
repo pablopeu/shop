@@ -225,7 +225,7 @@ $user = get_logged_user();
 
                 <div style="display: flex; gap: 10px; margin-top: 30px;">
                     <button type="submit" name="save_promotion" class="btn btn-primary">Guardar Cambios</button>
-                    <a href="/admin/promociones-listado.php" class="btn btn-secondary">Cancelar</a>
+                    <a href="<?php echo url('/admin/promociones-listado.php'); ?>" class="btn btn-secondary">Cancelar</a>
                 </div>
             </form>
         </div>

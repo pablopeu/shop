@@ -263,7 +263,7 @@ $user = get_logged_user();
 
                     <?php if (!empty($footer_config['left_column']['logo']['path'])): ?>
                     <div class="logo-preview" id="logo_preview">
-                        <img src="<?php echo htmlspecialchars($footer_config['left_column']['logo']['path']); ?>" alt="Logo actual">
+                        <img src="<?php echo htmlspecialchars(url($footer_config['left_column']['logo']['path'])); ?>" alt="Logo actual">
                         <div class="help-text">Logo actual</div>
                     </div>
                     <?php endif; ?>
