@@ -521,7 +521,7 @@ $user = get_logged_user();
                                     </td>
                                     <td>
                                         <div class="actions">
-                                            <a href="/admin/cupones-editar.php?id=<?php echo urlencode($coupon['id']); ?>"
+                                            <a href="<?php echo url('/admin/cupones-editar.php?id=' . urlencode($coupon['id'])); ?>"
                                                class="btn btn-primary btn-sm">✏️ Editar</a>
                                             <a href="javascript:void(0)"
                                                class="btn btn-secondary btn-sm"
@@ -611,7 +611,7 @@ $user = get_logged_user();
                             </div>
 
                             <div class="mobile-card-actions">
-                                <a href="/admin/cupones-editar.php?id=<?php echo urlencode($coupon['id']); ?>"
+                                <a href="<?php echo url('/admin/cupones-editar.php?id=' . urlencode($coupon['id'])); ?>"
                                    class="btn btn-primary btn-sm">Editar</a>
                                 <a href="javascript:void(0)"
                                    class="btn btn-secondary btn-sm"

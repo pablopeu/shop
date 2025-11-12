@@ -291,7 +291,7 @@ $user = get_logged_user();
                                     </td>
                                     <td>
                                         <div class="actions">
-                                            <a href="/admin/promociones-editar.php?id=<?php echo urlencode($promo['id']); ?>" class="btn btn-primary btn-sm">✏️ Editar</a>
+                                            <a href="<?php echo url('/admin/promociones-editar.php?id=' . urlencode($promo['id'])); ?>" class="btn btn-primary btn-sm">✏️ Editar</a>
                                             <a href="javascript:void(0)" class="btn btn-secondary btn-sm" onclick="confirmTogglePromotion('<?php echo urlencode($promo['id']); ?>', <?php echo $promo['active'] ? 'true' : 'false'; ?>)">
                                                 <?php echo $promo['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
                                             </a>
@@ -369,7 +369,7 @@ $user = get_logged_user();
                             </div>
 
                             <div class="mobile-card-actions">
-                                <a href="/admin/promociones-editar.php?id=<?php echo urlencode($promo['id']); ?>"
+                                <a href="<?php echo url('/admin/promociones-editar.php?id=' . urlencode($promo['id'])); ?>"
                                    class="btn btn-primary btn-sm">Editar</a>
                                 <a href="javascript:void(0)"
                                    class="btn btn-secondary btn-sm"

@@ -101,7 +101,7 @@ function update_promotion($promotion_id, $promotion_data) {
             $promotion['period_type'] = $promotion_data['period_type'];
             $promotion['start_date'] = $promotion_data['start_date'] ?? null;
             $promotion['end_date'] = $promotion_data['end_date'] ?? null;
-            $promotion['active'] = isset($promotion_data['active']) ? true : false;
+            $promotion['active'] = (bool)($promotion_data['active'] ?? false);
             $promotion['updated_at'] = gmdate('Y-m-d\TH:i:s\Z');
 
             return write_json(__DIR__ . '/../data/promotions.json', $promotions_data);
