@@ -179,20 +179,6 @@ $csrf_token = generate_csrf_token();
             font-size: 12px;
             color: #999;
         }
-
-        .password-note {
-            font-size: 12px;
-            color: #666;
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            border-left: 3px solid #667eea;
-        }
-
-        .password-note strong {
-            color: #333;
-        }
     </style>
 </head>
 <body>
@@ -229,15 +215,6 @@ $csrf_token = generate_csrf_token();
 
             <button type="submit" class="btn">Iniciar Sesión</button>
         </form>
-
-        <div class="password-note">
-            <strong>Credenciales por defecto:</strong><br>
-            Usuario: <code>admin</code><br>
-            Contraseña: <code>admin123</code><br>
-            <small style="color: #999; margin-top: 5px; display: block;">
-                ⚠️ Cambia la contraseña después del primer login
-            </small>
-        </div>
 
         <div class="footer-text">
             Protegido con rate limiting y CSRF tokens
