@@ -152,15 +152,45 @@ usort($orders, function($a, $b) {
     return strtotime($b['date']) - strtotime($a['date']);
 });
 
-// Calculate stats
-$total_orders = count($all_orders);
-$pending_orders = count(array_filter($all_orders, fn($o) => $o['status'] === 'pending'));
-$confirmed_orders = count(array_filter($all_orders, fn($o) => $o['status'] === 'confirmed'));
-$total_revenue = array_reduce($all_orders, function($sum, $order) {
-    if (in_array($order['status'], ['confirmed', 'shipped', 'delivered'])) {
-        return $sum + ($order['currency'] === 'ARS' ? $order['total'] : $order['total'] * 1000); // Approx conversion
+// Calculate stats for non-archived orders
+$non_archived_orders = array_filter($all_orders, fn($o) => !($o['archived'] ?? false));
+
+// 1. Total Orders: count + total amount in pesos (all non-archived orders, any status)
+$total_orders = count($non_archived_orders);
+$total_orders_amount = array_reduce($non_archived_orders, function($sum, $order) {
+    return $sum + floatval($order['total']);
+}, 0);
+
+// 2. Pending Orders: count + total amount in pesos
+$pending_orders_data = array_filter($non_archived_orders, fn($o) => $o['status'] === 'pending' || $o['status'] === 'pendiente');
+$pending_orders = count($pending_orders_data);
+$pending_amount = array_reduce($pending_orders_data, function($sum, $order) {
+    return $sum + floatval($order['total']);
+}, 0);
+
+// 3. Cobradas (Confirmed): count + gross amount (without discounting fees)
+$cobradas_orders = array_filter($non_archived_orders, fn($o) => $o['status'] === 'cobrada');
+$confirmed_orders = count($cobradas_orders);
+$cobradas_amount_gross = array_reduce($cobradas_orders, function($sum, $order) {
+    return $sum + floatval($order['total']);
+}, 0);
+
+// 4. Total Fees: sum of all MP fees from non-archived collected orders
+$total_fees = array_reduce($cobradas_orders, function($sum, $order) {
+    if (isset($order['mercadopago_data']['total_fees'])) {
+        return $sum + floatval($order['mercadopago_data']['total_fees']);
     }
     return $sum;
+}, 0);
+
+// 5. Net Revenue: collected amount - fees
+$net_revenue = array_reduce($cobradas_orders, function($sum, $order) {
+    if (isset($order['mercadopago_data']['net_received_amount'])) {
+        return $sum + floatval($order['mercadopago_data']['net_received_amount']);
+    } else {
+        // For presencial payments or orders without MP data, use full total
+        return $sum + floatval($order['total']);
+    }
 }, 0);
 
 // Generate CSRF token
@@ -730,22 +760,41 @@ $status_labels = [
             <?php endif; ?>
 
             <!-- Stats -->
-            <div class="stats-grid">
-                <div class="stat-card">
+            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                <div class="stat-card" style="border-left: 4px solid #3498db;">
                     <div class="stat-value"><?php echo $total_orders; ?></div>
                     <div class="stat-label">Total Órdenes</div>
+                    <div style="font-size: 13px; color: #666; margin-top: 4px;">
+                        <strong>$<?php echo number_format($total_orders_amount, 2, ',', '.'); ?></strong>
+                    </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" style="border-left: 4px solid #FFA726;">
                     <div class="stat-value"><?php echo $pending_orders; ?></div>
                     <div class="stat-label">Pendientes</div>
+                    <div style="font-size: 13px; color: #666; margin-top: 4px;">
+                        <strong>$<?php echo number_format($pending_amount, 2, ',', '.'); ?></strong>
+                    </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" style="border-left: 4px solid #4CAF50;">
                     <div class="stat-value"><?php echo $confirmed_orders; ?></div>
-                    <div class="stat-label">Confirmadas</div>
+                    <div class="stat-label">Cobradas (Bruto)</div>
+                    <div style="font-size: 13px; color: #666; margin-top: 4px;">
+                        <strong>$<?php echo number_format($cobradas_amount_gross, 2, ',', '.'); ?></strong>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo format_price($total_revenue, 'ARS'); ?></div>
-                    <div class="stat-label">Ingresos Totales</div>
+                <div class="stat-card" style="border-left: 4px solid #dc3545;">
+                    <div class="stat-value">$<?php echo number_format($total_fees, 2, ',', '.'); ?></div>
+                    <div class="stat-label">Comisiones MP</div>
+                    <div style="font-size: 12px; color: #999; margin-top: 4px;">
+                        de ventas cobradas
+                    </div>
+                </div>
+                <div class="stat-card" style="border-left: 4px solid #27ae60;">
+                    <div class="stat-value">$<?php echo number_format($net_revenue, 2, ',', '.'); ?></div>
+                    <div class="stat-label">Ingreso Neto</div>
+                    <div style="font-size: 12px; color: #27ae60; margin-top: 4px; font-weight: 600;">
+                        Cobrado - Comisiones
+                    </div>
                 </div>
             </div>
 
