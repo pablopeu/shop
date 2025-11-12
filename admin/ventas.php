@@ -762,37 +762,37 @@ $status_labels = [
             <!-- Stats -->
             <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                 <div class="stat-card" style="border-left: 4px solid #3498db;">
-                    <div class="stat-value"><?php echo $total_orders; ?></div>
+                    <div class="stat-value">$<?php echo number_format($total_orders_amount, 2, ',', '.'); ?></div>
                     <div class="stat-label">Total Órdenes</div>
-                    <div style="font-size: 13px; color: #666; margin-top: 4px;">
-                        <strong>$<?php echo number_format($total_orders_amount, 2, ',', '.'); ?></strong>
+                    <div style="font-size: 13px; color: #999; margin-top: 4px;">
+                        <?php echo $total_orders; ?> operaciones
                     </div>
                 </div>
                 <div class="stat-card" style="border-left: 4px solid #FFA726;">
-                    <div class="stat-value"><?php echo $pending_orders; ?></div>
+                    <div class="stat-value">$<?php echo number_format($pending_amount, 2, ',', '.'); ?></div>
                     <div class="stat-label">Pendientes</div>
-                    <div style="font-size: 13px; color: #666; margin-top: 4px;">
-                        <strong>$<?php echo number_format($pending_amount, 2, ',', '.'); ?></strong>
+                    <div style="font-size: 13px; color: #999; margin-top: 4px;">
+                        <?php echo $pending_orders; ?> operaciones
                     </div>
                 </div>
                 <div class="stat-card" style="border-left: 4px solid #4CAF50;">
-                    <div class="stat-value"><?php echo $confirmed_orders; ?></div>
+                    <div class="stat-value">$<?php echo number_format($cobradas_amount_gross, 2, ',', '.'); ?></div>
                     <div class="stat-label">Cobradas (Bruto)</div>
-                    <div style="font-size: 13px; color: #666; margin-top: 4px;">
-                        <strong>$<?php echo number_format($cobradas_amount_gross, 2, ',', '.'); ?></strong>
+                    <div style="font-size: 13px; color: #999; margin-top: 4px;">
+                        <?php echo $confirmed_orders; ?> operaciones
                     </div>
                 </div>
                 <div class="stat-card" style="border-left: 4px solid #dc3545;">
                     <div class="stat-value">$<?php echo number_format($total_fees, 2, ',', '.'); ?></div>
                     <div class="stat-label">Comisiones MP</div>
-                    <div style="font-size: 12px; color: #999; margin-top: 4px;">
-                        de ventas cobradas
+                    <div style="font-size: 13px; color: #999; margin-top: 4px;">
+                        de <?php echo $confirmed_orders; ?> ventas cobradas
                     </div>
                 </div>
                 <div class="stat-card" style="border-left: 4px solid #27ae60;">
                     <div class="stat-value">$<?php echo number_format($net_revenue, 2, ',', '.'); ?></div>
                     <div class="stat-label">Ingreso Neto</div>
-                    <div style="font-size: 12px; color: #27ae60; margin-top: 4px; font-weight: 600;">
+                    <div style="font-size: 13px; color: #999; margin-top: 4px;">
                         Cobrado - Comisiones
                     </div>
                 </div>
