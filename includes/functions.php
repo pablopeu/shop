@@ -34,14 +34,21 @@ function enforce_https() {
  */
 function read_json($file, $associative = true) {
     if (!file_exists($file)) {
-        // Try to create from .example file if it exists
-        $example_file = $file . '.example';
-        if (file_exists($example_file)) {
-            // Copy example file to actual file
-            if (copy($example_file, $file)) {
-                error_log("Created $file from example file");
+        // Create default structure for known files
+        $default_data = get_default_json_structure($file);
+
+        if ($default_data !== null) {
+            // Create directory if needed
+            $dir = dirname($file);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+
+            // Create the file with default structure
+            if (write_json($file, $default_data)) {
+                error_log("Created missing JSON file with default structure: $file");
             } else {
-                error_log("JSON file not found and could not create from example: $file");
+                error_log("JSON file not found and could not create: $file");
                 return $associative ? [] : new stdClass();
             }
         } else {
