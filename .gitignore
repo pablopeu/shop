@@ -46,9 +46,6 @@ data/newsletters.json
 # Individual product files (created from backoffice)
 data/products/prod-*.json
 
-# Keep only .example files for reference
-!data/*.example
-
 # ===== UPLOADED IMAGES =====
 # Comment out if you want to version control images
 images/products/*
@@ -92,6 +89,16 @@ temp/
 *.tmp
 *.bak
 *.cache
+
+# ===== TEST FILES =====
+test-*.php
+test-*.html
+test-results-*.html
+run-tests.sh
+run-production-test.sh
+production-test-log.json
+api/send-test-email.php
+*.example
 
 # ===== DEPENDENCIES =====
 # Will be uploaded via FTP or installed via Composer
