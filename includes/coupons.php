@@ -186,6 +186,71 @@ function delete_coupon($coupon_id) {
 }
 
 /**
+ * Archive coupon
+ */
+function archive_coupon($coupon_id) {
+    $coupon = get_coupon_by_id($coupon_id);
+    if (!$coupon) return false;
+
+    // Add to archived coupons
+    $archived_file = __DIR__ . '/../data/archived_coupons.json';
+    $archived_data = read_json($archived_file);
+    if (!isset($archived_data['coupons'])) {
+        $archived_data = ['coupons' => []];
+    }
+
+    $coupon['archived_at'] = gmdate('Y-m-d\TH:i:s\Z');
+    $archived_data['coupons'][] = $coupon;
+    write_json($archived_file, $archived_data);
+
+    // Remove from active coupons
+    return delete_coupon($coupon_id);
+}
+
+/**
+ * Get archived coupons
+ */
+function get_archived_coupons() {
+    $archived_file = __DIR__ . '/../data/archived_coupons.json';
+    $archived_data = read_json($archived_file);
+    return $archived_data['coupons'] ?? [];
+}
+
+/**
+ * Restore archived coupon
+ */
+function restore_coupon($coupon_id) {
+    $archived_file = __DIR__ . '/../data/archived_coupons.json';
+    $archived_data = read_json($archived_file);
+
+    $coupon_to_restore = null;
+    foreach ($archived_data['coupons'] ?? [] as $index => $coupon) {
+        if ($coupon['id'] === $coupon_id) {
+            $coupon_to_restore = $coupon;
+            unset($archived_data['coupons'][$index]);
+            break;
+        }
+    }
+
+    if (!$coupon_to_restore) return false;
+
+    // Remove archived_at field
+    unset($coupon_to_restore['archived_at']);
+    $archived_data['coupons'] = array_values($archived_data['coupons']);
+    write_json($archived_file, $archived_data);
+
+    // Add back to active coupons
+    $coupons_file = __DIR__ . '/../data/coupons.json';
+    $coupons_data = read_json($coupons_file);
+    if (!isset($coupons_data['coupons'])) {
+        $coupons_data = ['coupons' => []];
+    }
+    $coupons_data['coupons'][] = $coupon_to_restore;
+
+    return write_json($coupons_file, $coupons_data);
+}
+
+/**
  * Increment coupon usage
  */
 function increment_coupon_usage($coupon_id) {

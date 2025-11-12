@@ -42,6 +42,54 @@ if (isset($_GET['action']) && $_GET['action'] === 'toggle' && isset($_GET['id'])
     }
 }
 
+// Archive promotion
+if (isset($_GET['action']) && $_GET['action'] === 'archive' && isset($_GET['id'])) {
+    $promotion_id = $_GET['id'];
+
+    if (archive_promotion($promotion_id)) {
+        $message = 'Promoción archivada exitosamente';
+        log_admin_action('promotion_archived', $_SESSION['username'], ['promotion_id' => $promotion_id]);
+    } else {
+        $error = 'Error al archivar la promoción';
+    }
+}
+
+// Handle bulk actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
+    $action = $_POST['bulk_action'];
+    $selected_promotions = $_POST['selected_promotions'] ?? [];
+
+    if (!empty($selected_promotions)) {
+        $success_count = 0;
+        foreach ($selected_promotions as $promotion_id) {
+            $promotion = get_promotion_by_id($promotion_id);
+            if (!$promotion) continue;
+
+            if ($action === 'archive') {
+                if (archive_promotion($promotion_id)) {
+                    $success_count++;
+                }
+            } elseif ($action === 'activate') {
+                if (update_promotion($promotion_id, array_merge($promotion, ['active' => true]))) {
+                    $success_count++;
+                }
+            } elseif ($action === 'deactivate') {
+                if (update_promotion($promotion_id, array_merge($promotion, ['active' => false]))) {
+                    $success_count++;
+                }
+            }
+        }
+
+        $message = "$success_count promoción(es) procesada(s) exitosamente";
+        log_admin_action('bulk_promotions_action', $_SESSION['username'], [
+            'action' => $action,
+            'count' => $success_count
+        ]);
+    } else {
+        $error = 'No se seleccionaron promociones';
+    }
+}
+
 // Get all promotions
 $promotions = get_all_promotions();
 
@@ -95,6 +143,41 @@ $user = get_logged_user();
         .badge.expired { background: #f8d7da; color: #721c24; }
         .badge.valid { background: #d4edda; color: #155724; }
         .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        /* Bulk Actions Bar */
+        .bulk-actions-bar {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bulk-actions-bar.show {
+            display: flex;
+        }
+
+        .bulk-actions-bar select {
+            padding: 6px 12px;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+        }
+
+        /* Header Actions */
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .header-actions .btn {
+            font-size: 13px;
+        }
 
         /* Table Container for Mobile Scroll */
         .table-container {
@@ -224,6 +307,18 @@ $user = get_logged_user();
             <div class="message error"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
 
+        <!-- Header Actions -->
+        <div class="header-actions">
+            <div>
+                <a href="<?php echo url('/admin/promociones-nuevo.php'); ?>" class="btn btn-primary">
+                    ➕ Nueva Promoción
+                </a>
+                <a href="<?php echo url('/admin/promociones-archivados.php'); ?>" class="btn btn-secondary">
+                    📦 Ver Archivados
+                </a>
+            </div>
+        </div>
+
         <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-card"><div class="stat-value"><?php echo $total_promotions; ?></div><div class="stat-label">Total Promociones</div></div>
@@ -231,13 +326,31 @@ $user = get_logged_user();
             <div class="stat-card"><div class="stat-value"><?php echo $expired_promotions; ?></div><div class="stat-label">Expiradas</div></div>
         </div>
 
-        <!-- Promotions List -->
-        <div class="card">
-            <div class="card-header">Todas las Promociones</div>
-            <div class="table-container">
+        <!-- Bulk Actions Bar -->
+        <form method="POST" id="bulkForm">
+            <div class="bulk-actions-bar" id="bulkActionsBar">
+                <span id="selectedCount">0 promociones seleccionadas</span>
+                <select name="bulk_action" id="bulkAction">
+                    <option value="">Seleccionar acción...</option>
+                    <option value="activate">Activar</option>
+                    <option value="deactivate">Desactivar</option>
+                    <option value="archive">Archivar</option>
+                </select>
+                <button type="button" class="btn btn-sm btn-primary" onclick="confirmBulkAction()">
+                    Aplicar
+                </button>
+            </div>
+
+            <!-- Promotions List -->
+            <div class="card">
+                <div class="card-header">Todas las Promociones</div>
+                <div class="table-container">
                 <table class="promotions-table">
                     <thead>
                         <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+                            </th>
                             <th>Nombre</th>
                             <th>Tipo / Descuento</th>
                             <th>Aplicación</th>
@@ -249,7 +362,7 @@ $user = get_logged_user();
                     <tbody>
                         <?php if (empty($promotions)): ?>
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                                <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
                                     No hay promociones.
                                     <a href="/admin/promociones-nuevo.php" style="color: #4CAF50;">Crear tu primera promoción</a>
                                 </td>
@@ -259,6 +372,12 @@ $user = get_logged_user();
                                 $is_expired = $promo['period_type'] === 'limited' && strtotime($promo['end_date']) < $now;
                             ?>
                                 <tr>
+                                    <td>
+                                        <input type="checkbox" name="selected_promotions[]"
+                                               value="<?php echo htmlspecialchars($promo['id']); ?>"
+                                               class="promotion-checkbox"
+                                               onchange="updateBulkActions()">
+                                    </td>
                                     <td><strong><?php echo htmlspecialchars($promo['name']); ?></strong></td>
                                     <td>
                                         <span class="badge <?php echo $promo['type']; ?>">
@@ -295,7 +414,7 @@ $user = get_logged_user();
                                             <a href="javascript:void(0)" class="btn btn-secondary btn-sm" onclick="confirmTogglePromotion('<?php echo urlencode($promo['id']); ?>', <?php echo $promo['active'] ? 'true' : 'false'; ?>)">
                                                 <?php echo $promo['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
                                             </a>
-                                            <a href="javascript:void(0)" class="btn btn-danger btn-sm" onclick="confirmDeletePromotion('<?php echo urlencode($promo['id']); ?>', '<?php echo htmlspecialchars($promo['name'], ENT_QUOTES); ?>')">🗑️ Eliminar</a>
+                                            <a href="javascript:void(0)" class="btn btn-danger btn-sm" onclick="confirmArchivePromotion('<?php echo urlencode($promo['id']); ?>', '<?php echo htmlspecialchars($promo['name'], ENT_QUOTES); ?>')">📦 Archivar</a>
                                         </div>
                                     </td>
                                 </tr>
@@ -304,8 +423,10 @@ $user = get_logged_user();
                     </tbody>
                 </table>
             </div>
+        </div>
+    </form>
 
-            <!-- Mobile Cards View -->
+    <!-- Mobile Cards View -->
             <div class="mobile-cards">
                 <?php if (empty($promotions)): ?>
                     <div class="card">
@@ -378,7 +499,7 @@ $user = get_logged_user();
                                 </a>
                                 <a href="javascript:void(0)"
                                    class="btn btn-danger btn-sm"
-                                   onclick="confirmDeletePromotion('<?php echo urlencode($promo['id']); ?>', '<?php echo htmlspecialchars($promo['name'], ENT_QUOTES); ?>')">Eliminar</a>
+                                   onclick="confirmArchivePromotion('<?php echo urlencode($promo['id']); ?>', '<?php echo htmlspecialchars($promo['name'], ENT_QUOTES); ?>')">Archivar</a>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -402,18 +523,109 @@ $user = get_logged_user();
             });
         }
 
-        function confirmDeletePromotion(id, name) {
+        function confirmArchivePromotion(id, name) {
             showModal({
-                title: 'Eliminar Promoción',
-                message: `¿Estás seguro de que deseas eliminar la promoción "${name}"?`,
-                details: 'Esta acción no se puede deshacer.',
-                icon: '🗑️',
-                confirmText: 'Eliminar',
+                title: 'Archivar Promoción',
+                message: `¿Estás seguro de que deseas archivar la promoción "${name}"?`,
+                details: 'La promoción se moverá al archivo y no aparecerá en el listado principal. Podrás restaurarla desde la sección de Promociones Archivadas.',
+                icon: '📦',
+                confirmText: 'Archivar',
                 confirmType: 'danger',
                 onConfirm: function() {
-                    window.location.href = `?action=delete&id=${id}`;
+                    window.location.href = `?action=archive&id=${id}`;
                 }
             });
+        }
+
+        /**
+         * Confirmar acción masiva
+         */
+        function confirmBulkAction() {
+            const checkboxes = document.querySelectorAll('.promotion-checkbox:checked');
+            const action = document.getElementById('bulkAction').value;
+            const count = checkboxes.length;
+
+            // Validaciones
+            if (count === 0) {
+                showModal({
+                    title: 'Sin Promociones Seleccionadas',
+                    message: 'Debes seleccionar al menos una promoción para realizar una acción masiva.',
+                    icon: '⚠️',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    onConfirm: function() {}
+                });
+                return;
+            }
+
+            if (!action) {
+                showModal({
+                    title: 'Acción No Seleccionada',
+                    message: 'Debes seleccionar una acción para aplicar a las promociones seleccionadas.',
+                    icon: '⚠️',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    onConfirm: function() {}
+                });
+                return;
+            }
+
+            // Configurar modal según la acción
+            let title, message, icon, confirmType;
+
+            if (action === 'activate') {
+                title = 'Activar Promociones';
+                message = `¿Activar ${count} promoción${count > 1 ? 'es' : ''}?`;
+                icon = '✅';
+                confirmType = 'primary';
+            } else if (action === 'deactivate') {
+                title = 'Desactivar Promociones';
+                message = `¿Desactivar ${count} promoción${count > 1 ? 'es' : ''}?`;
+                icon = '❌';
+                confirmType = 'warning';
+            } else if (action === 'archive') {
+                title = 'Archivar Promociones';
+                message = `¿Archivar ${count} promoción${count > 1 ? 'es' : ''}?`;
+                icon = '📦';
+                confirmType = 'danger';
+            }
+
+            showModal({
+                title: title,
+                message: message,
+                details: `Esta acción se aplicará a ${count} promoción${count > 1 ? 'es seleccionadas' : ' seleccionada'}.`,
+                icon: icon,
+                confirmText: 'Confirmar',
+                confirmType: confirmType,
+                onConfirm: function() {
+                    document.getElementById('bulkForm').submit();
+                }
+            });
+        }
+
+        // Handle checkbox selection for bulk actions
+        function toggleSelectAll(checkbox) {
+            const checkboxes = document.querySelectorAll('.promotion-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+            updateBulkActions();
+        }
+
+        function updateBulkActions() {
+            const checkboxes = document.querySelectorAll('.promotion-checkbox:checked');
+            const count = checkboxes.length;
+            const bulkBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+            const selectAll = document.getElementById('selectAll');
+
+            if (count > 0) {
+                bulkBar.classList.add('show');
+                selectedCount.textContent = `${count} promoción${count > 1 ? 'es' : ''} seleccionada${count > 1 ? 's' : ''}`;
+            } else {
+                bulkBar.classList.remove('show');
+                selectAll.checked = false;
+            }
         }
     </script>
 

@@ -128,6 +128,71 @@ function delete_promotion($promotion_id) {
 }
 
 /**
+ * Archive promotion
+ */
+function archive_promotion($promotion_id) {
+    $promotion = get_promotion_by_id($promotion_id);
+    if (!$promotion) return false;
+
+    // Add to archived promotions
+    $archived_file = __DIR__ . '/../data/archived_promotions.json';
+    $archived_data = read_json($archived_file);
+    if (!isset($archived_data['promotions'])) {
+        $archived_data = ['promotions' => []];
+    }
+
+    $promotion['archived_at'] = gmdate('Y-m-d\TH:i:s\Z');
+    $archived_data['promotions'][] = $promotion;
+    write_json($archived_file, $archived_data);
+
+    // Remove from active promotions
+    return delete_promotion($promotion_id);
+}
+
+/**
+ * Get archived promotions
+ */
+function get_archived_promotions() {
+    $archived_file = __DIR__ . '/../data/archived_promotions.json';
+    $archived_data = read_json($archived_file);
+    return $archived_data['promotions'] ?? [];
+}
+
+/**
+ * Restore archived promotion
+ */
+function restore_promotion($promotion_id) {
+    $archived_file = __DIR__ . '/../data/archived_promotions.json';
+    $archived_data = read_json($archived_file);
+
+    $promotion_to_restore = null;
+    foreach ($archived_data['promotions'] ?? [] as $index => $promotion) {
+        if ($promotion['id'] === $promotion_id) {
+            $promotion_to_restore = $promotion;
+            unset($archived_data['promotions'][$index]);
+            break;
+        }
+    }
+
+    if (!$promotion_to_restore) return false;
+
+    // Remove archived_at field
+    unset($promotion_to_restore['archived_at']);
+    $archived_data['promotions'] = array_values($archived_data['promotions']);
+    write_json($archived_file, $archived_data);
+
+    // Add back to active promotions
+    $promotions_file = __DIR__ . '/../data/promotions.json';
+    $promotions_data = read_json($promotions_file);
+    if (!isset($promotions_data['promotions'])) {
+        $promotions_data = ['promotions' => []];
+    }
+    $promotions_data['promotions'][] = $promotion_to_restore;
+
+    return write_json($promotions_file, $promotions_data);
+}
+
+/**
  * Get applicable promotions for a cart
  * @param array $cart_items
  * @param float $subtotal
