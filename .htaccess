@@ -10,36 +10,6 @@
     Require all denied
 </FilesMatch>
 
-# Block access to config directory
-<DirectoryMatch "^.*/config/?">
-    Require all denied
-</DirectoryMatch>
-
-# Block access to data directory
-<DirectoryMatch "^.*/data/?">
-    Require all denied
-</DirectoryMatch>
-
-# Block access to includes directory (PHP libraries only)
-<DirectoryMatch "^.*/includes/?">
-    Require all denied
-</DirectoryMatch>
-
-# Block access to mcp-server directory
-<DirectoryMatch "^.*/mcp-server/?">
-    Require all denied
-</DirectoryMatch>
-
-# Block access to vendor directory (if exists)
-<DirectoryMatch "^.*/vendor/?">
-    Require all denied
-</DirectoryMatch>
-
-# Block access to node_modules (if exists)
-<DirectoryMatch "^.*/node_modules/?">
-    Require all denied
-</DirectoryMatch>
-
 # Block access to .env files
 <FilesMatch "^\.env">
     Require all denied
@@ -70,7 +40,7 @@
     Require all denied
 </Files>
 
-# Block access to all hidden files (starting with .)
+# Block access to all other hidden files (starting with .)
 <FilesMatch "^\.">
     Require all denied
 </FilesMatch>
@@ -78,14 +48,37 @@
 # Prevent directory listing
 Options -Indexes
 
-# Protect against clickjacking
-Header always set X-Frame-Options "SAMEORIGIN"
+# Protect specific directories from direct access
+RewriteEngine On
 
-# XSS Protection
-Header always set X-XSS-Protection "1; mode=block"
+# Block direct access to config directory
+RewriteCond %{REQUEST_URI} ^/shop/config/ [NC]
+RewriteRule ^ - [F,L]
 
-# Prevent MIME sniffing
-Header always set X-Content-Type-Options "nosniff"
+# Block direct access to data directory
+RewriteCond %{REQUEST_URI} ^/shop/data/ [NC]
+RewriteRule ^ - [F,L]
 
-# Referrer Policy
-Header always set Referrer-Policy "strict-origin-when-cross-origin"
+# Block direct access to includes directory
+RewriteCond %{REQUEST_URI} ^/shop/includes/ [NC]
+RewriteRule ^ - [F,L]
+
+# Block direct access to mcp-server directory
+RewriteCond %{REQUEST_URI} ^/shop/mcp-server/ [NC]
+RewriteRule ^ - [F,L]
+
+# Block direct access to vendor directory
+RewriteCond %{REQUEST_URI} ^/shop/vendor/ [NC]
+RewriteRule ^ - [F,L]
+
+# Block direct access to node_modules directory
+RewriteCond %{REQUEST_URI} ^/shop/node_modules/ [NC]
+RewriteRule ^ - [F,L]
+
+# Security headers (if mod_headers is available, otherwise ignored)
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
