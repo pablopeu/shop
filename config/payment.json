@@ -6,7 +6,7 @@
         "webhook_security": {
             "validate_signature": true,
             "validate_timestamp": true,
-            "validate_ip": false,
+            "validate_ip": true,
             "max_timestamp_age_minutes": 4
         }
     },
