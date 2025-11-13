@@ -34,6 +34,21 @@ $out_of_stock = get_out_of_stock_products();
 $orders_data = read_json(__DIR__ . '/../data/orders.json');
 $orders = $orders_data['orders'] ?? [];
 
+// Calculate net income from collected sales (cobrada status, not archived)
+$net_income = 0;
+foreach ($orders as $order) {
+    // Only cobrada orders that are not archived
+    if (($order['status'] === 'cobrada') && !($order['archived'] ?? false)) {
+        // If we have MercadoPago data with net amount, use that
+        if (isset($order['mercadopago_data']['net_received_amount'])) {
+            $net_income += floatval($order['mercadopago_data']['net_received_amount']);
+        } else {
+            // Otherwise use the full order total (presencial payments, etc.)
+            $net_income += floatval($order['total']);
+        }
+    }
+}
+
 $promotions_data = read_json(__DIR__ . '/../data/promotions.json');
 $active_promotions = array_filter($promotions_data['promotions'] ?? [], function($p) {
     return $p['active'] ?? false;
@@ -310,6 +325,14 @@ $user = get_logged_user();
                 <h3>Órdenes Totales</h3>
                 <div class="value"><?php echo count($orders); ?></div>
                 <div class="label">pedidos registrados</div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($dashboard_config['widgets']['ingreso_neto_ventas'] ?? true): ?>
+            <div class="stat-card success">
+                <h3>Ingreso Neto</h3>
+                <div class="value">$<?php echo number_format($net_income, 2, ',', '.'); ?></div>
+                <div class="label">ventas cobradas (después de comisiones)</div>
             </div>
             <?php endif; ?>
 

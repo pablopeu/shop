@@ -106,7 +106,6 @@ run-tests.sh
 run-production-test.sh
 production-test-log.json
 api/send-test-email.php
-*.example
 
 # ===== DEPENDENCIES =====
 # Will be uploaded via FTP or installed via Composer

@@ -34,14 +34,21 @@ function enforce_https() {
  */
 function read_json($file, $associative = true) {
     if (!file_exists($file)) {
-        // Try to create from .example file if it exists
-        $example_file = $file . '.example';
-        if (file_exists($example_file)) {
-            // Copy example file to actual file
-            if (copy($example_file, $file)) {
-                error_log("Created $file from example file");
+        // Create default structure for known files
+        $default_data = get_default_json_structure($file);
+
+        if ($default_data !== null) {
+            // Create directory if needed
+            $dir = dirname($file);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+
+            // Create the file with default structure
+            if (write_json($file, $default_data)) {
+                error_log("Created missing JSON file with default structure: $file");
             } else {
-                error_log("JSON file not found and could not create from example: $file");
+                error_log("JSON file not found and could not create: $file");
                 return $associative ? [] : new stdClass();
             }
         } else {
@@ -119,6 +126,75 @@ function write_json($file, $data, $pretty = true) {
     fclose($fp);
     error_log("Cannot acquire lock for writing: $file");
     return false;
+}
+
+/**
+ * Get default JSON structure for known files
+ * @param string $file Path to JSON file
+ * @return mixed Default structure or null if unknown
+ */
+function get_default_json_structure($file) {
+    $basename = basename($file);
+
+    switch ($basename) {
+        case 'reviews.json':
+            return ['reviews' => []];
+
+        case 'archived_orders.json':
+            return ['orders' => []];
+
+        case 'orders.json':
+            return ['orders' => []];
+
+        case 'products.json':
+            return ['products' => []];
+
+        case 'coupons.json':
+            return ['coupons' => []];
+
+        case 'promotions.json':
+            return ['promotions' => []];
+
+        case 'wishlists.json':
+            return ['wishlists' => []];
+
+        case 'newsletters.json':
+            return ['subscribers' => []];
+
+        case 'admin_logs.json':
+            return ['logs' => []];
+
+        case 'stock_logs.json':
+            return ['logs' => []];
+
+        case 'visits.json':
+            return ['visits' => []];
+
+        case 'webhook_log.json':
+            return ['logs' => []];
+
+        case 'webhook_rate_limit.json':
+            return ['limits' => []];
+
+        case 'mp_preference_log.json':
+            return ['preferences' => []];
+
+        case 'maintenance.json':
+            return [
+                'enabled' => false,
+                'bypass_code' => '',
+                'message' => 'Sitio en mantenimiento. Volveremos pronto.'
+            ];
+
+        case 'theme.json':
+            return ['active_theme' => 'minimal'];
+
+        case 'carousel.json':
+            return ['slides' => []];
+
+        default:
+            return null;
+    }
 }
 
 /**
@@ -426,7 +502,7 @@ function log_admin_action($action, $user, $details = []) {
 function is_maintenance_mode() {
     $maintenance = read_json(__DIR__ . '/../config/maintenance.json');
 
-    if (!$maintenance['enabled']) {
+    if (!isset($maintenance['enabled']) || !$maintenance['enabled']) {
         return false;
     }
 

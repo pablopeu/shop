@@ -58,7 +58,7 @@ $site_url = $site_config['site_url'] ?? 'https://tienda.com';
                                             <tr>
                                                 <td style="color: #666666; font-size: 14px; font-weight: 600;">Fecha:</td>
                                                 <td style="color: #333333; font-size: 14px; text-align: right;">
-                                                    <?= date('d/m/Y H:i', strtotime($order['created_at'])) ?>
+                                                    <?= date('d/m/Y H:i', strtotime($order['created_at'] ?? $order['date'] ?? 'now')) ?>
                                                 </td>
                                             </tr>
                                             <tr>
