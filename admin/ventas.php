@@ -1426,6 +1426,7 @@ $status_labels = [
         // Track unsaved changes in modal
         let modalHasUnsavedChanges = false;
         let modalOriginalValues = {};
+        let modalUserHasInteracted = false; // Only set to true after user touches an input
 
         function setupModalChangeDetection() {
             const modalContent = document.getElementById('modalOrderContent');
@@ -1444,21 +1445,31 @@ $status_labels = [
 
             // Reset state
             modalHasUnsavedChanges = false;
+            modalUserHasInteracted = false; // Reset interaction flag
             saveButtons.forEach(btn => {
                 btn.style.background = '#27ae60';
                 btn.style.boxShadow = '0 2px 8px rgba(39, 174, 96, 0.3)';
             });
 
-            // Detect changes
-            inputs.forEach(input => {
-                input.addEventListener('input', () => checkModalChanges(inputs, saveButtons));
-                input.addEventListener('change', () => checkModalChanges(inputs, saveButtons));
-            });
+            // Detect changes - only after a small delay to avoid false positives from browser autocomplete
+            setTimeout(() => {
+                inputs.forEach(input => {
+                    input.addEventListener('input', () => {
+                        modalUserHasInteracted = true;
+                        checkModalChanges(inputs, saveButtons);
+                    });
+                    input.addEventListener('change', () => {
+                        modalUserHasInteracted = true;
+                        checkModalChanges(inputs, saveButtons);
+                    });
+                });
+            }, 100);
 
             // Mark as saved when form is submitted
             forms.forEach(form => {
                 form.addEventListener('submit', () => {
                     modalHasUnsavedChanges = false;
+                    modalUserHasInteracted = false;
                 });
             });
         }
@@ -1493,17 +1504,22 @@ $status_labels = [
         }
 
         function closeModal() {
-            if (modalHasUnsavedChanges) {
+            // Only show warning if user actually interacted with the form AND there are changes
+            if (modalUserHasInteracted && modalHasUnsavedChanges) {
                 // Show custom unsaved changes modal
                 document.getElementById('unsavedChangesModal').classList.add('active');
             } else {
+                // Close directly - no interaction or no changes
                 document.getElementById('orderModal').classList.remove('active');
+                modalHasUnsavedChanges = false;
+                modalUserHasInteracted = false;
             }
         }
 
         function confirmCloseModal() {
             // User confirmed to leave without saving
             modalHasUnsavedChanges = false;
+            modalUserHasInteracted = false;
             document.getElementById('unsavedChangesModal').classList.remove('active');
             document.getElementById('orderModal').classList.remove('active');
         }
