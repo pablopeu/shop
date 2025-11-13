@@ -34,11 +34,17 @@ function log_mp_debug($event_type, $message, $data = null) {
  * Log webhook received
  */
 function log_webhook_received($data, $headers, $client_ip) {
+    // Extract payment/data ID from multiple possible locations
+    $data_id = $data['data']['id'] ?? $data['id'] ?? $data['resource'] ?? null;
+
+    // Extract type from type or topic field
+    $webhook_type = $data['type'] ?? $data['topic'] ?? 'unknown';
+
     log_mp_debug('WEBHOOK_RECEIVED', 'Webhook recibido de MercadoPago', [
         'client_ip' => $client_ip,
-        'webhook_type' => $data['type'] ?? 'unknown',
+        'webhook_type' => $webhook_type,
         'action' => $data['action'] ?? 'unknown',
-        'data_id' => $data['data']['id'] ?? null,
+        'data_id' => $data_id,
         'headers' => $headers,
         'full_payload' => $data
     ]);

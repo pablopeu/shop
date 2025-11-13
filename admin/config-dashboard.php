@@ -13,6 +13,7 @@ if (!file_exists($dashboard_config_file)) {
             'productos_activos',
             'sin_stock',
             'ordenes_totales',
+            'ingreso_neto_ventas',
             'promociones',
             'cupones',
             'reviews_pendientes'
@@ -22,6 +23,7 @@ if (!file_exists($dashboard_config_file)) {
             'stock_bajo' => true,
             'sin_stock' => true,
             'ordenes_totales' => true,
+            'ingreso_neto_ventas' => true,
             'promociones' => true,
             'cupones' => true,
             'reviews_pendientes' => true
@@ -65,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
             'stock_bajo' => isset($_POST['widget_stock_bajo']),
             'sin_stock' => isset($_POST['widget_sin_stock']),
             'ordenes_totales' => isset($_POST['widget_ordenes_totales']),
+            'ingreso_neto_ventas' => isset($_POST['widget_ingreso_neto_ventas']),
             'promociones' => isset($_POST['widget_promociones']),
             'cupones' => isset($_POST['widget_cupones']),
             'reviews_pendientes' => isset($_POST['widget_reviews_pendientes'])
@@ -88,7 +91,7 @@ $site_config = read_json(__DIR__ . '/../config/site.json');
 $page_title = 'Configuración del Dashboard';
 $csrf_token = generate_csrf_token();
 $user = get_logged_user();
-$widget_names = ['productos_activos'=>'📦 Productos Activos','stock_bajo'=>'⚠️ Stock Bajo','sin_stock'=>'🚨 Sin Stock','ordenes_totales'=>'💰 Órdenes','promociones'=>'🎯 Promociones','cupones'=>'🎫 Cupones','reviews_pendientes'=>'⭐ Reviews'];
+$widget_names = ['productos_activos'=>'📦 Productos Activos','stock_bajo'=>'⚠️ Stock Bajo','sin_stock'=>'🚨 Sin Stock','ordenes_totales'=>'💰 Órdenes','ingreso_neto_ventas'=>'💵 Ingreso Neto','promociones'=>'🎯 Promociones','cupones'=>'🎫 Cupones','reviews_pendientes'=>'⭐ Reviews'];
 $action_names = ['productos'=>'📦 Productos','ventas'=>'💰 Ventas','cupones'=>'🎫 Cupones','reviews'=>'⭐ Reviews','config'=>'⚙️ Config'];
 ?>
 <!DOCTYPE html>

@@ -152,15 +152,45 @@ usort($orders, function($a, $b) {
     return strtotime($b['date']) - strtotime($a['date']);
 });
 
-// Calculate stats
-$total_orders = count($all_orders);
-$pending_orders = count(array_filter($all_orders, fn($o) => $o['status'] === 'pending'));
-$confirmed_orders = count(array_filter($all_orders, fn($o) => $o['status'] === 'confirmed'));
-$total_revenue = array_reduce($all_orders, function($sum, $order) {
-    if (in_array($order['status'], ['confirmed', 'shipped', 'delivered'])) {
-        return $sum + ($order['currency'] === 'ARS' ? $order['total'] : $order['total'] * 1000); // Approx conversion
+// Calculate stats for non-archived orders
+$non_archived_orders = array_filter($all_orders, fn($o) => !($o['archived'] ?? false));
+
+// 1. Total Orders: count + total amount in pesos (all non-archived orders, any status)
+$total_orders = count($non_archived_orders);
+$total_orders_amount = array_reduce($non_archived_orders, function($sum, $order) {
+    return $sum + floatval($order['total']);
+}, 0);
+
+// 2. Pending Orders: count + total amount in pesos
+$pending_orders_data = array_filter($non_archived_orders, fn($o) => $o['status'] === 'pending' || $o['status'] === 'pendiente');
+$pending_orders = count($pending_orders_data);
+$pending_amount = array_reduce($pending_orders_data, function($sum, $order) {
+    return $sum + floatval($order['total']);
+}, 0);
+
+// 3. Cobradas (Confirmed): count + gross amount (without discounting fees)
+$cobradas_orders = array_filter($non_archived_orders, fn($o) => $o['status'] === 'cobrada');
+$confirmed_orders = count($cobradas_orders);
+$cobradas_amount_gross = array_reduce($cobradas_orders, function($sum, $order) {
+    return $sum + floatval($order['total']);
+}, 0);
+
+// 4. Total Fees: sum of all MP fees from non-archived collected orders
+$total_fees = array_reduce($cobradas_orders, function($sum, $order) {
+    if (isset($order['mercadopago_data']['total_fees'])) {
+        return $sum + floatval($order['mercadopago_data']['total_fees']);
     }
     return $sum;
+}, 0);
+
+// 5. Net Revenue: collected amount - fees
+$net_revenue = array_reduce($cobradas_orders, function($sum, $order) {
+    if (isset($order['mercadopago_data']['net_received_amount'])) {
+        return $sum + floatval($order['mercadopago_data']['net_received_amount']);
+    } else {
+        // For presencial payments or orders without MP data, use full total
+        return $sum + floatval($order['total']);
+    }
 }, 0);
 
 // Generate CSRF token
@@ -730,22 +760,41 @@ $status_labels = [
             <?php endif; ?>
 
             <!-- Stats -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo $total_orders; ?></div>
+            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                <div class="stat-card" style="border-left: 4px solid #3498db;">
+                    <div class="stat-value">$<?php echo number_format($total_orders_amount, 2, ',', '.'); ?></div>
                     <div class="stat-label">Total Órdenes</div>
+                    <div style="font-size: 13px; color: #999; margin-top: 4px;">
+                        <?php echo $total_orders; ?> operaciones
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo $pending_orders; ?></div>
+                <div class="stat-card" style="border-left: 4px solid #FFA726;">
+                    <div class="stat-value">$<?php echo number_format($pending_amount, 2, ',', '.'); ?></div>
                     <div class="stat-label">Pendientes</div>
+                    <div style="font-size: 13px; color: #999; margin-top: 4px;">
+                        <?php echo $pending_orders; ?> operaciones
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo $confirmed_orders; ?></div>
-                    <div class="stat-label">Confirmadas</div>
+                <div class="stat-card" style="border-left: 4px solid #4CAF50;">
+                    <div class="stat-value">$<?php echo number_format($cobradas_amount_gross, 2, ',', '.'); ?></div>
+                    <div class="stat-label">Cobradas (Bruto)</div>
+                    <div style="font-size: 13px; color: #999; margin-top: 4px;">
+                        <?php echo $confirmed_orders; ?> operaciones
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo format_price($total_revenue, 'ARS'); ?></div>
-                    <div class="stat-label">Ingresos Totales</div>
+                <div class="stat-card" style="border-left: 4px solid #dc3545;">
+                    <div class="stat-value">$<?php echo number_format($total_fees, 2, ',', '.'); ?></div>
+                    <div class="stat-label">Comisiones MP</div>
+                    <div style="font-size: 13px; color: #999; margin-top: 4px;">
+                        de <?php echo $confirmed_orders; ?> ventas cobradas
+                    </div>
+                </div>
+                <div class="stat-card" style="border-left: 4px solid #27ae60;">
+                    <div class="stat-value">$<?php echo number_format($net_revenue, 2, ',', '.'); ?></div>
+                    <div class="stat-label">Ingreso Neto</div>
+                    <div style="font-size: 13px; color: #999; margin-top: 4px;">
+                        Cobrado - Comisiones
+                    </div>
                 </div>
             </div>
 
@@ -1270,10 +1319,54 @@ $status_labels = [
                                 <strong>${formatPrice(item.final_price, order.currency)}</strong>
                             </div>
                         `).join('')}
-                        <div class="order-item" style="border-top: 2px solid #ccc; margin-top: 10px; padding-top: 10px;">
+                        <div class="order-item" style="margin-top: 10px; padding-top: 10px;">
+                            <span><strong>Subtotal:</strong></span>
+                            <strong>${formatPrice(order.total, order.currency)}</strong>
+                        </div>
+                        ${order.mercadopago_data && order.mercadopago_data.total_fees ? `
+                        <div class="order-item" style="color: #dc3545;">
+                            <span>Comisión MercadoPago:</span>
+                            <strong>- ${formatPrice(order.mercadopago_data.total_fees, order.currency)}</strong>
+                        </div>
+                        <div class="order-item" style="border-top: 2px solid #4CAF50; margin-top: 5px; padding-top: 10px; background: #f0f9f0;">
+                            <span><strong>Neto Recibido:</strong></span>
+                            <strong style="color: #4CAF50; font-size: 16px;">${formatPrice(order.mercadopago_data.net_received_amount || order.total, order.currency)}</strong>
+                        </div>
+                        ` : `
+                        <div class="order-item" style="border-top: 2px solid #ccc; margin-top: 5px; padding-top: 10px;">
                             <span><strong>Total:</strong></span>
                             <strong>${formatPrice(order.total, order.currency)}</strong>
                         </div>
+                        `}
+                    </div>
+                </div>
+
+                <!-- Current Status Badge -->
+                <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid ${
+                    order.status === 'pending' ? '#FFA726' :
+                    order.status === 'confirmed' || order.status === 'cobrada' ? '#4CAF50' :
+                    order.status === 'shipped' ? '#2196F3' :
+                    order.status === 'delivered' ? '#4CAF50' :
+                    order.status === 'cancelled' || order.status === 'rechazada' ? '#f44336' : '#999'
+                };">
+                    <label style="margin-bottom: 10px; display: block;"><strong>📊 Estado Actual:</strong></label>
+                    <div style="display: inline-block;">
+                        <span style="padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; color: white; background: ${
+                            order.status === 'pending' ? '#FFA726' :
+                            order.status === 'confirmed' || order.status === 'cobrada' ? '#4CAF50' :
+                            order.status === 'shipped' ? '#2196F3' :
+                            order.status === 'delivered' ? '#4CAF50' :
+                            order.status === 'cancelled' || order.status === 'rechazada' ? '#f44336' : '#999'
+                        };">
+                            ${order.status === 'pending' ? '⏳ Pendiente' :
+                              order.status === 'confirmed' ? '✅ Confirmado' :
+                              order.status === 'cobrada' ? '💰 Cobrada' :
+                              order.status === 'shipped' ? '🚚 Enviado' :
+                              order.status === 'delivered' ? '📦 Entregado' :
+                              order.status === 'cancelled' ? '❌ Cancelado' :
+                              order.status === 'rechazada' ? '⛔ Rechazada' :
+                              order.status.toUpperCase()}
+                        </span>
                     </div>
                 </div>
 
@@ -1283,11 +1376,13 @@ $status_labels = [
 
                     <div class="form-group">
                         <label for="status"><strong>Cambiar Estado:</strong></label>
-                        <select name="status" id="status">
-                            <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pendiente</option>
-                            <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmado</option>
-                            <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>Enviado</option>
-                            <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Entregado</option>
+                        <select name="status" id="status" style="font-weight: 600;">
+                            <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>⏳ Pendiente</option>
+                            <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>✅ Confirmado</option>
+                            <option value="cobrada" ${order.status === 'cobrada' ? 'selected' : ''}>💰 Cobrada</option>
+                            <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>🚚 Enviado</option>
+                            <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>📦 Entregado</option>
+                            <option value="rechazada" ${order.status === 'rechazada' ? 'selected' : ''}>⛔ Rechazada</option>
                         </select>
                     </div>
 

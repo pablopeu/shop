@@ -299,9 +299,14 @@ log_webhook('Webhook received', [
 // Also log with detailed MP logger
 log_webhook_received($data, $headers, $client_ip);
 
-// Validate webhook
-if (!$data || !isset($data['type'])) {
-    log_webhook('Invalid webhook data', ['data' => $data, 'raw_input' => $input]);
+// Validate webhook - accept either 'type' or 'topic' field (MercadoPago uses both)
+if (!$data || (!isset($data['type']) && !isset($data['topic']))) {
+    log_webhook('Invalid webhook data - missing type/topic field', [
+        'data' => $data,
+        'raw_input' => $input,
+        'has_type' => isset($data['type']),
+        'has_topic' => isset($data['topic'])
+    ]);
     http_response_code(400);
     exit('Invalid data');
 }
@@ -370,6 +375,13 @@ if ($security_config['validate_ip'] ?? true) {
     ]);
 }
 
+log_webhook('[DEBUG A] After IP validation block');
+log_mp_debug('DEBUG_A', 'Después del bloque de validación de IP', [
+    'validate_signature_config' => $security_config['validate_signature'] ?? 'not_set',
+    'validate_timestamp_config' => $security_config['validate_timestamp'] ?? 'not_set',
+    'has_webhook_secret' => !empty($webhook_secret)
+]);
+
 // 3. X-Signature Validation (if enabled and secret is configured)
 if (($security_config['validate_signature'] ?? true) && !empty($webhook_secret)) {
     if (!validate_mercadopago_signature($data, $headers, $webhook_secret)) {
@@ -383,6 +395,11 @@ if (($security_config['validate_signature'] ?? true) && !empty($webhook_secret))
         'sandbox_mode' => $sandbox_mode
     ]);
 }
+
+log_webhook('[DEBUG B] After signature validation block');
+log_mp_debug('DEBUG_B', 'Después del bloque de validación de signature', [
+    'signature_validated' => 'skipped or passed'
+]);
 
 // 4. Timestamp Validation (if enabled)
 if ($security_config['validate_timestamp'] ?? true) {
@@ -398,18 +415,79 @@ if ($security_config['validate_timestamp'] ?? true) {
     }
 }
 
-log_webhook('All security validations passed - processing webhook');
+log_webhook('[DEBUG C] After timestamp validation block');
+log_mp_debug('DEBUG_C', 'Después del bloque de validación de timestamp', [
+    'timestamp_validated' => 'skipped or passed'
+]);
 
-// Handle payment notification
-if ($data['type'] === 'payment') {
+log_webhook('[CHECKPOINT 1] After security validations');
+log_mp_debug('CHECKPOINT_1', 'Después de validaciones de seguridad', ['client_ip' => $client_ip]);
+
+// Get notification type - MercadoPago uses 'type' (newer) or 'topic' (legacy)
+log_webhook('[CHECKPOINT 2] About to extract notification type', [
+    'has_type' => isset($data['type']),
+    'has_topic' => isset($data['topic']),
+    'data_keys' => array_keys($data)
+]);
+
+$notification_type = $data['type'] ?? $data['topic'] ?? 'unknown';
+$notification_action = $data['action'] ?? 'unknown';
+
+log_webhook('[CHECKPOINT 3] Notification type extracted', [
+    'notification_type' => $notification_type,
+    'notification_action' => $notification_action
+]);
+
+log_webhook('Determining notification type', [
+    'type_field' => $data['type'] ?? null,
+    'topic_field' => $data['topic'] ?? null,
+    'action_field' => $notification_action,
+    'final_type' => $notification_type,
+    'full_data_keys' => array_keys($data)
+]);
+
+log_mp_debug('WEBHOOK_TYPE_DETECTION', 'Detectando tipo de notificación', [
+    'type' => $data['type'] ?? null,
+    'topic' => $data['topic'] ?? null,
+    'action' => $notification_action,
+    'resolved_type' => $notification_type
+]);
+
+// Handle payment notification (check both 'payment' and 'payments' for compatibility)
+if ($notification_type === 'payment' || $notification_type === 'payments') {
     try {
-        $payment_id = $data['data']['id'] ?? null;
+        // Extract payment ID - support multiple formats:
+        // - Nested: data.id (Webhook v1 format)
+        // - Flat: id (some integrations)
+        // - Resource: resource (IPN/topic format)
+        $payment_id = $data['data']['id'] ?? $data['id'] ?? $data['resource'] ?? null;
 
-        if (!$payment_id) {
-            log_webhook('No payment ID in webhook');
+        // If resource is a URL, extract the ID from it
+        if ($payment_id && strpos($payment_id, 'http') === 0) {
+            // Extract ID from URL like "https://api.mercadopago.com/v1/payments/123456"
+            $payment_id = basename(parse_url($payment_id, PHP_URL_PATH));
+        }
+
+        if (!$payment_id || !is_numeric($payment_id)) {
+            log_webhook('No payment ID in webhook', [
+                'has_data' => isset($data['data']),
+                'has_data_id' => isset($data['data']['id']),
+                'has_id' => isset($data['id']),
+                'has_resource' => isset($data['resource']),
+                'resource_value' => $data['resource'] ?? null,
+                'data_keys' => array_keys($data),
+                'full_data' => $data
+            ]);
+            log_mp_debug('WEBHOOK_ERROR', 'Webhook de pago sin payment_id válido', $data);
             http_response_code(400);
             exit('No payment ID');
         }
+
+        log_mp_debug('PAYMENT_WEBHOOK', "Procesando webhook de pago - Payment ID: $payment_id", [
+            'payment_id' => $payment_id,
+            'notification_type' => $notification_type,
+            'action' => $notification_action
+        ]);
 
         // Get payment details from Mercadopago
         $mp = new MercadoPago($access_token, $sandbox_mode);
@@ -722,7 +800,7 @@ if ($data['type'] === 'payment') {
 }
 
 // Handle chargeback notification
-if ($data['type'] === 'chargebacks') {
+if ($notification_type === 'chargebacks' || $notification_type === 'chargeback') {
     try {
         $chargeback_id = $data['data']['id'] ?? null;
 
@@ -852,7 +930,7 @@ if ($data['type'] === 'chargebacks') {
 }
 
 // Handle merchant_order notification
-if ($data['type'] === 'merchant_order') {
+if ($notification_type === 'merchant_order' || $notification_type === 'merchant_orders') {
     try {
         $merchant_order_id = $data['data']['id'] ?? null;
 
@@ -882,7 +960,20 @@ if ($data['type'] === 'merchant_order') {
 }
 
 // Acknowledge other notification types
-log_webhook('Other notification type', ['type' => $data['type']]);
+log_webhook('Unrecognized notification type - webhook ignored', [
+    'notification_type' => $notification_type,
+    'type_field' => $data['type'] ?? null,
+    'topic_field' => $data['topic'] ?? null,
+    'action' => $notification_action,
+    'full_data' => $data
+]);
+
+log_mp_debug('WEBHOOK_IGNORED', "Tipo de notificación no reconocido: $notification_type", [
+    'notification_type' => $notification_type,
+    'action' => $notification_action,
+    'data' => $data
+]);
+
 http_response_code(200);
 exit('OK');
 
