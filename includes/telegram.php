@@ -305,3 +305,69 @@ function send_telegram_test() {
 
     return send_telegram_message($message);
 }
+
+/**
+ * Send Telegram message to a specific chat_id (for customer validation)
+ * This allows sending to users other than the admin
+ */
+function send_telegram_to_user($chat_id, $message, $parse_mode = 'HTML') {
+    $config = get_telegram_config();
+
+    if (!($config['enabled'] ?? false)) {
+        error_log("Telegram notifications disabled");
+        return false;
+    }
+
+    // Get bot token from secure credentials
+    $credentials = get_secure_telegram_credentials();
+    $bot_token = $credentials['bot_token'] ?? '';
+
+    if (empty($bot_token)) {
+        error_log("Telegram not configured - missing bot_token");
+        return false;
+    }
+
+    $url = "https://api.telegram.org/bot{$bot_token}/sendMessage";
+
+    $data = [
+        'chat_id' => $chat_id,
+        'text' => $message,
+        'parse_mode' => $parse_mode,
+        'disable_web_page_preview' => true
+    ];
+
+    $options = [
+        'http' => [
+            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+            'method'  => 'POST',
+            'content' => http_build_query($data),
+            'timeout' => 10
+        ]
+    ];
+
+    $context = stream_context_create($options);
+
+    try {
+        $result = @file_get_contents($url, false, $context);
+
+        if ($result === false) {
+            error_log("Failed to send Telegram message to user $chat_id");
+            return false;
+        }
+
+        $response = json_decode($result, true);
+
+        if (!($response['ok'] ?? false)) {
+            error_log("Telegram API error: " . ($response['description'] ?? 'Unknown error'));
+            return false;
+        }
+
+        error_log("Telegram message sent successfully to user $chat_id");
+        return true;
+
+    } catch (Exception $e) {
+        error_log("Exception sending Telegram message: " . $e->getMessage());
+        return false;
+    }
+}
+
