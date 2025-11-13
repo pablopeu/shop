@@ -1542,9 +1542,28 @@ $status_labels = [
 
         function copyPaymentLink(link) {
             navigator.clipboard.writeText(link).then(() => {
-                alert('✅ Link de pago copiado al portapapeles');
+                showModal({
+                    title: 'Link Copiado',
+                    message: 'El link de pago se ha copiado al portapapeles exitosamente.',
+                    icon: '✅',
+                    iconClass: 'success',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    cancelText: null,
+                    onConfirm: function() {}
+                });
             }).catch(() => {
-                prompt('Copia este link:', link);
+                showModal({
+                    title: 'Copiar Link de Pago',
+                    message: 'No se pudo copiar automáticamente. Por favor, copia manualmente el siguiente link:',
+                    details: link,
+                    icon: '📋',
+                    iconClass: 'info',
+                    confirmText: 'Cerrar',
+                    confirmType: 'primary',
+                    cancelText: null,
+                    onConfirm: function() {}
+                });
             });
         }
 
@@ -1752,5 +1771,8 @@ $status_labels = [
         // Initialize selected count on page load
         document.addEventListener('DOMContentLoaded', updateSelectedCount);
     </script>
+
+    <!-- Modal Component -->
+    <?php include __DIR__ . '/includes/modal.php'; ?>
 </body>
 </html>

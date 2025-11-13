@@ -1082,18 +1082,49 @@ $user = get_logged_user();
                         .then(data => {
                             if (data.success) {
                                 console.log('Orden actualizado:', data.message);
-                                // Optionally show a success message
+                                // Show success notification
+                                showModal({
+                                    title: 'Orden Actualizado',
+                                    message: 'El orden de los productos se ha actualizado exitosamente.',
+                                    icon: '✅',
+                                    iconClass: 'success',
+                                    confirmText: 'Entendido',
+                                    confirmType: 'primary',
+                                    cancelText: null,
+                                    onConfirm: function() {}
+                                });
                             } else {
                                 console.error('Error al actualizar el orden:', data.message);
-                                alert('Error al guardar el nuevo orden: ' + data.message);
-                                // Reload the page to restore original order
-                                location.reload();
+                                showModal({
+                                    title: 'Error al Guardar',
+                                    message: 'No se pudo guardar el nuevo orden de productos.',
+                                    details: data.message || 'Error desconocido. La página se recargará para restaurar el orden original.',
+                                    icon: '❌',
+                                    iconClass: 'danger',
+                                    confirmText: 'Recargar Página',
+                                    confirmType: 'danger',
+                                    cancelText: null,
+                                    onConfirm: function() {
+                                        location.reload();
+                                    }
+                                });
                             }
                         })
                         .catch(error => {
                             console.error('Error:', error);
-                            alert('Error al guardar el nuevo orden');
-                            location.reload();
+                            showModal({
+                                title: 'Error de Conexión',
+                                message: 'No se pudo comunicar con el servidor para guardar el nuevo orden.',
+                                details: 'La página se recargará para restaurar el orden original.',
+                                icon: '⚠️',
+                                iconClass: 'warning',
+                                confirmText: 'Recargar Página',
+                                confirmType: 'warning',
+                                cancelText: null,
+                                onConfirm: function() {
+                                    location.reload();
+                                }
+                            });
                         });
                     }
                 });

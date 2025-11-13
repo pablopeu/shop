@@ -300,12 +300,34 @@ $webhook_url = $protocol . $_SERVER['HTTP_HOST'] . url('/webhook.php');
         function copyWebhookUrl() {
             const url = '<?php echo $webhook_url; ?>';
             navigator.clipboard.writeText(url).then(() => {
-                alert('✅ URL del webhook copiada al portapapeles');
+                showModal({
+                    title: 'URL Copiada',
+                    message: 'La URL del webhook se ha copiado al portapapeles exitosamente.',
+                    icon: '✅',
+                    iconClass: 'success',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    cancelText: null,
+                    onConfirm: function() {}
+                });
             }).catch(() => {
-                prompt('Copia esta URL:', url);
+                showModal({
+                    title: 'Copiar URL del Webhook',
+                    message: 'No se pudo copiar automáticamente. Por favor, copia manualmente la siguiente URL:',
+                    details: url,
+                    icon: '📋',
+                    iconClass: 'info',
+                    confirmText: 'Cerrar',
+                    confirmType: 'primary',
+                    cancelText: null,
+                    onConfirm: function() {}
+                });
             });
         }
     </script>
+
+    <!-- Modal Component -->
+    <?php include __DIR__ . '/includes/modal.php'; ?>
 
     <!-- Unsaved Changes Warning -->
     <script src="<?php echo url('/admin/includes/unsaved-changes-warning.js'); ?>"></script>

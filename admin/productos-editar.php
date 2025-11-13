@@ -849,7 +849,17 @@ $user = get_logged_user();
 
             if (priceArs <= 0 && priceUsd <= 0) {
                 e.preventDefault();
-                alert('Debe ingresar al menos un precio (ARS o USD) mayor a 0');
+                showModal({
+                    title: 'Precio Requerido',
+                    message: 'Debe ingresar al menos un precio (ARS o USD) mayor a 0.',
+                    details: 'Complete el campo de precio en pesos argentinos (ARS) o dólares (USD) antes de guardar el producto.',
+                    icon: '⚠️',
+                    iconClass: 'warning',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    cancelText: null,
+                    onConfirm: function() {}
+                });
                 return false;
             }
 
