@@ -336,7 +336,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <span>💳 Medios de Pago</span>
                 <span class="menu-arrow" id="arrow-payment">▶</span>
             </div>
-            <ul class="submenu <?php echo in_array($current_page, ['config-payment.php', 'payment-secretos-path.php']) ? 'open' : ''; ?>"
+            <ul class="submenu <?php echo in_array($current_page, ['config-payment.php', 'payment-secretos-path.php', 'reprocesar-pago-mp.php']) ? 'open' : ''; ?>"
                 id="submenu-payment">
                 <li>
                     <a href="<?php echo url('/admin/config-payment.php'); ?>"
@@ -348,6 +348,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <a href="<?php echo url('/admin/payment-secretos-path.php'); ?>"
                        class="<?php echo $current_page === 'payment-secretos-path.php' ? 'active' : ''; ?>">
                         🔐 Ubicación de Secretos
+                    </a>
+                </li>
+                <li>
+                    <a href="<?php echo url('/admin/reprocesar-pago-mp.php'); ?>"
+                       class="<?php echo $current_page === 'reprocesar-pago-mp.php' ? 'active' : ''; ?>">
+                        🔄 Reprocesar Pagos
                     </a>
                 </li>
             </ul>
