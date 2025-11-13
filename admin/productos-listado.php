@@ -1074,11 +1074,20 @@ $user = get_logged_user();
                             headers: {
                                 'Content-Type': 'application/json',
                             },
+                            credentials: 'same-origin',  // Include session cookies
                             body: JSON.stringify({
                                 product_order: productOrder
                             })
                         })
-                        .then(response => response.json())
+                        .then(response => {
+                            // Check if response is OK before parsing JSON
+                            if (!response.ok) {
+                                return response.text().then(text => {
+                                    throw new Error(`HTTP ${response.status}: ${text}`);
+                                });
+                            }
+                            return response.json();
+                        })
                         .then(data => {
                             if (data.success) {
                                 console.log('Orden actualizado:', data.message);
@@ -1111,11 +1120,11 @@ $user = get_logged_user();
                             }
                         })
                         .catch(error => {
-                            console.error('Error:', error);
+                            console.error('Error completo:', error);
                             showModal({
                                 title: 'Error de Conexión',
                                 message: 'No se pudo comunicar con el servidor para guardar el nuevo orden.',
-                                details: 'La página se recargará para restaurar el orden original.',
+                                details: error.message || 'La página se recargará para restaurar el orden original.',
                                 icon: '⚠️',
                                 iconClass: 'warning',
                                 confirmText: 'Recargar Página',
