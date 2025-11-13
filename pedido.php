@@ -43,34 +43,64 @@ $active_theme = $theme_config['active_theme'] ?? 'minimal';
 // Status configuration
 $status_config = [
     'pending' => [
-        'icon' => '📦',
-        'label' => 'Pendiente',
-        'color' => '#FFA726',
-        'description' => 'Tu pedido ha sido recibido y está pendiente de confirmación'
+        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
+        'label' => 'Pendiente de Pago',
+        'color' => '#FF9800',
+        'description' => 'Tu pedido está esperando la confirmación del pago'
+    ],
+    'pendiente' => [
+        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
+        'label' => 'Pendiente de Pago',
+        'color' => '#FF9800',
+        'description' => 'Tu pedido está esperando la confirmación del pago'
+    ],
+    'cobrada' => [
+        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+        'label' => 'Pago Confirmado',
+        'color' => '#4CAF50',
+        'description' => 'Tu pago fue confirmado y estamos preparando tu pedido'
+    ],
+    'confirmado' => [
+        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>',
+        'label' => 'Pedido Confirmado',
+        'color' => '#2196F3',
+        'description' => 'Tu pedido está siendo preparado para el envío'
     ],
     'confirmed' => [
-        'icon' => '✅',
-        'label' => 'Confirmado',
-        'color' => '#4CAF50',
-        'description' => 'Tu pedido ha sido confirmado y está siendo preparado'
+        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>',
+        'label' => 'Pedido Confirmado',
+        'color' => '#2196F3',
+        'description' => 'Tu pedido está siendo preparado para el envío'
     ],
     'shipped' => [
-        'icon' => '🚚',
+        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>',
         'label' => 'Enviado',
-        'color' => '#2196F3',
+        'color' => '#9C27B0',
         'description' => 'Tu pedido está en camino'
     ],
     'delivered' => [
-        'icon' => '🏠',
+        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
         'label' => 'Entregado',
         'color' => '#4CAF50',
         'description' => '¡Tu pedido ha sido entregado!'
     ],
-    'cancelled' => [
-        'icon' => '❌',
+    'cancelada' => [
+        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
         'label' => 'Cancelado',
         'color' => '#f44336',
         'description' => 'Este pedido ha sido cancelado'
+    ],
+    'cancelled' => [
+        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+        'label' => 'Cancelado',
+        'color' => '#f44336',
+        'description' => 'Este pedido ha sido cancelado'
+    ],
+    'rechazada' => [
+        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+        'label' => 'Rechazado',
+        'color' => '#f44336',
+        'description' => 'El pago fue rechazado'
     ]
 ];
 
@@ -87,6 +117,283 @@ $status_config = [
 
     <!-- Mobile Menu Styles -->
     <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
+
+    <!-- Order Tracking Styles -->
+    <style>
+        /* Timeline Icon Styling */
+        .timeline-dot {
+            width: 48px !important;
+            height: 48px !important;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: white;
+            border: 3px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .timeline-dot svg {
+            width: 24px;
+            height: 24px;
+            stroke: #9e9e9e;
+            transition: stroke 0.3s ease;
+        }
+
+        .timeline-item.completed .timeline-dot {
+            background: #4CAF50;
+            border-color: #4CAF50;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .timeline-item.completed .timeline-dot svg {
+            stroke: white;
+        }
+
+        .timeline-item.current .timeline-dot {
+            background: white;
+            border-color: currentColor;
+            border-width: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .timeline-item.current .timeline-dot svg {
+            stroke: currentColor;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+            }
+        }
+
+        .timeline-item.pending .timeline-dot {
+            background: #fafafa;
+            border-color: #e0e0e0;
+        }
+
+        /* Timeline Content */
+        .timeline-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #333;
+        }
+
+        .timeline-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 6px;
+            line-height: 1.5;
+        }
+
+        .timeline-date {
+            font-size: 13px;
+            color: #999;
+            font-weight: 500;
+        }
+
+        .timeline-item.completed .timeline-title {
+            color: #4CAF50;
+        }
+
+        .timeline-item.current .timeline-title {
+            color: currentColor;
+            font-weight: 700;
+        }
+
+        /* Payment Status Icons */
+        .payment-status-icon {
+            width: 24px;
+            height: 24px;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        /* Order Header Enhancement */
+        .order-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .order-header h1 {
+            font-size: 28px;
+            margin: 0 0 10px 0;
+            font-weight: 700;
+        }
+
+        .order-date {
+            font-size: 15px;
+            opacity: 0.9;
+        }
+
+        /* Timeline Section */
+        .timeline {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .timeline h2 {
+            font-size: 22px;
+            margin: 0 0 25px 0;
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* Payment Status Box Enhancement */
+        .payment-status-box {
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .payment-status-box h3 {
+            display: flex;
+            align-items: center;
+            margin: 0 0 12px 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .payment-status-box h3 svg {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+        }
+
+        /* Sections */
+        .order-details, .items-section, .contact-box {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .order-details h2, .items-section h2 {
+            font-size: 20px;
+            margin: 0 0 20px 0;
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* Detail rows */
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 500;
+            color: #666;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* Items */
+        .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .item-quantity {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .item-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        /* Contact Box */
+        .contact-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .contact-box h3 {
+            margin: 0 0 12px 0;
+            font-size: 20px;
+        }
+
+        .contact-box p {
+            margin: 0;
+            line-height: 1.8;
+            opacity: 0.95;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .order-header h1 {
+                font-size: 24px;
+            }
+
+            .timeline, .order-details, .items-section, .contact-box {
+                padding: 20px;
+            }
+
+            .detail-row {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -120,14 +427,18 @@ $status_config = [
 
             <!-- Timeline -->
             <div class="timeline">
-                <h2>📍 Estado del Pedido</h2>
+                <h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px; color: #667eea;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    Estado del Pedido
+                </h2>
 
                 <div class="timeline-items">
                     <div class="timeline-line"></div>
 
                     <?php
                     // Build timeline from status_history
-                    $all_steps = ['pending', 'confirmed', 'shipped', 'delivered'];
+                    // Updated to include both English and Spanish states
+                    $all_steps = ['pending', 'pendiente', 'cobrada', 'confirmado', 'confirmed', 'shipped', 'delivered'];
                     $current_status = $order['status'];
                     $history = $order['status_history'];
                     $last_index = count($history) - 1;
@@ -240,17 +551,38 @@ $status_config = [
             <!-- Payment Status Box (only for active orders) -->
             <?php
             $payment_status_config = [
-                'pending' => ['icon' => '⏳', 'label' => 'Pago Pendiente', 'color' => '#FF9800', 'bg' => '#fff3e0'],
-                'approved' => ['icon' => '✅', 'label' => 'Pago Aprobado', 'color' => '#4CAF50', 'bg' => '#e8f5e9'],
-                'rejected' => ['icon' => '❌', 'label' => 'Pago Rechazado', 'color' => '#f44336', 'bg' => '#ffebee'],
-                'cancelled' => ['icon' => '🚫', 'label' => 'Pago Cancelado', 'color' => '#9e9e9e', 'bg' => '#f5f5f5']
+                'pending' => [
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
+                    'label' => 'Pago Pendiente',
+                    'color' => '#FF9800',
+                    'bg' => '#fff3e0'
+                ],
+                'approved' => [
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+                    'label' => 'Pago Aprobado',
+                    'color' => '#4CAF50',
+                    'bg' => '#e8f5e9'
+                ],
+                'rejected' => [
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+                    'label' => 'Pago Rechazado',
+                    'color' => '#f44336',
+                    'bg' => '#ffebee'
+                ],
+                'cancelled' => [
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4" y1="12" x2="20" y2="12"></line></svg>',
+                    'label' => 'Pago Cancelado',
+                    'color' => '#9e9e9e',
+                    'bg' => '#f5f5f5'
+                ]
             ];
             $payment_status = $order['payment_status'] ?? 'pending';
             $payment_info = $payment_status_config[$payment_status] ?? $payment_status_config['pending'];
             ?>
-            <div style="background: <?php echo $payment_info['bg']; ?>; border-left: 4px solid <?php echo $payment_info['color']; ?>; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
-                <h3 style="color: <?php echo $payment_info['color']; ?>; margin-bottom: 10px;">
-                    <?php echo $payment_info['icon']; ?> Estado del Pago
+            <div class="payment-status-box" style="background: <?php echo $payment_info['bg']; ?>; border-left: 4px solid <?php echo $payment_info['color']; ?>;">
+                <h3 style="color: <?php echo $payment_info['color']; ?>;">
+                    <span style="color: <?php echo $payment_info['color']; ?>;"><?php echo $payment_info['icon']; ?></span>
+                    Estado del Pago
                 </h3>
                 <div style="font-size: 18px; font-weight: 600; color: <?php echo $payment_info['color']; ?>; margin-bottom: 10px;">
                     <?php echo $payment_info['label']; ?>
@@ -258,8 +590,9 @@ $status_config = [
                 <?php if ($payment_status === 'pending' && $order['payment_link']): ?>
                     <a href="<?php echo htmlspecialchars($order['payment_link']); ?>"
                        class="btn btn-primary"
-                       style="display: inline-block; margin-top: 10px;">
-                        💳 Completar Pago
+                       style="display: inline-block; margin-top: 10px; text-decoration: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                        Completar Pago
                     </a>
                 <?php endif; ?>
             </div>
@@ -268,7 +601,10 @@ $status_config = [
             <!-- Tracking Info (if exists and not cancelled) -->
             <?php if ($order['tracking_number'] && $order['status'] !== 'cancelled'): ?>
             <div class="tracking-box">
-                <h3>🚚 Número de Seguimiento</h3>
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                    Número de Seguimiento
+                </h3>
                 <div class="tracking-number"><?php echo htmlspecialchars($order['tracking_number']); ?></div>
                 <?php if ($order['tracking_url']): ?>
                     <a href="<?php echo htmlspecialchars($order['tracking_url']); ?>"
@@ -281,7 +617,10 @@ $status_config = [
 
             <!-- Order Details -->
             <div class="order-details">
-                <h2>📋 Detalles del Pedido</h2>
+                <h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    Detalles del Pedido
+                </h2>
 
                 <div class="detail-row">
                     <span class="detail-label">Método de pago:</span>
@@ -315,7 +654,10 @@ $status_config = [
 
             <!-- Items -->
             <div class="items-section">
-                <h2>📦 Productos</h2>
+                <h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    Productos
+                </h2>
 
                 <?php foreach ($order['items'] as $item): ?>
                 <div class="item">
@@ -349,7 +691,10 @@ $status_config = [
 
             <!-- Contact -->
             <div class="contact-box">
-                <h3>💬 ¿Necesitas ayuda?</h3>
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    ¿Necesitas ayuda?
+                </h3>
                 <p>
                     Si tienes alguna consulta sobre tu pedido, no dudes en contactarnos:
                     <br>
@@ -362,7 +707,8 @@ $status_config = [
             <!-- Back to Home -->
             <div style="margin-top: 30px; text-align: center;">
                 <a href="<?php echo url('/'); ?>" class="btn btn-primary" style="display: inline-block; text-decoration: none;">
-                    🏠 Volver al Inicio
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    Volver al Inicio
                 </a>
             </div>
         <?php endif; ?>
