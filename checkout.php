@@ -962,7 +962,9 @@ $csrf_token = generate_csrf_token();
         const MERCADOPAGO_PUBLIC_KEY = '<?php echo $mp_public_key; ?>';
 
         // Step management
-        let currentStep = 1;
+        // If form was submitted (POST data exists), start at step 4 (confirmation)
+        // This handles validation errors gracefully
+        let currentStep = <?php echo (!empty($_POST) && isset($_POST['place_order'])) ? '4' : '1'; ?>;
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
