@@ -55,6 +55,15 @@ $_SESSION['cart'] = $valid_items;
 // Get configurations
 $site_config = read_json(__DIR__ . '/config/site.json');
 $telegram_config = get_telegram_config();
+
+// If bot_username is not set, try to get it from Telegram API
+if (empty($telegram_config['bot_username'])) {
+    $bot_username = update_telegram_bot_username();
+    if ($bot_username) {
+        $telegram_config['bot_username'] = $bot_username;
+    }
+}
+
 $footer_config = read_json(__DIR__ . '/config/footer.json');
 $currency_config = read_json(__DIR__ . '/config/currency.json');
 $payment_config = read_json(__DIR__ . '/config/payment.json');
