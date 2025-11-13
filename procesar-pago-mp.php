@@ -200,9 +200,17 @@ try {
 
         // Send notifications (using updated order data)
         $updated_order = $orders_data['orders'][$order_index];
-        send_payment_approved_email($updated_order);  // To customer
-        send_admin_new_order_email($updated_order);   // To admin
-        send_telegram_payment_approved($updated_order); // To admin via Telegram
+
+        // Send to customer based on their preference
+        if (($updated_order['contact_preference'] ?? 'email') === 'telegram') {
+            send_telegram_payment_approved_to_customer($updated_order);
+        } else {
+            send_payment_approved_email($updated_order);
+        }
+
+        // Always send to admin
+        send_admin_new_order_email($updated_order);
+        send_telegram_payment_approved($updated_order);
 
         $redirect_url = url('/gracias.php?order=' . $order_id . '&token=' . $tracking_token);
     } elseif ($payment['status'] === 'in_process' ||

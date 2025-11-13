@@ -371,3 +371,131 @@ function send_telegram_to_user($chat_id, $message, $parse_mode = 'HTML') {
     }
 }
 
+/**
+ * Send order confirmation to customer via Telegram
+ */
+function send_telegram_order_confirmation($order) {
+    if (empty($order['telegram_chat_id'])) {
+        error_log("No telegram_chat_id in order");
+        return false;
+    }
+
+    $site_config = read_json(__DIR__ . '/../config/site.json');
+    $site_name = $site_config['site_name'] ?? 'Nuestra Tienda';
+
+    $currency = $order['currency'] === 'USD' ? 'U$D' : '$';
+    $total = number_format($order['total'], 2);
+
+    $message = "✅ <b>Orden Confirmada</b>\n\n";
+    $message .= "Gracias por tu compra en <b>{$site_name}</b>!\n\n";
+    $message .= "📝 Número de orden: <code>#{$order['order_number']}</code>\n";
+    $message .= "💰 Total: <b>{$currency} {$total}</b>\n\n";
+
+    $message .= "📦 <b>Productos:</b>\n";
+    foreach ($order['items'] as $item) {
+        $message .= "• {$item['name']} x{$item['quantity']}\n";
+    }
+
+    $message .= "\n💳 Método de pago: " . ucfirst($order['payment_method'] ?? 'N/A') . "\n";
+
+    if ($order['delivery_method'] === 'shipping' && isset($order['shipping_address'])) {
+        $message .= "📍 Envío a: {$order['shipping_address']['city']}, {$order['shipping_address']['state']}\n";
+    } else {
+        $message .= "🏪 Retiro en persona\n";
+    }
+
+    $message .= "\nTe mantendremos informado sobre el estado de tu pedido. ✨";
+
+    return send_telegram_to_user($order['telegram_chat_id'], $message);
+}
+
+/**
+ * Send payment approved notification to customer via Telegram
+ */
+function send_telegram_payment_approved_to_customer($order) {
+    if (empty($order['telegram_chat_id'])) {
+        error_log("No telegram_chat_id in order");
+        return false;
+    }
+
+    $site_config = read_json(__DIR__ . '/../config/site.json');
+    $site_name = $site_config['site_name'] ?? 'Nuestra Tienda';
+
+    $currency = $order['currency'] === 'USD' ? 'U$D' : '$';
+    $total = number_format($order['total'], 2);
+
+    $message = "✅ <b>¡Pago Confirmado!</b>\n\n";
+    $message .= "Tu pago ha sido aprobado exitosamente.\n\n";
+    $message .= "📝 Orden: <code>#{$order['order_number']}</code>\n";
+    $message .= "💰 Monto: <b>{$currency} {$total}</b>\n\n";
+
+    if (isset($order['mercadopago_data']['payment_method_id'])) {
+        $method = strtoupper($order['mercadopago_data']['payment_method_id']);
+        if (isset($order['mercadopago_data']['card_last_four_digits'])) {
+            $method .= " **** {$order['mercadopago_data']['card_last_four_digits']}";
+        }
+        $message .= "💳 Método: {$method}\n";
+    }
+
+    if (isset($order['mercadopago_data']['installments']) && $order['mercadopago_data']['installments'] > 1) {
+        $message .= "📊 Cuotas: {$order['mercadopago_data']['installments']}x\n";
+    }
+
+    $message .= "\nPronto recibirás actualizaciones sobre el envío de tu pedido. 🎉";
+
+    return send_telegram_to_user($order['telegram_chat_id'], $message);
+}
+
+/**
+ * Send payment pending notification to customer via Telegram
+ */
+function send_telegram_payment_pending_to_customer($order) {
+    if (empty($order['telegram_chat_id'])) {
+        error_log("No telegram_chat_id in order");
+        return false;
+    }
+
+    $site_config = read_json(__DIR__ . '/../config/site.json');
+    $site_name = $site_config['site_name'] ?? 'Nuestra Tienda';
+
+    $currency = $order['currency'] === 'USD' ? 'U$D' : '$';
+    $total = number_format($order['total'], 2);
+
+    $message = "⏳ <b>Pago Pendiente</b>\n\n";
+    $message .= "Tu pago está siendo procesado.\n\n";
+    $message .= "📝 Orden: <code>#{$order['order_number']}</code>\n";
+    $message .= "💰 Monto: {$currency} {$total}\n\n";
+    $message .= "Te notificaremos cuando se confirme el pago. ⏰";
+
+    return send_telegram_to_user($order['telegram_chat_id'], $message);
+}
+
+/**
+ * Send payment rejected notification to customer via Telegram
+ */
+function send_telegram_payment_rejected_to_customer($order, $status_detail = '') {
+    if (empty($order['telegram_chat_id'])) {
+        error_log("No telegram_chat_id in order");
+        return false;
+    }
+
+    $site_config = read_json(__DIR__ . '/../config/site.json');
+    $site_name = $site_config['site_name'] ?? 'Nuestra Tienda';
+
+    $currency = $order['currency'] === 'USD' ? 'U$D' : '$';
+    $total = number_format($order['total'], 2);
+
+    $message = "❌ <b>Pago Rechazado</b>\n\n";
+    $message .= "Lamentablemente tu pago no pudo ser procesado.\n\n";
+    $message .= "📝 Orden: <code>#{$order['order_number']}</code>\n";
+    $message .= "💰 Monto: {$currency} {$total}\n";
+
+    if (!empty($status_detail)) {
+        $message .= "⚠️ Motivo: {$status_detail}\n";
+    }
+
+    $message .= "\nPuedes intentar nuevamente con otro método de pago o contactarnos para asistencia.";
+
+    return send_telegram_to_user($order['telegram_chat_id'], $message);
+}
+

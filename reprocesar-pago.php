@@ -311,18 +311,26 @@ try {
         else echo "📧 Enviando notificaciones...\n";
 
         if ($new_order_status === 'cobrada') {
-            $email_sent = send_payment_approved_email($updated_order);
-            log_notification_sent('EMAIL_PAYMENT_APPROVED', $updated_order['customer_email'], $email_sent, $order_id);
+            // Send to customer based on preference
+            $customer_notif_sent = false;
+            if (($updated_order['contact_preference'] ?? 'email') === 'telegram') {
+                $customer_notif_sent = send_telegram_payment_approved_to_customer($updated_order);
+                log_notification_sent('TELEGRAM_PAYMENT_APPROVED_CUSTOMER', $updated_order['telegram_chat_id'] ?? 'N/A', $customer_notif_sent, $order_id);
+            } else {
+                $customer_notif_sent = send_payment_approved_email($updated_order);
+                log_notification_sent('EMAIL_PAYMENT_APPROVED', $updated_order['customer_email'], $customer_notif_sent, $order_id);
+            }
 
+            // Always send to admin via Telegram
             $telegram_sent = send_telegram_payment_approved($updated_order);
             log_notification_sent('TELEGRAM_PAYMENT_APPROVED', 'admin', $telegram_sent, $order_id);
 
             if (!$is_cli) {
-                echo "<p class='success'>✅ Email enviado: " . ($email_sent ? 'Sí' : 'No') . "</p>";
-                echo "<p class='success'>✅ Telegram enviado: " . ($telegram_sent ? 'Sí' : 'No') . "</p>";
+                echo "<p class='success'>✅ Notificación al cliente: " . ($customer_notif_sent ? 'Sí' : 'No') . "</p>";
+                echo "<p class='success'>✅ Telegram admin: " . ($telegram_sent ? 'Sí' : 'No') . "</p>";
             } else {
-                echo "  - Email: " . ($email_sent ? '✅ Enviado' : '❌ Fallo') . "\n";
-                echo "  - Telegram: " . ($telegram_sent ? '✅ Enviado' : '❌ Fallo') . "\n";
+                echo "  - Cliente: " . ($customer_notif_sent ? '✅ Enviado' : '❌ Fallo') . "\n";
+                echo "  - Telegram admin: " . ($telegram_sent ? '✅ Enviado' : '❌ Fallo') . "\n";
             }
 
             log_mp_debug('PAYMENT_APPROVED', "Pago aprobado (reproceso manual) - Orden: $order_id", [
@@ -331,28 +339,43 @@ try {
                 'amount' => $payment['transaction_amount'] ?? 0,
                 'fees' => $total_fees,
                 'net_amount' => $net_received_amount,
-                'email_sent' => $email_sent,
+                'customer_notif_sent' => $customer_notif_sent,
                 'telegram_sent' => $telegram_sent
             ]);
         } elseif ($new_order_status === 'pendiente') {
-            $email_sent = send_payment_pending_email($updated_order);
-            log_notification_sent('EMAIL_PAYMENT_PENDING', $updated_order['customer_email'], $email_sent, $order_id);
+            // Send to customer based on preference
+            $customer_notif_sent = false;
+            if (($updated_order['contact_preference'] ?? 'email') === 'telegram') {
+                $customer_notif_sent = send_telegram_payment_pending_to_customer($updated_order);
+                log_notification_sent('TELEGRAM_PAYMENT_PENDING_CUSTOMER', $updated_order['telegram_chat_id'] ?? 'N/A', $customer_notif_sent, $order_id);
+            } else {
+                $customer_notif_sent = send_payment_pending_email($updated_order);
+                log_notification_sent('EMAIL_PAYMENT_PENDING', $updated_order['customer_email'], $customer_notif_sent, $order_id);
+            }
 
-            if (!$is_cli) echo "<p class='success'>✅ Email pendiente enviado: " . ($email_sent ? 'Sí' : 'No') . "</p>";
-            else echo "  - Email pendiente: " . ($email_sent ? '✅ Enviado' : '❌ Fallo') . "\n";
+            if (!$is_cli) echo "<p class='success'>✅ Notificación pendiente: " . ($customer_notif_sent ? 'Sí' : 'No') . "</p>";
+            else echo "  - Cliente: " . ($customer_notif_sent ? '✅ Enviado' : '❌ Fallo') . "\n";
         } elseif ($new_order_status === 'rechazada') {
-            $email_sent = send_payment_rejected_email($updated_order, $status_detail);
-            log_notification_sent('EMAIL_PAYMENT_REJECTED', $updated_order['customer_email'], $email_sent, $order_id);
+            // Send to customer based on preference
+            $customer_notif_sent = false;
+            if (($updated_order['contact_preference'] ?? 'email') === 'telegram') {
+                $customer_notif_sent = send_telegram_payment_rejected_to_customer($updated_order, $status_detail);
+                log_notification_sent('TELEGRAM_PAYMENT_REJECTED_CUSTOMER', $updated_order['telegram_chat_id'] ?? 'N/A', $customer_notif_sent, $order_id);
+            } else {
+                $customer_notif_sent = send_payment_rejected_email($updated_order, $status_detail);
+                log_notification_sent('EMAIL_PAYMENT_REJECTED', $updated_order['customer_email'], $customer_notif_sent, $order_id);
+            }
 
+            // Always send to admin via Telegram
             $telegram_sent = send_telegram_payment_rejected($updated_order);
             log_notification_sent('TELEGRAM_PAYMENT_REJECTED', 'admin', $telegram_sent, $order_id);
 
             if (!$is_cli) {
-                echo "<p class='success'>✅ Email rechazo enviado: " . ($email_sent ? 'Sí' : 'No') . "</p>";
-                echo "<p class='success'>✅ Telegram enviado: " . ($telegram_sent ? 'Sí' : 'No') . "</p>";
+                echo "<p class='success'>✅ Notificación al cliente: " . ($customer_notif_sent ? 'Sí' : 'No') . "</p>";
+                echo "<p class='success'>✅ Telegram admin: " . ($telegram_sent ? 'Sí' : 'No') . "</p>";
             } else {
-                echo "  - Email rechazo: " . ($email_sent ? '✅ Enviado' : '❌ Fallo') . "\n";
-                echo "  - Telegram: " . ($telegram_sent ? '✅ Enviado' : '❌ Fallo') . "\n";
+                echo "  - Cliente: " . ($customer_notif_sent ? '✅ Enviado' : '❌ Fallo') . "\n";
+                echo "  - Telegram admin: " . ($telegram_sent ? '✅ Enviado' : '❌ Fallo') . "\n";
             }
         }
 

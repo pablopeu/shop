@@ -359,14 +359,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                 increment_coupon_usage($coupon_code);
             }
 
-            // Send order confirmation email to customer (always send)
-            send_order_confirmation_email($order);
+            // Send order confirmation to customer based on their preference
+            if ($order['contact_preference'] === 'telegram') {
+                send_telegram_order_confirmation($order);
+            } else {
+                send_order_confirmation_email($order);
+            }
 
             // For non-mercadopago payments: send all notifications immediately
             // For Mercadopago: notifications will be sent when payment is processed
             if ($payment_method !== 'mercadopago') {
                 send_admin_new_order_email($order);
-                send_telegram_new_order($order);
+                send_telegram_new_order($order); // Always send to admin via Telegram
             }
 
             // Clear cart and coupon only for non-Mercadopago payments
