@@ -28,6 +28,7 @@ function get_telegram_config() {
             'enabled' => false,
             'bot_token' => '',
             'chat_id' => '',
+            'bot_username' => '',
             'notifications' => [
                 'new_order' => true,
                 'payment_approved' => true,
@@ -44,6 +45,69 @@ function get_telegram_config() {
     }
 
     return read_json($config_file);
+}
+
+/**
+ * Get bot information from Telegram API
+ * Returns bot username, first_name, etc.
+ */
+function get_telegram_bot_info() {
+    $credentials = get_secure_telegram_credentials();
+    $bot_token = $credentials['bot_token'] ?? '';
+
+    if (empty($bot_token)) {
+        return null;
+    }
+
+    $url = "https://api.telegram.org/bot{$bot_token}/getMe";
+
+    $options = [
+        'http' => [
+            'method'  => 'GET',
+            'timeout' => 10
+        ]
+    ];
+
+    $context = stream_context_create($options);
+
+    try {
+        $result = @file_get_contents($url, false, $context);
+
+        if ($result === false) {
+            error_log("Failed to get bot info from Telegram API");
+            return null;
+        }
+
+        $response = json_decode($result, true);
+
+        if (!($response['ok'] ?? false)) {
+            error_log("Telegram API error: " . ($response['description'] ?? 'Unknown error'));
+            return null;
+        }
+
+        return $response['result'] ?? null;
+    } catch (Exception $e) {
+        error_log("Exception getting Telegram bot info: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Update bot username in telegram config
+ * This should be called after saving bot token
+ */
+function update_telegram_bot_username() {
+    $bot_info = get_telegram_bot_info();
+
+    if ($bot_info && isset($bot_info['username'])) {
+        $config_file = __DIR__ . '/../config/telegram.json';
+        $config = get_telegram_config();
+        $config['bot_username'] = $bot_info['username'];
+        write_json($config_file, $config);
+        return $bot_info['username'];
+    }
+
+    return null;
 }
 
 /**

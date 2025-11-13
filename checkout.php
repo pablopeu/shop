@@ -54,6 +54,7 @@ $_SESSION['cart'] = $valid_items;
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/config/site.json');
+$telegram_config = get_telegram_config();
 $footer_config = read_json(__DIR__ . '/config/footer.json');
 $currency_config = read_json(__DIR__ . '/config/currency.json');
 $payment_config = read_json(__DIR__ . '/config/payment.json');
@@ -545,8 +546,15 @@ $csrf_token = generate_csrf_token();
                                        placeholder="123456789" required>
                                 <small style="color: #666;">
                                     Para obtener tu Chat ID:
-                                    <br>1. Envía /start a nuestro bot: <a href="https://t.me/<?php echo htmlspecialchars($site_config['telegram_bot_username'] ?? ''); ?>" target="_blank" style="color: #007bff; font-weight: 600;">@<?php echo htmlspecialchars($site_config['telegram_bot_username'] ?? 'TU_BOT'); ?></a>
+                                    <?php
+                                    $bot_username = $telegram_config['bot_username'] ?? '';
+                                    if (!empty($bot_username)):
+                                    ?>
+                                    <br>1. Envía /start a nuestro bot: <a href="https://t.me/<?php echo htmlspecialchars($bot_username); ?>" target="_blank" style="color: #007bff; font-weight: 600;">@<?php echo htmlspecialchars($bot_username); ?></a>
                                     <br>2. Luego envía /start a <a href="https://t.me/userinfobot" target="_blank" style="color: #007bff;">@userinfobot</a> para ver tu ID
+                                    <?php else: ?>
+                                    <br>El administrador debe configurar el bot de Telegram primero.
+                                    <?php endif; ?>
                                 </small>
                             </div>
 
