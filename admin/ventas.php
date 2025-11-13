@@ -1044,7 +1044,7 @@ $status_labels = [
     <div id="orderModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <span class="modal-close" onclick="closeModal()">&times;</span>
+                <span class="modal-close" onclick="closeOrderModal()">&times;</span>
                 <h2 id="modalOrderNumber">Orden #</h2>
             </div>
             <div id="modalOrderContent">
@@ -1100,7 +1100,7 @@ $status_labels = [
     <!-- Unsaved Changes Modal -->
     <div id="unsavedChangesModal" class="modal" style="z-index: 10001;">
         <div class="modal-content" style="max-width: 500px; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); position: relative;">
-            <span class="modal-close" onclick="cancelCloseModal()" style="position: absolute; top: 15px; right: 20px; font-size: 28px; font-weight: bold; color: #999; cursor: pointer; line-height: 20px; transition: color 0.3s;">&times;</span>
+            <span class="modal-close" onclick="cancelCloseOrderModal()" style="position: absolute; top: 15px; right: 20px; font-size: 28px; font-weight: bold; color: #999; cursor: pointer; line-height: 20px; transition: color 0.3s;">&times;</span>
             <div style="text-align: center; margin-bottom: 20px;">
                 <div style="font-size: 48px; margin-bottom: 10px;">⚠️</div>
                 <h2 style="margin: 0; color: #333; font-size: 22px;">Cambios sin guardar</h2>
@@ -1109,11 +1109,11 @@ $status_labels = [
                 Hay cambios sin guardar en este formulario. Si cierras ahora, perderás estos cambios.
             </p>
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <button onclick="confirmCloseModal()"
+                <button onclick="confirmCloseOrderModal()"
                         style="padding: 12px 24px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
                     Salir sin guardar
                 </button>
-                <button onclick="cancelCloseModal()"
+                <button onclick="cancelCloseOrderModal()"
                         style="padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
                     Quedarme para guardar
                 </button>
@@ -1503,7 +1503,7 @@ $status_labels = [
             });
         }
 
-        function closeModal() {
+        function closeOrderModal() {
             // Only show warning if user actually interacted with the form AND there are changes
             if (modalUserHasInteracted && modalHasUnsavedChanges) {
                 // Show custom unsaved changes modal
@@ -1516,7 +1516,7 @@ $status_labels = [
             }
         }
 
-        function confirmCloseModal() {
+        function confirmCloseOrderModal() {
             // User confirmed to leave without saving
             modalHasUnsavedChanges = false;
             modalUserHasInteracted = false;
@@ -1524,7 +1524,7 @@ $status_labels = [
             document.getElementById('orderModal').classList.remove('active');
         }
 
-        function cancelCloseModal() {
+        function cancelCloseOrderModal() {
             // User wants to stay and save
             document.getElementById('unsavedChangesModal').classList.remove('active');
 
@@ -1599,7 +1599,7 @@ $status_labels = [
         // Close modal when clicking outside
         document.getElementById('orderModal').addEventListener('click', function(e) {
             if (e.target === this) {
-                closeModal();
+                closeOrderModal();
             }
         });
 
@@ -1611,7 +1611,7 @@ $status_labels = [
 
         document.getElementById('unsavedChangesModal').addEventListener('click', function(e) {
             if (e.target === this) {
-                cancelCloseModal();
+                cancelCloseOrderModal();
             }
         });
 
@@ -1626,10 +1626,10 @@ $status_labels = [
 
                 if (unsavedModal.classList.contains('active')) {
                     // Close unsaved changes modal (same as clicking X - stays in edit mode)
-                    cancelCloseModal();
+                    cancelCloseOrderModal();
                 } else if (orderModal.classList.contains('active')) {
                     // Close order detail modal (checks for unsaved changes)
-                    closeModal();
+                    closeOrderModal();
                 } else if (cancelModal.classList.contains('active')) {
                     // Close cancel order modal
                     closeCancelModal();
