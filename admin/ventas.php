@@ -1099,7 +1099,8 @@ $status_labels = [
 
     <!-- Unsaved Changes Modal -->
     <div id="unsavedChangesModal" class="modal" style="z-index: 10001;">
-        <div class="modal-content" style="max-width: 500px; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+        <div class="modal-content" style="max-width: 500px; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); position: relative;">
+            <span class="modal-close" onclick="cancelCloseModal()" style="position: absolute; top: 15px; right: 20px; font-size: 28px; font-weight: bold; color: #999; cursor: pointer; line-height: 20px; transition: color 0.3s;">&times;</span>
             <div style="text-align: center; margin-bottom: 20px;">
                 <div style="font-size: 48px; margin-bottom: 10px;">⚠️</div>
                 <h2 style="margin: 0; color: #333; font-size: 22px;">Cambios sin guardar</h2>
@@ -1588,6 +1589,31 @@ $status_labels = [
         document.getElementById('unsavedChangesModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 cancelCloseModal();
+            }
+        });
+
+        // Close modals with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                // Check which modal is open and close accordingly
+                const unsavedModal = document.getElementById('unsavedChangesModal');
+                const orderModal = document.getElementById('orderModal');
+                const cancelModal = document.getElementById('cancelModal');
+                const confirmBulkModal = document.getElementById('confirmBulkModal');
+
+                if (unsavedModal.classList.contains('active')) {
+                    // Close unsaved changes modal (same as clicking X - stays in edit mode)
+                    cancelCloseModal();
+                } else if (orderModal.classList.contains('active')) {
+                    // Close order detail modal (checks for unsaved changes)
+                    closeModal();
+                } else if (cancelModal.classList.contains('active')) {
+                    // Close cancel order modal
+                    closeCancelModal();
+                } else if (confirmBulkModal.classList.contains('active')) {
+                    // Close bulk action confirmation modal
+                    closeConfirmModal();
+                }
             }
         });
 
