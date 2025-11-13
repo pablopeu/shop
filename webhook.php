@@ -430,18 +430,29 @@ log_mp_debug('WEBHOOK_TYPE_DETECTION', 'Detectando tipo de notificación', [
 // Handle payment notification (check both 'payment' and 'payments' for compatibility)
 if ($notification_type === 'payment' || $notification_type === 'payments') {
     try {
-        // Extract payment ID - support both nested (data.id) and flat (id) formats
-        $payment_id = $data['data']['id'] ?? $data['id'] ?? null;
+        // Extract payment ID - support multiple formats:
+        // - Nested: data.id (Webhook v1 format)
+        // - Flat: id (some integrations)
+        // - Resource: resource (IPN/topic format)
+        $payment_id = $data['data']['id'] ?? $data['id'] ?? $data['resource'] ?? null;
 
-        if (!$payment_id) {
+        // If resource is a URL, extract the ID from it
+        if ($payment_id && strpos($payment_id, 'http') === 0) {
+            // Extract ID from URL like "https://api.mercadopago.com/v1/payments/123456"
+            $payment_id = basename(parse_url($payment_id, PHP_URL_PATH));
+        }
+
+        if (!$payment_id || !is_numeric($payment_id)) {
             log_webhook('No payment ID in webhook', [
                 'has_data' => isset($data['data']),
                 'has_data_id' => isset($data['data']['id']),
                 'has_id' => isset($data['id']),
+                'has_resource' => isset($data['resource']),
+                'resource_value' => $data['resource'] ?? null,
                 'data_keys' => array_keys($data),
                 'full_data' => $data
             ]);
-            log_mp_debug('WEBHOOK_ERROR', 'Webhook de pago sin payment_id', $data);
+            log_mp_debug('WEBHOOK_ERROR', 'Webhook de pago sin payment_id válido', $data);
             http_response_code(400);
             exit('No payment ID');
         }
