@@ -375,6 +375,13 @@ if ($security_config['validate_ip'] ?? true) {
     ]);
 }
 
+log_webhook('[DEBUG A] After IP validation block');
+log_mp_debug('DEBUG_A', 'Después del bloque de validación de IP', [
+    'validate_signature_config' => $security_config['validate_signature'] ?? 'not_set',
+    'validate_timestamp_config' => $security_config['validate_timestamp'] ?? 'not_set',
+    'has_webhook_secret' => !empty($webhook_secret)
+]);
+
 // 3. X-Signature Validation (if enabled and secret is configured)
 if (($security_config['validate_signature'] ?? true) && !empty($webhook_secret)) {
     if (!validate_mercadopago_signature($data, $headers, $webhook_secret)) {
@@ -389,6 +396,11 @@ if (($security_config['validate_signature'] ?? true) && !empty($webhook_secret))
     ]);
 }
 
+log_webhook('[DEBUG B] After signature validation block');
+log_mp_debug('DEBUG_B', 'Después del bloque de validación de signature', [
+    'signature_validated' => 'skipped or passed'
+]);
+
 // 4. Timestamp Validation (if enabled)
 if ($security_config['validate_timestamp'] ?? true) {
     $signature_header = $headers['x-signature'] ?? '';
@@ -402,6 +414,11 @@ if ($security_config['validate_timestamp'] ?? true) {
         log_webhook('Timestamp validation passed');
     }
 }
+
+log_webhook('[DEBUG C] After timestamp validation block');
+log_mp_debug('DEBUG_C', 'Después del bloque de validación de timestamp', [
+    'timestamp_validated' => 'skipped or passed'
+]);
 
 log_webhook('[CHECKPOINT 1] After security validations');
 log_mp_debug('CHECKPOINT_1', 'Después de validaciones de seguridad', ['client_ip' => $client_ip]);
