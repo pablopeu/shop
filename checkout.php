@@ -544,9 +544,9 @@ $csrf_token = generate_csrf_token();
                                        value="<?php echo htmlspecialchars($_POST['telegram_chat_id'] ?? ''); ?>"
                                        placeholder="123456789" required>
                                 <small style="color: #666;">
-                                    Para obtener tu Chat ID, envía /start a nuestro bot:
-                                    <a href="https://t.me/<?php echo htmlspecialchars($site_config['telegram_bot_username'] ?? 'TU_BOT'); ?>" target="_blank" style="color: #007bff;">@<?php echo htmlspecialchars($site_config['telegram_bot_username'] ?? 'TU_BOT'); ?></a>
-                                    y luego usa <a href="https://t.me/userinfobot" target="_blank" style="color: #007bff;">@userinfobot</a> para ver tu ID.
+                                    Para obtener tu Chat ID:
+                                    <br>1. Envía /start a nuestro bot: <a href="https://t.me/<?php echo htmlspecialchars($site_config['telegram_bot_username'] ?? ''); ?>" target="_blank" style="color: #007bff; font-weight: 600;">@<?php echo htmlspecialchars($site_config['telegram_bot_username'] ?? 'TU_BOT'); ?></a>
+                                    <br>2. Luego envía /start a <a href="https://t.me/userinfobot" target="_blank" style="color: #007bff;">@userinfobot</a> para ver tu ID
                                 </small>
                             </div>
 
@@ -556,7 +556,7 @@ $csrf_token = generate_csrf_token();
                                     <label class="radio-option">
                                         <input type="radio" name="contact_preference" value="telegram"
                                                <?php echo (!isset($_POST['contact_preference']) || $_POST['contact_preference'] === 'telegram') ? 'checked' : ''; ?> required>
-                                        <span>📱 Prefiero Telegram</span>
+                                        <span>📱 Prefiero Telegram <small style="color: #FF9800; font-weight: 600;">(Método en etapa de prueba)</small></span>
                                     </label>
                                     <label class="radio-option">
                                         <input type="radio" name="contact_preference" value="email"
