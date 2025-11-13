@@ -403,11 +403,14 @@ if ($security_config['validate_timestamp'] ?? true) {
     }
 }
 
+error_log('[WEBHOOK DEBUG] After timestamp validation, about to process webhook');
 log_webhook('All security validations passed - processing webhook');
 
 // Get notification type - MercadoPago uses 'type' (newer) or 'topic' (legacy)
+error_log('[WEBHOOK DEBUG] Extracting notification type');
 $notification_type = $data['type'] ?? $data['topic'] ?? 'unknown';
 $notification_action = $data['action'] ?? 'unknown';
+error_log('[WEBHOOK DEBUG] Notification type: ' . $notification_type);
 
 log_webhook('Determining notification type', [
     'type_field' => $data['type'] ?? null,
