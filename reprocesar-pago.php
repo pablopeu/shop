@@ -18,8 +18,8 @@ require_once __DIR__ . '/includes/telegram.php';
 require_once __DIR__ . '/includes/mp-logger.php';
 
 // Clave secreta para proteger el endpoint
-// CAMBIAR ESTA CLAVE por algo seguro
-define('REPROCESS_SECRET_KEY', 'cambiar_esta_clave_secreta_' . md5(__DIR__));
+// NOTA: Esta es una clave fija para facilitar el acceso
+define('REPROCESS_SECRET_KEY', 'peu2024secure');
 
 // Permitir ejecución desde CLI o navegador con autenticación
 $is_cli = php_sapi_name() === 'cli';
