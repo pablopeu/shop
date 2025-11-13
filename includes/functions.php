@@ -179,6 +179,19 @@ function get_default_json_structure($file) {
         case 'mp_preference_log.json':
             return ['preferences' => []];
 
+        case 'maintenance.json':
+            return [
+                'enabled' => false,
+                'bypass_code' => '',
+                'message' => 'Sitio en mantenimiento. Volveremos pronto.'
+            ];
+
+        case 'theme.json':
+            return ['active_theme' => 'minimal'];
+
+        case 'carousel.json':
+            return ['slides' => []];
+
         default:
             return null;
     }
@@ -489,7 +502,7 @@ function log_admin_action($action, $user, $details = []) {
 function is_maintenance_mode() {
     $maintenance = read_json(__DIR__ . '/../config/maintenance.json');
 
-    if (!$maintenance['enabled']) {
+    if (!isset($maintenance['enabled']) || !$maintenance['enabled']) {
         return false;
     }
 
