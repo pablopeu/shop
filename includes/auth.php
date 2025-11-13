@@ -318,3 +318,52 @@ function change_admin_password($user_id, $old_password, $new_password) {
         'message' => 'Error al actualizar la contraseña.'
     ];
 }
+
+/**
+ * Check if user is logged in as admin
+ * @return bool Whether user is logged in as admin
+ */
+function is_admin_logged_in() {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true &&
+           isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+}
+
+/**
+ * Require admin authentication (redirect to login if not authenticated)
+ * For API endpoints, use is_admin_logged_in() instead
+ */
+function require_admin() {
+    if (!is_admin_logged_in()) {
+        // For API calls, return JSON error
+        if (strpos($_SERVER['REQUEST_URI'], '/api/') !== false) {
+            http_response_code(401);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'No autorizado']);
+            exit;
+        }
+
+        // For web pages, redirect to login
+        $base_path = defined('BASE_PATH') ? BASE_PATH : '';
+        header('Location: ' . $base_path . '/admin/login.php');
+        exit;
+    }
+
+    // Check session timeout (default: 2 hours)
+    if (!check_session_timeout(7200)) {
+        // For API calls, return JSON error
+        if (strpos($_SERVER['REQUEST_URI'], '/api/') !== false) {
+            http_response_code(401);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Sesión expirada']);
+            exit;
+        }
+
+        // For web pages, redirect to login with timeout message
+        $base_path = defined('BASE_PATH') ? BASE_PATH : '';
+        header('Location: ' . $base_path . '/admin/login.php?timeout=1');
+        exit;
+    }
+}
