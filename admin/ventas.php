@@ -1433,11 +1433,13 @@ $status_labels = [
             const inputs = modalContent.querySelectorAll('input, select, textarea');
             const saveButtons = modalContent.querySelectorAll('button[type="submit"]');
 
-            // Store original values
+            // Store original values (skip inputs without name or id)
             modalOriginalValues = {};
             inputs.forEach(input => {
                 const key = input.name || input.id;
-                modalOriginalValues[key] = input.type === 'checkbox' ? input.checked : input.value;
+                if (key) {
+                    modalOriginalValues[key] = input.type === 'checkbox' ? input.checked : input.value;
+                }
             });
 
             // Reset state
@@ -1465,8 +1467,13 @@ $status_labels = [
             let hasChanges = false;
             inputs.forEach(input => {
                 const key = input.name || input.id;
+                if (!key) return; // Skip inputs without name or id
+
                 const currentValue = input.type === 'checkbox' ? input.checked : input.value;
-                if (currentValue !== modalOriginalValues[key]) {
+                const originalValue = modalOriginalValues[key];
+
+                // Only compare if we have an original value
+                if (originalValue !== undefined && currentValue !== originalValue) {
                     hasChanges = true;
                 }
             });
