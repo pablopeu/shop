@@ -96,6 +96,18 @@ foreach ($_SESSION['cart'] as $cart_item) {
 // Set currency based on cart contents
 $checkout_currency = ($all_products_usd) ? 'USD' : 'ARS';
 
+// Check if any product is pickup-only (no shipping available)
+$has_pickup_only = false;
+$pickup_only_products = [];
+foreach ($_SESSION['cart'] as $cart_item) {
+    $product_id = $cart_item['product_id'];
+    $product = get_product_by_id($product_id);
+    if ($product && isset($product['pickup_only']) && $product['pickup_only'] === true) {
+        $has_pickup_only = true;
+        $pickup_only_products[] = $product['name'];
+    }
+}
+
 // Second pass: calculate totals
 foreach ($_SESSION['cart'] as $cart_item) {
     $product_id = $cart_item['product_id'];
@@ -549,13 +561,28 @@ $csrf_token = generate_csrf_token();
                         <div class="form-section">
                             <h2>🚚 Envío o Retiro</h2>
 
+                            <?php if ($has_pickup_only): ?>
+                            <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                                <p style="margin: 0; color: #856404; font-weight: 600; font-size: 15px;">
+                                    ⚠️ Tu carrito contiene productos que solo pueden retirarse en persona
+                                </p>
+                                <p style="margin: 10px 0 0 0; color: #856404; font-size: 14px;">
+                                    <?php if (count($pickup_only_products) === 1): ?>
+                                        El producto <strong><?php echo htmlspecialchars($pickup_only_products[0]); ?></strong> no tiene opción de envío a domicilio.
+                                    <?php else: ?>
+                                        Los siguientes productos no tienen opción de envío a domicilio: <strong><?php echo htmlspecialchars(implode(', ', $pickup_only_products)); ?></strong>
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                            <?php endif; ?>
+
                             <div class="form-group">
                                 <label>Método de entrega *</label>
                                 <div class="radio-group">
                                     <label class="radio-option">
                                         <input type="radio" name="delivery_method" value="pickup"
                                                onchange="toggleShippingFields()"
-                                               <?php echo (!isset($_POST['delivery_method']) || $_POST['delivery_method'] === 'pickup') ? 'checked' : ''; ?> required>
+                                               <?php echo (!isset($_POST['delivery_method']) || $_POST['delivery_method'] === 'pickup' || $has_pickup_only) ? 'checked' : ''; ?> required>
                                         <div>
                                             <strong>🏪 Retiro en persona</strong>
                                             <p style="font-size: 14px; color: #666; margin-top: 5px;">
@@ -563,14 +590,15 @@ $csrf_token = generate_csrf_token();
                                             </p>
                                         </div>
                                     </label>
-                                    <label class="radio-option">
+                                    <label class="radio-option <?php echo $has_pickup_only ? 'disabled' : ''; ?>">
                                         <input type="radio" name="delivery_method" value="shipping"
                                                onchange="toggleShippingFields()"
-                                               <?php echo (isset($_POST['delivery_method']) && $_POST['delivery_method'] === 'shipping') ? 'checked' : ''; ?>>
+                                               <?php echo $has_pickup_only ? 'disabled' : ''; ?>
+                                               <?php echo (isset($_POST['delivery_method']) && $_POST['delivery_method'] === 'shipping' && !$has_pickup_only) ? 'checked' : ''; ?>>
                                         <div>
                                             <strong>📦 Envío a domicilio</strong>
                                             <p style="font-size: 14px; color: #666; margin-top: 5px;">
-                                                Completa tu dirección de envío
+                                                <?php echo $has_pickup_only ? 'No disponible para estos productos' : 'Completa tu dirección de envío'; ?>
                                             </p>
                                         </div>
                                     </label>
@@ -1599,6 +1627,27 @@ $csrf_token = generate_csrf_token();
         .radio-option:has(input[type="radio"]:checked) {
             border-color: #007bff;
             background: #e7f3ff;
+        }
+
+        /* Disabled radio option */
+        .radio-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f5f5f5;
+            border-color: #ccc;
+        }
+
+        .radio-option.disabled:hover {
+            border-color: #ccc;
+            background: #f5f5f5;
+        }
+
+        .radio-option.disabled input[type="radio"] {
+            cursor: not-allowed;
+        }
+
+        .radio-option.disabled div {
+            color: #999;
         }
 
         /* Confirmation summary */

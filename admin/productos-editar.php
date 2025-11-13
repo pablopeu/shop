@@ -117,6 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
             'stock' => intval($_POST['stock'] ?? 0),
             'stock_alert' => intval($_POST['stock_alert'] ?? 5),
             'active' => isset($_POST['active']) ? true : false,
+            'pickup_only' => isset($_POST['pickup_only']) ? true : false,
             'images' => $current_images,
             'thumbnail' => !empty($current_images) ? $current_images[0] : '',
             'seo' => [
@@ -677,6 +678,19 @@ $user = get_logged_user();
                                 Producto Activo (visible en el sitio público)
                             </label>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="pickup_only" name="pickup_only"
+                                   <?php echo ($product['pickup_only'] ?? false) ? 'checked' : ''; ?>>
+                            <label for="pickup_only">
+                                🏪 Solo Retiro en Persona (sin opción de envío)
+                            </label>
+                        </div>
+                        <small style="color: #666; margin-left: 28px; display: block;">
+                            Si activas esta opción, el producto solo podrá ser retirado en persona y no estará disponible la opción de envío en el checkout.
+                        </small>
                     </div>
 
                     <!-- Actions -->
