@@ -289,6 +289,10 @@ $user = get_logged_user();
             background: linear-gradient(135deg, #0A0A0F 0%, #00F0FF 50%, #B24DFF 100%);
         }
 
+        .theme-card[data-theme="classic"] .theme-preview {
+            background: linear-gradient(135deg, #000000 0%, #d4af37 100%);
+        }
+
         .info-box {
             background: #e7f3ff;
             border-left: 4px solid #2196f3;
