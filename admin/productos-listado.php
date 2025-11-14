@@ -814,19 +814,17 @@ $user = get_logged_user();
                                             </span>
                                         </td>
                                         <td>
-                                            <div class="actions" id="actions-<?php echo $product['id']; ?>">
-                                                <div class="delete-actions">
-                                                    <a href="<?php echo url('/admin/productos-editar.php?id=' . urlencode($product['id'])); ?>"
-                                                       class="btn btn-primary btn-sm">✏️ Editar</a>
-                                                    <button type="button" class="btn btn-secondary btn-sm"
-                                                       onclick="confirmToggleProduct('<?php echo urlencode($product['id']); ?>', <?php echo $product['active'] ? 'true' : 'false'; ?>)">
-                                                        <?php echo $product['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
-                                                    </button>
-                                                    <button type="button" class="btn btn-danger btn-sm"
-                                                            onclick="confirmArchiveProduct('<?php echo $product['id']; ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
-                                                        📦 Archivar
-                                                    </button>
-                                                </div>
+                                            <div class="actions">
+                                                <a href="<?php echo url('/admin/productos-editar.php?id=' . urlencode($product['id'])); ?>"
+                                                   class="btn btn-primary btn-sm">✏️ Editar</a>
+                                                <button type="button" class="btn btn-secondary btn-sm"
+                                                   onclick="confirmToggleProduct('<?php echo urlencode($product['id']); ?>', <?php echo $product['active'] ? 'true' : 'false'; ?>)">
+                                                    <?php echo $product['active'] ? '❌ Desactivar' : '✅ Activar'; ?>
+                                                </button>
+                                                <button type="button" class="btn btn-danger btn-sm"
+                                                        onclick="confirmArchiveProduct('<?php echo $product['id']; ?>', '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')">
+                                                    📦 Archivar
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
