@@ -331,6 +331,7 @@ a:hover::after {
     text-transform: uppercase;
     position: relative;
     overflow: hidden;
+    z-index: 1;
 }
 
 .btn-primary::before,
@@ -346,6 +347,7 @@ a:hover::after {
     background: var(--color-secondary);
     border-radius: 50%;
     transition: width 0.6s, height 0.6s;
+    z-index: -1;
 }
 
 .btn-primary:hover::before,
@@ -544,4 +546,118 @@ select:focus {
         var(--color-secondary) 0%,
         transparent 100%);
     margin: var(--spacing-md) auto 0;
+}
+
+/* ========================================
+   PRODUCT PAGE - Sophisticated Luxury
+   ======================================== */
+
+.product-container {
+    background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+    border: 1px solid var(--color-border);
+    padding: var(--spacing-3xl);
+    box-shadow: var(--shadow-lg);
+}
+
+.main-image-container {
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
+    position: relative;
+}
+
+.main-image-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--color-secondary), transparent);
+    opacity: 0;
+    transition: var(--transition-base);
+}
+
+.main-image-container:hover::before {
+    opacity: 1;
+}
+
+.thumbnail {
+    border: 1px solid var(--color-border);
+    transition: var(--transition-base);
+    opacity: 0.7;
+}
+
+.thumbnail.active {
+    border-color: var(--color-secondary);
+    opacity: 1;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+}
+
+.product-info h1 {
+    font-family: var(--font-family-heading);
+    color: var(--color-primary);
+    border-bottom: 2px solid var(--color-secondary);
+    padding-bottom: var(--spacing-md);
+}
+
+.price-current {
+    font-size: var(--font-size-3xl);
+    color: var(--color-text);
+    font-weight: var(--font-weight-semibold);
+}
+
+.cart-container, .checkout-container {
+    background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+    border: 1px solid var(--color-border);
+    border-top: 3px solid var(--color-secondary);
+    padding: var(--spacing-2xl);
+}
+
+.cart-item {
+    border-bottom: 1px solid var(--color-border-light);
+    padding: var(--spacing-lg) 0;
+    transition: var(--transition-base);
+}
+
+.cart-item:hover {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.checkout-section h2 {
+    font-family: var(--font-family-heading);
+    color: var(--color-primary);
+    font-weight: var(--font-weight-semibold);
+    border-bottom: 2px solid var(--color-secondary);
+    padding-bottom: var(--spacing-sm);
+}
+
+.checkout-section h2::after {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 2px;
+    background: var(--color-secondary);
+    margin-top: var(--spacing-xs);
+}
+
+.thank-you-container {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.02), rgba(212, 175, 55, 0.05));
+    border: 1px solid var(--color-border);
+    border-top: 3px solid var(--color-secondary);
+    padding: var(--spacing-3xl);
+    text-align: center;
+    box-shadow: var(--shadow-xl);
+}
+
+.modal {
+    background: white;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.02), rgba(212, 175, 55, 0.05));
+    border-bottom: 2px solid var(--color-secondary);
+    color: var(--color-primary);
 }
