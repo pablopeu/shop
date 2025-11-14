@@ -17,8 +17,10 @@
  * @return void Imprime los tags <link>
  */
 function render_theme_css($active_theme = 'minimal') {
-    // Validar theme
-    $valid_themes = ['minimal', 'elegant', 'fresh', 'bold'];
+    // Validar theme dinámicamente usando los themes disponibles
+    $available_themes = get_available_themes();
+    $valid_themes = array_keys($available_themes);
+
     if (!in_array($active_theme, $valid_themes)) {
         $active_theme = 'minimal';
     }
