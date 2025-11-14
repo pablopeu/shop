@@ -196,12 +196,27 @@ function update_order_status($order_id, $new_status, $user = 'system') {
     $found = false;
     foreach ($data['orders'] as &$order) {
         if ($order['id'] === $order_id) {
+            $old_status = $order['status'];
             $order['status'] = $new_status;
             $order['status_history'][] = [
                 'status' => $new_status,
                 'date' => get_timestamp(),
                 'user' => $user
             ];
+
+            // Reduce stock when changing to "cobrada" if not already reduced
+            if ($new_status === 'cobrada' && !($order['stock_reduced'] ?? false)) {
+                foreach ($order['items'] as $item) {
+                    update_stock($item['product_id'], -$item['quantity'], "Orden {$order['order_number']} marcada como cobrada por {$user}");
+                }
+                $order['stock_reduced'] = true;
+
+                log_admin_action('stock_reduced_on_payment', $user, [
+                    'order_id' => $order_id,
+                    'order_number' => $order['order_number']
+                ]);
+            }
+
             $found = true;
             break;
         }
@@ -211,6 +226,7 @@ function update_order_status($order_id, $new_status, $user = 'system') {
         write_json($orders_file, $data);
         log_admin_action('order_status_updated', $user, [
             'order_id' => $order_id,
+            'old_status' => $old_status,
             'new_status' => $new_status
         ]);
         return true;
