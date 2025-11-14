@@ -235,7 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
     $country_code = sanitize_input($_POST['country_code'] ?? '+54');
     $customer_phone = sanitize_input($_POST['customer_phone'] ?? '');
     $telegram_chat_id = sanitize_input($_POST['telegram_chat_id'] ?? '');
-    $contact_preference = sanitize_input($_POST['contact_preference'] ?? 'telegram');
+    $contact_preference = sanitize_input($_POST['contact_preference'] ?? 'email');
     $delivery_method = sanitize_input($_POST['delivery_method'] ?? 'pickup');
     $payment_method = sanitize_input($_POST['payment_method'] ?? '');
 
@@ -251,11 +251,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         $errors[] = 'Email inválido';
     }
 
-    if (empty($telegram_chat_id)) {
+    // Validar según preferencia de contacto
+    if ($contact_preference === 'telegram' && empty($telegram_chat_id)) {
         $errors[] = 'El Telegram Chat ID es requerido';
+    } elseif ($contact_preference === 'email' && empty($customer_phone)) {
+        $errors[] = 'El teléfono es requerido';
     }
 
-    if (!in_array($contact_preference, ['telegram', 'email'])) {
+    if (!in_array($contact_preference, ['email', 'telegram'])) {
         $errors[] = 'Preferencia de contacto inválida';
     }
 
@@ -451,6 +454,7 @@ $csrf_token = generate_csrf_token();
     <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
+    <?php include __DIR__ . '/admin/includes/modal.php'; ?>
     <!-- Header -->
     <div class="header">
         <div class="header-content">
@@ -571,14 +575,14 @@ $csrf_token = generate_csrf_token();
                                 <label>Preferencia de contacto *</label>
                                 <div class="radio-group">
                                     <label class="radio-option">
-                                        <input type="radio" name="contact_preference" value="telegram"
-                                               <?php echo (!isset($_POST['contact_preference']) || $_POST['contact_preference'] === 'telegram') ? 'checked' : ''; ?> required>
-                                        <span>📱 Prefiero Telegram <small style="color: #FF9800; font-weight: 600;">(Método en etapa de prueba)</small></span>
+                                        <input type="radio" name="contact_preference" value="email"
+                                               <?php echo (!isset($_POST['contact_preference']) || $_POST['contact_preference'] === 'email') ? 'checked' : ''; ?> required>
+                                        <span>✉️ Prefiero Email</span>
                                     </label>
                                     <label class="radio-option">
-                                        <input type="radio" name="contact_preference" value="email"
-                                               <?php echo (isset($_POST['contact_preference']) && $_POST['contact_preference'] === 'email') ? 'checked' : ''; ?>>
-                                        <span>✉️ Prefiero Email</span>
+                                        <input type="radio" name="contact_preference" value="telegram"
+                                               <?php echo (isset($_POST['contact_preference']) && $_POST['contact_preference'] === 'telegram') ? 'checked' : ''; ?>>
+                                        <span>📱 Prefiero Telegram <small style="color: #FF9800; font-weight: 600;">(Método en etapa de prueba)</small></span>
                                     </label>
                                 </div>
                             </div>
@@ -970,7 +974,113 @@ $csrf_token = generate_csrf_token();
         document.addEventListener('DOMContentLoaded', () => {
             updateStepDisplay();
             toggleShippingFields();
+
+            // Load saved contact info from sessionStorage
+            loadContactInfo();
+
+            // Add click handlers to step indicators for navigation
+            document.querySelectorAll('.step-indicator').forEach(indicator => {
+                indicator.style.cursor = 'pointer';
+                indicator.addEventListener('click', function() {
+                    const targetStep = parseInt(this.dataset.step);
+
+                    // Only allow navigation to current step or previous steps
+                    // Don't allow jumping ahead without validation
+                    if (targetStep <= currentStep) {
+                        currentStep = targetStep;
+                        updateStepDisplay();
+                        window.scrollTo(0, 0);
+                    } else {
+                        // Try to validate current steps before jumping ahead
+                        let canProceed = true;
+                        for (let i = currentStep; i < targetStep; i++) {
+                            if (!validateStep(i)) {
+                                canProceed = false;
+                                break;
+                            }
+                        }
+
+                        if (canProceed) {
+                            // Update confirmation if jumping to step 4
+                            if (targetStep === 4) {
+                                updateConfirmationSummary();
+                            }
+                            currentStep = targetStep;
+                            updateStepDisplay();
+                            window.scrollTo(0, 0);
+                        }
+                    }
+                });
+            });
+
+            // Save contact info when fields change
+            const contactFields = ['customer_name', 'customer_email', 'customer_phone', 'country_code'];
+            contactFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('change', saveContactInfo);
+                    field.addEventListener('input', saveContactInfo);
+                }
+            });
+
+            // Save contact preference when changed
+            document.querySelectorAll('input[name="contact_preference"]').forEach(radio => {
+                radio.addEventListener('change', saveContactInfo);
+            });
         });
+
+        // Save contact information to sessionStorage
+        function saveContactInfo() {
+            const contactData = {
+                customer_name: document.getElementById('customer_name')?.value || '',
+                customer_email: document.getElementById('customer_email')?.value || '',
+                customer_phone: document.getElementById('customer_phone')?.value || '',
+                country_code: document.getElementById('country_code')?.value || '+54',
+                contact_preference: document.querySelector('input[name="contact_preference"]:checked')?.value || 'email'
+            };
+
+            sessionStorage.setItem('checkout_contact_info', JSON.stringify(contactData));
+        }
+
+        // Load contact information from sessionStorage
+        function loadContactInfo() {
+            const savedData = sessionStorage.getItem('checkout_contact_info');
+            if (!savedData) return;
+
+            try {
+                const contactData = JSON.parse(savedData);
+
+                // Load name
+                if (contactData.customer_name && document.getElementById('customer_name')) {
+                    document.getElementById('customer_name').value = contactData.customer_name;
+                }
+
+                // Load email
+                if (contactData.customer_email && document.getElementById('customer_email')) {
+                    document.getElementById('customer_email').value = contactData.customer_email;
+                }
+
+                // Load phone
+                if (contactData.customer_phone && document.getElementById('customer_phone')) {
+                    document.getElementById('customer_phone').value = contactData.customer_phone;
+                }
+
+                // Load country code
+                if (contactData.country_code && document.getElementById('country_code')) {
+                    document.getElementById('country_code').value = contactData.country_code;
+                }
+
+                // Load contact preference
+                if (contactData.contact_preference) {
+                    const radio = document.querySelector(`input[name="contact_preference"][value="${contactData.contact_preference}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading contact info:', e);
+            }
+        }
 
         // Validate current step
         function validateStep(stepNumber) {
@@ -989,25 +1099,51 @@ $csrf_token = generate_csrf_token();
                     const radioGroup = step.querySelectorAll(`input[name="${input.name}"]`);
                     const isChecked = Array.from(radioGroup).some(radio => radio.checked);
                     if (!isChecked) {
-                        alert('Por favor completa todos los campos requeridos');
+                        showModal({
+                            title: 'Campos incompletos',
+                            message: 'Por favor completa todos los campos requeridos',
+                            icon: '⚠️',
+                            iconClass: 'warning',
+                            confirmText: 'Entendido',
+                            onConfirm: () => {}
+                        });
                         return false;
                     }
                 } else if (input.type === 'checkbox') {
                     if (!input.checked && input.required) {
-                        alert('Por favor completa todos los campos requeridos');
+                        showModal({
+                            title: 'Campos incompletos',
+                            message: 'Por favor completa todos los campos requeridos',
+                            icon: '⚠️',
+                            iconClass: 'warning',
+                            confirmText: 'Entendido',
+                            onConfirm: () => {}
+                        });
                         return false;
                     }
                 } else {
                     if (!input.value.trim()) {
-                        alert('Por favor completa todos los campos requeridos');
-                        input.focus();
+                        showModal({
+                            title: 'Campos incompletos',
+                            message: 'Por favor completa todos los campos requeridos',
+                            icon: '⚠️',
+                            iconClass: 'warning',
+                            confirmText: 'Entendido',
+                            onConfirm: () => { input.focus(); }
+                        });
                         return false;
                     }
 
                     // Email validation
                     if (input.type === 'email' && !isValidEmail(input.value)) {
-                        alert('Por favor ingresa un email válido');
-                        input.focus();
+                        showModal({
+                            title: 'Email inválido',
+                            message: 'Por favor ingresa un email válido',
+                            icon: '⚠️',
+                            iconClass: 'warning',
+                            confirmText: 'Entendido',
+                            onConfirm: () => { input.focus(); }
+                        });
                         return false;
                     }
                 }
@@ -1099,7 +1235,7 @@ $csrf_token = generate_csrf_token();
 
             const contactPref = document.querySelector('input[name="contact_preference"]:checked');
             document.getElementById('confirm-contact-pref').textContent =
-                contactPref.value === 'telegram' ? '📱 Telegram' : '✉️ Email';
+                contactPref.value === 'email' ? '✉️ Email' : '📱 Telegram';
 
             // Delivery info
             const deliveryMethod = document.querySelector('input[name="delivery_method"]:checked');
@@ -1197,12 +1333,13 @@ $csrf_token = generate_csrf_token();
 
         async function sendTelegramTest() {
             const chatId = document.getElementById('telegram_chat_id').value;
+
             const name = document.getElementById('customer_name').value;
 
             // Show loading status
             const statusDiv = document.getElementById('telegram-status');
             statusDiv.style.display = 'block';
-            statusDiv.innerHTML = '<p style="color: #007bff;">Enviando mensaje...</p>';
+            statusDiv.innerHTML = '<p style="color: #007bff;">Preparando mensaje de prueba...</p>';
 
             try {
                 // Send test message via API
@@ -1240,6 +1377,7 @@ $csrf_token = generate_csrf_token();
                     <button type="button" class="btn btn-secondary" onclick="closeTelegramModal()">Cerrar</button>
                 `;
             }
+
         }
 
         function confirmTelegramValidation() {
@@ -1314,21 +1452,27 @@ $csrf_token = generate_csrf_token();
         }
 
         // Form submission handler
-        let formSubmitAllowed = false;
+        let paymentWarningShown = false;
         let mercadopagoOrder = null;
 
         document.getElementById('checkout-form').addEventListener('submit', function(e) {
             const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
 
+            // If warning was already shown, allow the form to submit normally
+            if (paymentWarningShown) {
+                // Allow form submission - will redirect to gracias.php
+                return true;
+            }
+
             // If Mercadopago, create order via AJAX and show modal
-            if (paymentMethod && paymentMethod.value === 'mercadopago' && !formSubmitAllowed) {
+            if (paymentMethod && paymentMethod.value === 'mercadopago') {
                 e.preventDefault();
                 createOrderAndShowMercadopagoModal();
                 return false;
             }
 
-            // Show warning modal for non-mercadopago payments
-            if (paymentMethod && paymentMethod.value !== 'mercadopago' && !formSubmitAllowed) {
+            // Show warning modal for non-mercadopago payments (only once)
+            if (paymentMethod && paymentMethod.value !== 'mercadopago') {
                 e.preventDefault();
                 showPaymentWarningModal();
                 return false;
@@ -1392,14 +1536,29 @@ $csrf_token = generate_csrf_token();
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
                 } else {
-                    alert('Error al crear la orden: ' + (data.error || 'Error desconocido'));
+                    showModal({
+                        title: 'Error al crear la orden',
+                        message: data.error || 'Error desconocido',
+                        icon: '❌',
+                        iconClass: 'danger',
+                        confirmText: 'Entendido',
+                        onConfirm: () => {}
+                    });
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
                 }
             })
             .catch(error => {
                 console.error('Error completo:', error);
-                alert('Error al procesar la orden. Por favor intenta nuevamente.\n\nDetalle: ' + error.message);
+                showModal({
+                    title: 'Error al procesar la orden',
+                    message: 'Por favor intenta nuevamente.',
+                    details: '<strong>Detalle técnico:</strong><br>' + error.message,
+                    icon: '❌',
+                    iconClass: 'danger',
+                    confirmText: 'Entendido',
+                    onConfirm: () => {}
+                });
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             });
@@ -1506,13 +1665,34 @@ $csrf_token = generate_csrf_token();
 
         function closePaymentWarningModal() {
             document.getElementById('payment-warning-modal').style.display = 'none';
-            // Allow form submission after modal is closed
-            formSubmitAllowed = true;
-            document.getElementById('checkout-form').submit();
+            // Mark that warning was shown so next submit will go through
+            paymentWarningShown = true;
+
+            // Add hidden input to ensure place_order parameter is sent
+            // When we programmatically submit, button values aren't included
+            const form = document.getElementById('checkout-form');
+
+            // Remove any existing hidden place_order field first
+            const existingHidden = form.querySelector('input[name="place_order"][type="hidden"]');
+            if (existingHidden) {
+                existingHidden.remove();
+            }
+
+            // Add new hidden field
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'place_order';
+            hiddenInput.value = '1';
+            form.appendChild(hiddenInput);
+
+            // Submit the form
+            form.submit();
         }
 
         function backToPaymentMethod() {
             document.getElementById('payment-warning-modal').style.display = 'none';
+            // Reset the warning shown flag
+            paymentWarningShown = false;
             // Go back to step 3 (payment method)
             currentStep = 3;
             updateStepDisplay();
