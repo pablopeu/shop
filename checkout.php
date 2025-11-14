@@ -253,9 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
 
     // Validar según preferencia de contacto
     if ($contact_preference === 'telegram' && empty($telegram_chat_id)) {
-        $errors[] = 'El Telegram Chat ID es requerido';
-    } elseif ($contact_preference === 'email' && empty($customer_phone)) {
-        $errors[] = 'El teléfono es requerido';
+        $errors[] = 'El Telegram Chat ID es requerido cuando se elige Telegram como preferencia de contacto';
     }
 
     if (!in_array($contact_preference, ['email', 'telegram'])) {
@@ -552,11 +550,11 @@ $csrf_token = generate_csrf_token();
                                 <small style="color: #666;">Para referencia (opcional)</small>
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group" id="telegram-chat-id-group" style="display: none;">
                                 <label for="telegram_chat_id">Telegram Chat ID *</label>
                                 <input type="text" id="telegram_chat_id" name="telegram_chat_id"
                                        value="<?php echo htmlspecialchars($_POST['telegram_chat_id'] ?? ''); ?>"
-                                       placeholder="123456789" required>
+                                       placeholder="123456789">
                                 <small style="color: #666;">
                                     Para obtener tu Chat ID:
                                     <?php
@@ -974,6 +972,7 @@ $csrf_token = generate_csrf_token();
         document.addEventListener('DOMContentLoaded', () => {
             updateStepDisplay();
             toggleShippingFields();
+            toggleTelegramField(); // Initialize Telegram field visibility
 
             // Load saved contact info from sessionStorage
             loadContactInfo();
@@ -1023,9 +1022,12 @@ $csrf_token = generate_csrf_token();
                 }
             });
 
-            // Save contact preference when changed
+            // Save contact preference when changed and toggle Telegram field
             document.querySelectorAll('input[name="contact_preference"]').forEach(radio => {
-                radio.addEventListener('change', saveContactInfo);
+                radio.addEventListener('change', () => {
+                    saveContactInfo();
+                    toggleTelegramField();
+                });
             });
         });
 
@@ -1209,6 +1211,21 @@ $csrf_token = generate_csrf_token();
                     step.style.display = 'block';
                 }
             });
+        }
+
+        // Toggle Telegram field based on contact preference
+        function toggleTelegramField() {
+            const telegramRadio = document.querySelector('input[name="contact_preference"][value="telegram"]');
+            const telegramGroup = document.getElementById('telegram-chat-id-group');
+            const telegramInput = document.getElementById('telegram_chat_id');
+
+            if (telegramRadio && telegramRadio.checked) {
+                telegramGroup.style.display = 'block';
+                telegramInput.required = true;
+            } else {
+                telegramGroup.style.display = 'none';
+                telegramInput.required = false;
+            }
         }
 
         // Toggle shipping fields based on delivery method
