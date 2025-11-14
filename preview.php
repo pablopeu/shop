@@ -81,9 +81,9 @@ $preview_theme_name = $is_preview ? ucfirst($preview_theme) : '';
     <div style="position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 20px; text-align: center; z-index: 10000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
         <strong>🎨 Modo Preview</strong> - Estás viendo el theme: <strong><?php echo htmlspecialchars($preview_theme_name); ?></strong>
         <span style="margin: 0 15px;">|</span>
-        <a href="/admin/config-themes.php" style="color: white; text-decoration: underline;">← Volver al selector de themes</a>
+        <a href="<?php echo url('/admin/config-themes.php'); ?>" style="color: white; text-decoration: underline;">← Volver al selector de themes</a>
         <span style="margin: 0 15px;">|</span>
-        <a href="/" style="color: white; text-decoration: underline;">Ver sitio normal</a>
+        <a href="<?php echo url('/'); ?>" style="color: white; text-decoration: underline;">Ver sitio normal</a>
     </div>
     <div style="height: 46px;"></div>
     <?php endif; ?>
@@ -93,15 +93,15 @@ $preview_theme_name = $is_preview ? ucfirst($preview_theme) : '';
         <div class="container">
             <div class="header-content">
                 <div class="logo">
-                    <a href="/">
+                    <a href="<?php echo url('/'); ?>">
                         <?php render_site_logo($site_config); ?>
                     </a>
                 </div>
                 <nav class="nav">
-                    <a href="/">Inicio</a>
-                    <a href="/buscar.php">Buscar</a>
-                    <a href="/favoritos.php">❤️ Favoritos</a>
-                    <a href="/track.php">📦 Rastreo</a>
+                    <a href="<?php echo url('/'); ?>">Inicio</a>
+                    <a href="<?php echo url('/buscar.php'); ?>">Buscar</a>
+                    <a href="<?php echo url('/favoritos.php'); ?>">❤️ Favoritos</a>
+                    <a href="<?php echo url('/track.php'); ?>">📦 Rastreo</a>
                 </nav>
                 <div class="header-actions">
                     <button class="btn-icon" onclick="toggleCart()">
