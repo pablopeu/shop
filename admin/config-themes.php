@@ -277,6 +277,18 @@ $user = get_logged_user();
             background: linear-gradient(135deg, #e74c3c 0%, #000000 100%);
         }
 
+        .theme-card[data-theme="luxury"] .theme-preview {
+            background: linear-gradient(135deg, #FAF7F2 0%, #C9A961 100%);
+        }
+
+        .theme-card[data-theme="vibrant"] .theme-preview {
+            background: linear-gradient(135deg, #FF006E 0%, #FFBE0B 50%, #3A86FF 100%);
+        }
+
+        .theme-card[data-theme="dark"] .theme-preview {
+            background: linear-gradient(135deg, #0A0A0F 0%, #00F0FF 50%, #B24DFF 100%);
+        }
+
         .info-box {
             background: #e7f3ff;
             border-left: 4px solid #2196f3;
@@ -352,8 +364,8 @@ $user = get_logged_user();
                                 </div>
 
                                 <div class="theme-colors">
-                                    <div class="color-circle" style="background: <?php echo htmlspecialchars($theme_info['primary_color'] ?? '#667eea'); ?>"></div>
-                                    <div class="color-circle" style="background: <?php echo htmlspecialchars($theme_info['secondary_color'] ?? '#764ba2'); ?>"></div>
+                                    <div class="color-circle" style="background: <?php echo htmlspecialchars($theme_info['colors']['primary'] ?? $theme_info['primary_color'] ?? '#667eea'); ?>"></div>
+                                    <div class="color-circle" style="background: <?php echo htmlspecialchars($theme_info['colors']['secondary'] ?? $theme_info['secondary_color'] ?? '#764ba2'); ?>"></div>
                                 </div>
 
                                 <div class="theme-meta">
