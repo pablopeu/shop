@@ -444,3 +444,241 @@ h3 { font-size: var(--font-size-2xl); }
         font-size: var(--font-size-2xl);
     }
 }
+
+/* ========================================
+   PRODUCT DETAIL PAGE - Editorial Refined
+   ======================================== */
+
+.product-container {
+    background: var(--color-bg-light);
+    border: var(--border-width) solid var(--color-border);
+    padding: var(--spacing-3xl);
+    margin-top: var(--spacing-xl);
+}
+
+.product-grid {
+    gap: var(--spacing-3xl);
+}
+
+.main-image-container {
+    border: var(--border-width) solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-base);
+}
+
+.main-image-container:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.thumbnails {
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.thumbnail {
+    border: var(--border-width) solid var(--color-border);
+    opacity: 0.6;
+    transition: var(--transition-base);
+}
+
+.thumbnail:hover,
+.thumbnail.active {
+    border-color: var(--color-secondary);
+    opacity: 1;
+}
+
+.product-info h1 {
+    font-family: var(--font-family-heading);
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--spacing-lg);
+    color: var(--color-text);
+    letter-spacing: -0.01em;
+    padding-bottom: var(--spacing-md);
+    border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.price-container {
+    margin: var(--spacing-xl) 0;
+    padding: var(--spacing-lg) 0;
+    border-top: var(--border-width) solid var(--color-border-light);
+    border-bottom: var(--border-width) solid var(--color-border-light);
+}
+
+.price-current {
+    font-family: var(--font-family-heading);
+    font-size: var(--font-size-2xl);
+    color: var(--color-text);
+    letter-spacing: 0.02em;
+}
+
+.description {
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-normal);
+    color: var(--color-text-light);
+    margin: var(--spacing-xl) 0;
+}
+
+.actions button {
+    font-family: var(--font-family);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* ========================================
+   CART PAGE - Clean & Spacious
+   ======================================== */
+
+.cart-container {
+    background: var(--color-bg-light);
+    border: var(--border-width) solid var(--color-border);
+    padding: var(--spacing-2xl);
+}
+
+.cart-item {
+    border-bottom: var(--border-width) solid var(--color-border-light);
+    padding: var(--spacing-xl) 0;
+    transition: var(--transition-base);
+}
+
+.cart-item:hover {
+    background: var(--color-bg);
+}
+
+.cart-summary {
+    background: var(--color-bg);
+    border: var(--border-width) solid var(--color-border);
+    padding: var(--spacing-xl);
+}
+
+.cart-total {
+    font-family: var(--font-family-heading);
+    font-size: var(--font-size-2xl);
+    padding-top: var(--spacing-lg);
+    border-top: var(--border-width) solid var(--color-secondary);
+}
+
+/* ========================================
+   CHECKOUT PAGE - Refined Forms
+   ======================================== */
+
+.checkout-container {
+    background: var(--color-bg-light);
+    border: var(--border-width) solid var(--color-border);
+    padding: var(--spacing-3xl);
+}
+
+.checkout-section {
+    margin-bottom: var(--spacing-2xl);
+    padding-bottom: var(--spacing-2xl);
+    border-bottom: var(--border-width) solid var(--color-border-light);
+}
+
+.checkout-section h2 {
+    font-family: var(--font-family-heading);
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-sm);
+}
+
+.checkout-section h2::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 1px;
+    background: var(--color-secondary);
+    margin-top: var(--spacing-sm);
+}
+
+.form-group label {
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    border: none;
+    border-bottom: var(--border-width) solid var(--color-border);
+    background: transparent;
+    padding: var(--spacing-sm) 0;
+    transition: var(--transition-base);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-bottom-color: var(--color-secondary);
+    outline: none;
+}
+
+/* ========================================
+   THANK YOU PAGE - Elegant Confirmation
+   ======================================== */
+
+.thank-you-container {
+    background: var(--color-bg-light);
+    border: var(--border-width) solid var(--color-border);
+    padding: var(--spacing-3xl);
+    text-align: center;
+    max-width: 700px;
+    margin: var(--spacing-3xl) auto;
+}
+
+.thank-you-container h1 {
+    font-family: var(--font-family-heading);
+    font-size: var(--font-size-4xl);
+    margin-bottom: var(--spacing-lg);
+}
+
+.thank-you-container h1::after {
+    content: '';
+    display: block;
+    width: 80px;
+    height: 2px;
+    background: var(--color-secondary);
+    margin: var(--spacing-md) auto 0;
+}
+
+.order-summary {
+    background: var(--color-bg);
+    border: var(--border-width) solid var(--color-border);
+    padding: var(--spacing-xl);
+    margin: var(--spacing-xl) 0;
+    text-align: left;
+}
+
+/* ========================================
+   MODAL - Minimal & Refined
+   ======================================== */
+
+.modal-overlay {
+    background: rgba(43, 43, 43, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.modal {
+    background: var(--color-bg-light);
+    border: var(--border-width) solid var(--color-border);
+    box-shadow: var(--shadow-xl);
+}
+
+.modal-header {
+    border-bottom: var(--border-width) solid var(--color-border);
+    padding: var(--spacing-lg);
+}
+
+.modal-header h2 {
+    font-family: var(--font-family-heading);
+    font-size: var(--font-size-xl);
+}
+
+.modal-body {
+    padding: var(--spacing-xl);
+}
+
+.modal-footer {
+    border-top: var(--border-width) solid var(--color-border);
+    padding: var(--spacing-lg);
+    background: var(--color-bg);
+}

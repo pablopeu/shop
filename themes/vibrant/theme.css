@@ -610,3 +610,104 @@ h3 { font-size: var(--font-size-2xl); }
         padding: var(--spacing-xs) var(--spacing-sm);
     }
 }
+
+/* ========================================
+   PRODUCT PAGE - Maximal & Energetic
+   ======================================== */
+
+.product-container {
+    background: var(--color-bg-light);
+    border: var(--border-width) solid var(--color-text);
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-2xl);
+}
+
+.main-image-container {
+    border: var(--border-width-thick) solid var(--color-primary);
+    box-shadow: var(--shadow-md);
+    transition: var(--transition-base);
+}
+
+.main-image-container:hover {
+    transform: translate(-3px, -3px) rotate(-1deg);
+    box-shadow: var(--shadow-xl);
+}
+
+.thumbnail {
+    border: var(--border-width) solid var(--color-text);
+    transition: var(--transition-base);
+}
+
+.thumbnail:nth-child(4n+1) {border-color: var(--color-primary);}
+.thumbnail:nth-child(4n+2) {border-color: var(--color-secondary);}
+.thumbnail:nth-child(4n+3) {border-color: var(--color-accent-blue);}
+.thumbnail:nth-child(4n+4) {border-color: var(--color-accent-green);}
+
+.thumbnail.active {
+    border-width: var(--border-width-thick);
+    transform: scale(1.05);
+}
+
+.product-info h1 {
+    font-family: var(--font-family-heading);
+    font-weight: var(--font-weight-black);
+    text-transform: uppercase;
+    color: var(--color-text);
+    text-shadow: 2px 2px 0 rgba(255, 0, 110, 0.2);
+}
+
+.price-current {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+    text-shadow: 2px 2px 0 var(--color-shadow-yellow);
+}
+
+/* CART, CHECKOUT, GRACIAS, MODAL - Bold Style */
+
+.cart-container, .checkout-container {
+    background: var(--color-bg-light);
+    border: var(--border-width) solid var(--color-text);
+    box-shadow: 8px 8px 0 var(--color-shadow);
+    padding: var(--spacing-xl);
+}
+
+.cart-item {
+    border-bottom: var(--border-width) solid var(--color-border);
+    padding: var(--spacing-lg) 0;
+    transition: var(--transition-base);
+}
+
+.cart-item:hover {
+    transform: translateX(4px);
+    background: var(--color-bg-dark);
+}
+
+.checkout-section h2 {
+    font-family: var(--font-family-heading);
+    font-weight: var(--font-weight-black);
+    text-transform: uppercase;
+    border-bottom: var(--border-width-thick) solid var(--color-primary);
+    padding-bottom: var(--spacing-sm);
+}
+
+.thank-you-container {
+    background: var(--color-bg-light);
+    border: var(--border-width-thick) solid var(--color-primary);
+    box-shadow: 12px 12px 0 var(--color-shadow);
+    padding: var(--spacing-3xl);
+    text-align: center;
+}
+
+.modal {
+    background: var(--color-bg-light);
+    border: var(--border-width) solid var(--color-text);
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.3);
+    border-radius: var(--border-radius-md);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    color: white;
+    border-bottom: var(--border-width) solid var(--color-text);
+}

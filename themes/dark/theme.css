@@ -704,3 +704,124 @@ h3 {
         font-size: var(--font-size-2xl);
     }
 }
+
+/* ========================================
+   PRODUCT PAGE - Futuristic Neon
+   ======================================== */
+
+.product-container {
+    background: rgba(26, 26, 36, 0.8);
+    border: var(--border-width) solid var(--color-border-glow);
+    box-shadow: var(--shadow-xl), var(--glow-md);
+    padding: var(--spacing-3xl);
+}
+
+.product-grid {
+    gap: var(--spacing-3xl);
+}
+
+.main-image-container {
+    border: var(--border-width) solid var(--color-border-glow);
+    box-shadow: var(--glow-sm);
+    background: var(--color-bg-dark);
+    transition: var(--transition-base);
+}
+
+.main-image-container:hover {
+    box-shadow: var(--glow-lg);
+    transform: translateY(-4px);
+}
+
+.thumbnail {
+    border: var(--border-width) solid var(--color-border);
+    transition: var(--transition-base);
+    opacity: 0.6;
+}
+
+.thumbnail:nth-child(4n+1) {border-color: var(--color-primary);}
+.thumbnail:nth-child(4n+2) {border-color: var(--color-secondary);}
+.thumbnail:nth-child(4n+3) {border-color: var(--color-accent-blue);}
+.thumbnail:nth-child(4n+4) {border-color: var(--color-accent-green);}
+
+.thumbnail.active {
+    opacity: 1;
+    box-shadow: var(--glow-sm);
+}
+
+.product-info h1 {
+    font-family: var(--font-family-heading);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.price-current {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-3xl);
+    color: var(--color-primary);
+    text-shadow: var(--glow-md);
+}
+
+.cart-container, .checkout-container {
+    background: rgba(26, 26, 36, 0.95);
+    border: var(--border-width) solid var(--color-border-glow);
+    box-shadow: var(--shadow-xl);
+    backdrop-filter: blur(20px);
+    padding: var(--spacing-2xl);
+}
+
+.cart-item {
+    border-bottom: var(--border-width) solid var(--color-border);
+    padding: var(--spacing-lg) 0;
+    transition: var(--transition-base);
+}
+
+.cart-item:hover {
+    background: rgba(0, 240, 255, 0.05);
+    transform: translateX(4px);
+}
+
+.checkout-section h2 {
+    font-family: var(--font-family-heading);
+    text-transform: uppercase;
+    color: var(--color-primary);
+    text-shadow: var(--glow-sm);
+    border-bottom: 2px solid var(--color-border-glow);
+    padding-bottom: var(--spacing-sm);
+}
+
+.form-group input, .form-group select {
+    background: rgba(26, 26, 36, 0.6);
+    border: var(--border-width) solid var(--color-border);
+    color: var(--color-text);
+    transition: var(--transition-base);
+}
+
+.form-group input:focus, .form-group select:focus {
+    border-color: var(--color-primary);
+    box-shadow: var(--glow-sm);
+}
+
+.thank-you-container {
+    background: rgba(26, 26, 36, 0.9);
+    border: var(--border-width) solid var(--color-border-glow);
+    box-shadow: var(--shadow-2xl), var(--glow-lg);
+    padding: var(--spacing-3xl);
+    text-align: center;
+}
+
+.modal {
+    background: rgba(26, 26, 36, 0.98);
+    border: var(--border-width) solid var(--color-border-glow);
+    box-shadow: var(--shadow-2xl), var(--glow-xl);
+    border-radius: var(--border-radius-lg);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(178, 77, 255, 0.1));
+    border-bottom: var(--border-width) solid var(--color-border-glow);
+    color: var(--color-primary);
+}
