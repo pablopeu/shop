@@ -907,6 +907,9 @@ $csrf_token = generate_csrf_token();
             updateStepDisplay();
             toggleShippingFields();
 
+            // Load saved contact info from sessionStorage
+            loadContactInfo();
+
             // Add click handlers to step indicators for navigation
             document.querySelectorAll('.step-indicator').forEach(indicator => {
                 indicator.style.cursor = 'pointer';
@@ -941,7 +944,75 @@ $csrf_token = generate_csrf_token();
                     }
                 });
             });
+
+            // Save contact info when fields change
+            const contactFields = ['customer_name', 'customer_email', 'customer_phone', 'country_code'];
+            contactFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('change', saveContactInfo);
+                    field.addEventListener('input', saveContactInfo);
+                }
+            });
+
+            // Save contact preference when changed
+            document.querySelectorAll('input[name="contact_preference"]').forEach(radio => {
+                radio.addEventListener('change', saveContactInfo);
+            });
         });
+
+        // Save contact information to sessionStorage
+        function saveContactInfo() {
+            const contactData = {
+                customer_name: document.getElementById('customer_name')?.value || '',
+                customer_email: document.getElementById('customer_email')?.value || '',
+                customer_phone: document.getElementById('customer_phone')?.value || '',
+                country_code: document.getElementById('country_code')?.value || '+54',
+                contact_preference: document.querySelector('input[name="contact_preference"]:checked')?.value || 'email'
+            };
+
+            sessionStorage.setItem('checkout_contact_info', JSON.stringify(contactData));
+        }
+
+        // Load contact information from sessionStorage
+        function loadContactInfo() {
+            const savedData = sessionStorage.getItem('checkout_contact_info');
+            if (!savedData) return;
+
+            try {
+                const contactData = JSON.parse(savedData);
+
+                // Load name
+                if (contactData.customer_name && document.getElementById('customer_name')) {
+                    document.getElementById('customer_name').value = contactData.customer_name;
+                }
+
+                // Load email
+                if (contactData.customer_email && document.getElementById('customer_email')) {
+                    document.getElementById('customer_email').value = contactData.customer_email;
+                }
+
+                // Load phone
+                if (contactData.customer_phone && document.getElementById('customer_phone')) {
+                    document.getElementById('customer_phone').value = contactData.customer_phone;
+                }
+
+                // Load country code
+                if (contactData.country_code && document.getElementById('country_code')) {
+                    document.getElementById('country_code').value = contactData.country_code;
+                }
+
+                // Load contact preference
+                if (contactData.contact_preference) {
+                    const radio = document.querySelector(`input[name="contact_preference"][value="${contactData.contact_preference}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading contact info:', e);
+            }
+        }
 
         // Validate current step
         function validateStep(stepNumber) {
@@ -1291,25 +1362,28 @@ $csrf_token = generate_csrf_token();
         }
 
         // Form submission handler
-        let formSubmitAllowed = false;
+        let paymentWarningShown = false;
         let mercadopagoOrder = null;
 
         document.getElementById('checkout-form').addEventListener('submit', function(e) {
             const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
 
             // If Mercadopago, create order via AJAX and show modal
-            if (paymentMethod && paymentMethod.value === 'mercadopago' && !formSubmitAllowed) {
+            if (paymentMethod && paymentMethod.value === 'mercadopago') {
                 e.preventDefault();
                 createOrderAndShowMercadopagoModal();
                 return false;
             }
 
-            // Show warning modal for non-mercadopago payments
-            if (paymentMethod && paymentMethod.value !== 'mercadopago' && !formSubmitAllowed) {
+            // Show warning modal for non-mercadopago payments (only once)
+            if (paymentMethod && paymentMethod.value !== 'mercadopago' && !paymentWarningShown) {
                 e.preventDefault();
                 showPaymentWarningModal();
                 return false;
             }
+
+            // If we get here with non-mercadopago payment, allow form submission
+            // This happens after the warning modal was shown and user clicked "Entendido"
         });
 
         // Create order via AJAX and show Mercadopago modal
@@ -1498,13 +1572,24 @@ $csrf_token = generate_csrf_token();
 
         function closePaymentWarningModal() {
             document.getElementById('payment-warning-modal').style.display = 'none';
-            // Allow form submission after modal is closed
-            formSubmitAllowed = true;
-            document.getElementById('checkout-form').submit();
+            // Mark that warning was shown so next submit will go through
+            paymentWarningShown = true;
+
+            // Find and click the submit button to properly submit the form
+            // This ensures the place_order parameter is included
+            const submitBtn = document.querySelector('button[name="place_order"]');
+            if (submitBtn) {
+                submitBtn.click();
+            } else {
+                // Fallback: submit the form directly
+                document.getElementById('checkout-form').submit();
+            }
         }
 
         function backToPaymentMethod() {
             document.getElementById('payment-warning-modal').style.display = 'none';
+            // Reset the warning shown flag
+            paymentWarningShown = false;
             // Go back to step 3 (payment method)
             currentStep = 3;
             updateStepDisplay();
