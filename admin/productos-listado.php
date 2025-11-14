@@ -357,8 +357,6 @@ $user = get_logged_user();
         .actions {
             display: flex;
             gap: 8px;
-            flex-wrap: wrap;
-            align-items: center;
         }
 
         /* Filters */
