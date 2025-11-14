@@ -28,6 +28,7 @@ function get_telegram_config() {
             'enabled' => false,
             'bot_token' => '',
             'chat_id' => '',
+            'bot_username' => '',
             'notifications' => [
                 'new_order' => true,
                 'payment_approved' => true,
@@ -44,6 +45,69 @@ function get_telegram_config() {
     }
 
     return read_json($config_file);
+}
+
+/**
+ * Get bot information from Telegram API
+ * Returns bot username, first_name, etc.
+ */
+function get_telegram_bot_info() {
+    $credentials = get_secure_telegram_credentials();
+    $bot_token = $credentials['bot_token'] ?? '';
+
+    if (empty($bot_token)) {
+        return null;
+    }
+
+    $url = "https://api.telegram.org/bot{$bot_token}/getMe";
+
+    $options = [
+        'http' => [
+            'method'  => 'GET',
+            'timeout' => 10
+        ]
+    ];
+
+    $context = stream_context_create($options);
+
+    try {
+        $result = @file_get_contents($url, false, $context);
+
+        if ($result === false) {
+            error_log("Failed to get bot info from Telegram API");
+            return null;
+        }
+
+        $response = json_decode($result, true);
+
+        if (!($response['ok'] ?? false)) {
+            error_log("Telegram API error: " . ($response['description'] ?? 'Unknown error'));
+            return null;
+        }
+
+        return $response['result'] ?? null;
+    } catch (Exception $e) {
+        error_log("Exception getting Telegram bot info: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Update bot username in telegram config
+ * This should be called after saving bot token
+ */
+function update_telegram_bot_username() {
+    $bot_info = get_telegram_bot_info();
+
+    if ($bot_info && isset($bot_info['username'])) {
+        $config_file = __DIR__ . '/../config/telegram.json';
+        $config = get_telegram_config();
+        $config['bot_username'] = $bot_info['username'];
+        write_json($config_file, $config);
+        return $bot_info['username'];
+    }
+
+    return null;
 }
 
 /**
@@ -305,3 +369,197 @@ function send_telegram_test() {
 
     return send_telegram_message($message);
 }
+
+/**
+ * Send Telegram message to a specific chat_id (for customer validation)
+ * This allows sending to users other than the admin
+ */
+function send_telegram_to_user($chat_id, $message, $parse_mode = 'HTML') {
+    $config = get_telegram_config();
+
+    if (!($config['enabled'] ?? false)) {
+        error_log("Telegram notifications disabled");
+        return false;
+    }
+
+    // Get bot token from secure credentials
+    $credentials = get_secure_telegram_credentials();
+    $bot_token = $credentials['bot_token'] ?? '';
+
+    if (empty($bot_token)) {
+        error_log("Telegram not configured - missing bot_token");
+        return false;
+    }
+
+    $url = "https://api.telegram.org/bot{$bot_token}/sendMessage";
+
+    $data = [
+        'chat_id' => $chat_id,
+        'text' => $message,
+        'parse_mode' => $parse_mode,
+        'disable_web_page_preview' => true
+    ];
+
+    $options = [
+        'http' => [
+            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+            'method'  => 'POST',
+            'content' => http_build_query($data),
+            'timeout' => 10
+        ]
+    ];
+
+    $context = stream_context_create($options);
+
+    try {
+        $result = @file_get_contents($url, false, $context);
+
+        if ($result === false) {
+            error_log("Failed to send Telegram message to user $chat_id");
+            return false;
+        }
+
+        $response = json_decode($result, true);
+
+        if (!($response['ok'] ?? false)) {
+            error_log("Telegram API error: " . ($response['description'] ?? 'Unknown error'));
+            return false;
+        }
+
+        error_log("Telegram message sent successfully to user $chat_id");
+        return true;
+
+    } catch (Exception $e) {
+        error_log("Exception sending Telegram message: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Send order confirmation to customer via Telegram
+ */
+function send_telegram_order_confirmation($order) {
+    if (empty($order['telegram_chat_id'])) {
+        error_log("No telegram_chat_id in order");
+        return false;
+    }
+
+    $site_config = read_json(__DIR__ . '/../config/site.json');
+    $site_name = $site_config['site_name'] ?? 'Nuestra Tienda';
+
+    $currency = $order['currency'] === 'USD' ? 'U$D' : '$';
+    $total = number_format($order['total'], 2);
+
+    $message = "✅ <b>Orden Confirmada</b>\n\n";
+    $message .= "Gracias por tu compra en <b>{$site_name}</b>!\n\n";
+    $message .= "📝 Número de orden: <code>#{$order['order_number']}</code>\n";
+    $message .= "💰 Total: <b>{$currency} {$total}</b>\n\n";
+
+    $message .= "📦 <b>Productos:</b>\n";
+    foreach ($order['items'] as $item) {
+        $message .= "• {$item['name']} x{$item['quantity']}\n";
+    }
+
+    $message .= "\n💳 Método de pago: " . ucfirst($order['payment_method'] ?? 'N/A') . "\n";
+
+    if ($order['delivery_method'] === 'shipping' && isset($order['shipping_address'])) {
+        $message .= "📍 Envío a: {$order['shipping_address']['city']}, {$order['shipping_address']['state']}\n";
+    } else {
+        $message .= "🏪 Retiro en persona\n";
+    }
+
+    $message .= "\nTe mantendremos informado sobre el estado de tu pedido. ✨";
+
+    return send_telegram_to_user($order['telegram_chat_id'], $message);
+}
+
+/**
+ * Send payment approved notification to customer via Telegram
+ */
+function send_telegram_payment_approved_to_customer($order) {
+    if (empty($order['telegram_chat_id'])) {
+        error_log("No telegram_chat_id in order");
+        return false;
+    }
+
+    $site_config = read_json(__DIR__ . '/../config/site.json');
+    $site_name = $site_config['site_name'] ?? 'Nuestra Tienda';
+
+    $currency = $order['currency'] === 'USD' ? 'U$D' : '$';
+    $total = number_format($order['total'], 2);
+
+    $message = "✅ <b>¡Pago Confirmado!</b>\n\n";
+    $message .= "Tu pago ha sido aprobado exitosamente.\n\n";
+    $message .= "📝 Orden: <code>#{$order['order_number']}</code>\n";
+    $message .= "💰 Monto: <b>{$currency} {$total}</b>\n\n";
+
+    if (isset($order['mercadopago_data']['payment_method_id'])) {
+        $method = strtoupper($order['mercadopago_data']['payment_method_id']);
+        if (isset($order['mercadopago_data']['card_last_four_digits'])) {
+            $method .= " **** {$order['mercadopago_data']['card_last_four_digits']}";
+        }
+        $message .= "💳 Método: {$method}\n";
+    }
+
+    if (isset($order['mercadopago_data']['installments']) && $order['mercadopago_data']['installments'] > 1) {
+        $message .= "📊 Cuotas: {$order['mercadopago_data']['installments']}x\n";
+    }
+
+    $message .= "\nPronto recibirás actualizaciones sobre el envío de tu pedido. 🎉";
+
+    return send_telegram_to_user($order['telegram_chat_id'], $message);
+}
+
+/**
+ * Send payment pending notification to customer via Telegram
+ */
+function send_telegram_payment_pending_to_customer($order) {
+    if (empty($order['telegram_chat_id'])) {
+        error_log("No telegram_chat_id in order");
+        return false;
+    }
+
+    $site_config = read_json(__DIR__ . '/../config/site.json');
+    $site_name = $site_config['site_name'] ?? 'Nuestra Tienda';
+
+    $currency = $order['currency'] === 'USD' ? 'U$D' : '$';
+    $total = number_format($order['total'], 2);
+
+    $message = "⏳ <b>Pago Pendiente</b>\n\n";
+    $message .= "Tu pago está siendo procesado.\n\n";
+    $message .= "📝 Orden: <code>#{$order['order_number']}</code>\n";
+    $message .= "💰 Monto: {$currency} {$total}\n\n";
+    $message .= "Te notificaremos cuando se confirme el pago. ⏰";
+
+    return send_telegram_to_user($order['telegram_chat_id'], $message);
+}
+
+/**
+ * Send payment rejected notification to customer via Telegram
+ */
+function send_telegram_payment_rejected_to_customer($order, $status_detail = '') {
+    if (empty($order['telegram_chat_id'])) {
+        error_log("No telegram_chat_id in order");
+        return false;
+    }
+
+    $site_config = read_json(__DIR__ . '/../config/site.json');
+    $site_name = $site_config['site_name'] ?? 'Nuestra Tienda';
+
+    $currency = $order['currency'] === 'USD' ? 'U$D' : '$';
+    $total = number_format($order['total'], 2);
+
+    $message = "❌ <b>Pago Rechazado</b>\n\n";
+    $message .= "Lamentablemente tu pago no pudo ser procesado.\n\n";
+    $message .= "📝 Orden: <code>#{$order['order_number']}</code>\n";
+    $message .= "💰 Monto: {$currency} {$total}\n";
+
+    if (!empty($status_detail)) {
+        $message .= "⚠️ Motivo: {$status_detail}\n";
+    }
+
+    $message .= "\nPuedes intentar nuevamente con otro método de pago o contactarnos para asistencia.";
+
+    return send_telegram_to_user($order['telegram_chat_id'], $message);
+}
+

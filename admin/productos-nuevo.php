@@ -66,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
                     'stock' => intval($_POST['stock'] ?? 0),
                     'stock_alert' => intval($_POST['stock_alert'] ?? 5),
                     'active' => isset($_POST['active']) ? true : false,
+                    'pickup_only' => isset($_POST['pickup_only']) ? true : false,
                     'images' => $images,
                     'thumbnail' => $images[0], // First image is thumbnail
                     'seo' => [
@@ -527,6 +528,18 @@ $user = get_logged_user();
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="pickup_only" name="pickup_only">
+                        <label for="pickup_only">
+                            🏪 Solo Retiro en Persona (sin opción de envío)
+                        </label>
+                    </div>
+                    <small style="color: #666; margin-left: 28px; display: block;">
+                        Si activas esta opción, el producto solo podrá ser retirado en persona y no estará disponible la opción de envío en el checkout.
+                    </small>
+                </div>
+
                 <!-- SEO -->
                 <div class="section-divider">🔍 SEO (Opcional)</div>
 
@@ -749,7 +762,17 @@ $user = get_logged_user();
 
             if (arsValue <= 0 && usdValue <= 0) {
                 e.preventDefault();
-                alert('Debe ingresar al menos un precio (ARS o USD) mayor a 0');
+                showModal({
+                    title: 'Precio Requerido',
+                    message: 'Debe ingresar al menos un precio (ARS o USD) mayor a 0.',
+                    details: 'Complete el campo de precio en pesos argentinos (ARS) o dólares (USD) antes de guardar el producto.',
+                    icon: '⚠️',
+                    iconClass: 'warning',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    cancelText: null,
+                    onConfirm: function() {}
+                });
                 return false;
             }
 
@@ -763,6 +786,9 @@ $user = get_logged_user();
         // Initial UI state
         updateUIForChanges();
     </script>
+
+    <!-- Modal Component -->
+    <?php include __DIR__ . '/includes/modal.php'; ?>
 
     <!-- Unsaved Changes Warning -->
     <script src="<?php echo url('/admin/includes/unsaved-changes-warning.js'); ?>"></script>

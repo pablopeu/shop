@@ -27,9 +27,9 @@ function get_all_products($active_only = false) {
         });
     }
 
-    // Sort by order field
+    // Sort by display_order field (set by drag-and-drop in admin)
     usort($products, function($a, $b) {
-        return ($a['order'] ?? 999) - ($b['order'] ?? 999);
+        return ($a['display_order'] ?? 9999) - ($b['display_order'] ?? 9999);
     });
 
     // DO NOT apply url() here - PHP views already do it

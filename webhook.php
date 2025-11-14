@@ -730,10 +730,17 @@ if ($notification_type === 'payment' || $notification_type === 'payments') {
             $updated_order = $orders_data['orders'][$order_index];
 
             if ($new_order_status === 'cobrada') {
-                // Payment approved
-                $email_sent = send_payment_approved_email($updated_order);
-                log_notification_sent('EMAIL_PAYMENT_APPROVED', $updated_order['customer_email'], $email_sent, $order_id);
+                // Payment approved - send to customer based on preference
+                $customer_notif_sent = false;
+                if (($updated_order['contact_preference'] ?? 'email') === 'telegram') {
+                    $customer_notif_sent = send_telegram_payment_approved_to_customer($updated_order);
+                    log_notification_sent('TELEGRAM_PAYMENT_APPROVED_CUSTOMER', $updated_order['telegram_chat_id'] ?? 'N/A', $customer_notif_sent, $order_id);
+                } else {
+                    $customer_notif_sent = send_payment_approved_email($updated_order);
+                    log_notification_sent('EMAIL_PAYMENT_APPROVED', $updated_order['customer_email'], $customer_notif_sent, $order_id);
+                }
 
+                // Always send to admin via Telegram
                 $telegram_sent = send_telegram_payment_approved($updated_order);
                 log_notification_sent('TELEGRAM_PAYMENT_APPROVED', 'admin', $telegram_sent, $order_id);
 
@@ -744,26 +751,39 @@ if ($notification_type === 'payment' || $notification_type === 'payments') {
                     'fees' => $total_fees,
                     'net_amount' => $net_received_amount,
                     'payment_method' => $payment['payment_method_id'] ?? 'unknown',
-                    'email_sent' => $email_sent,
+                    'customer_notif_sent' => $customer_notif_sent,
                     'telegram_sent' => $telegram_sent
                 ]);
             } elseif ($new_order_status === 'pendiente' && in_array($payment_status, ['pending', 'in_process', 'authorized', 'in_mediation'])) {
-                // Payment pending
-                $email_sent = send_payment_pending_email($updated_order);
-                log_notification_sent('EMAIL_PAYMENT_PENDING', $updated_order['customer_email'], $email_sent, $order_id);
+                // Payment pending - send to customer based on preference
+                $customer_notif_sent = false;
+                if (($updated_order['contact_preference'] ?? 'email') === 'telegram') {
+                    $customer_notif_sent = send_telegram_payment_pending_to_customer($updated_order);
+                    log_notification_sent('TELEGRAM_PAYMENT_PENDING_CUSTOMER', $updated_order['telegram_chat_id'] ?? 'N/A', $customer_notif_sent, $order_id);
+                } else {
+                    $customer_notif_sent = send_payment_pending_email($updated_order);
+                    log_notification_sent('EMAIL_PAYMENT_PENDING', $updated_order['customer_email'], $customer_notif_sent, $order_id);
+                }
 
                 log_mp_debug('PAYMENT_PENDING', "Pago pendiente - Orden: $order_id", [
                     'order_id' => $order_id,
                     'payment_id' => $payment_id,
                     'payment_status' => $payment_status,
                     'status_detail' => $status_detail,
-                    'email_sent' => $email_sent
+                    'customer_notif_sent' => $customer_notif_sent
                 ]);
             } elseif ($new_order_status === 'rechazada') {
-                // Payment rejected
-                $email_sent = send_payment_rejected_email($updated_order, $status_detail);
-                log_notification_sent('EMAIL_PAYMENT_REJECTED', $updated_order['customer_email'], $email_sent, $order_id);
+                // Payment rejected - send to customer based on preference
+                $customer_notif_sent = false;
+                if (($updated_order['contact_preference'] ?? 'email') === 'telegram') {
+                    $customer_notif_sent = send_telegram_payment_rejected_to_customer($updated_order, $status_detail);
+                    log_notification_sent('TELEGRAM_PAYMENT_REJECTED_CUSTOMER', $updated_order['telegram_chat_id'] ?? 'N/A', $customer_notif_sent, $order_id);
+                } else {
+                    $customer_notif_sent = send_payment_rejected_email($updated_order, $status_detail);
+                    log_notification_sent('EMAIL_PAYMENT_REJECTED', $updated_order['customer_email'], $customer_notif_sent, $order_id);
+                }
 
+                // Always send to admin via Telegram
                 $telegram_sent = send_telegram_payment_rejected($updated_order);
                 log_notification_sent('TELEGRAM_PAYMENT_REJECTED', 'admin', $telegram_sent, $order_id);
 
@@ -771,7 +791,7 @@ if ($notification_type === 'payment' || $notification_type === 'payments') {
                     'order_id' => $order_id,
                     'payment_id' => $payment_id,
                     'status_detail' => $status_detail,
-                    'email_sent' => $email_sent,
+                    'customer_notif_sent' => $customer_notif_sent,
                     'telegram_sent' => $telegram_sent
                 ]);
             } elseif ($new_order_status === 'cancelada' && in_array($payment_status, ['refunded', 'charged_back'])) {

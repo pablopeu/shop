@@ -117,6 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
             'stock' => intval($_POST['stock'] ?? 0),
             'stock_alert' => intval($_POST['stock_alert'] ?? 5),
             'active' => isset($_POST['active']) ? true : false,
+            'pickup_only' => isset($_POST['pickup_only']) ? true : false,
             'images' => $current_images,
             'thumbnail' => !empty($current_images) ? $current_images[0] : '',
             'seo' => [
@@ -679,6 +680,19 @@ $user = get_logged_user();
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="pickup_only" name="pickup_only"
+                                   <?php echo ($product['pickup_only'] ?? false) ? 'checked' : ''; ?>>
+                            <label for="pickup_only">
+                                🏪 Solo Retiro en Persona (sin opción de envío)
+                            </label>
+                        </div>
+                        <small style="color: #666; margin-left: 28px; display: block;">
+                            Si activas esta opción, el producto solo podrá ser retirado en persona y no estará disponible la opción de envío en el checkout.
+                        </small>
+                    </div>
+
                     <!-- Actions -->
                     <div style="display: flex; gap: 10px; margin-top: 15px;">
                         <button type="submit" name="save_product" class="btn-save" id="saveBtn">
@@ -849,7 +863,17 @@ $user = get_logged_user();
 
             if (priceArs <= 0 && priceUsd <= 0) {
                 e.preventDefault();
-                alert('Debe ingresar al menos un precio (ARS o USD) mayor a 0');
+                showModal({
+                    title: 'Precio Requerido',
+                    message: 'Debe ingresar al menos un precio (ARS o USD) mayor a 0.',
+                    details: 'Complete el campo de precio en pesos argentinos (ARS) o dólares (USD) antes de guardar el producto.',
+                    icon: '⚠️',
+                    iconClass: 'warning',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    cancelText: null,
+                    onConfirm: function() {}
+                });
                 return false;
             }
 

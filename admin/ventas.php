@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
                 if (cancel_order($order_id, 'Cancelado en masa por admin', $_SESSION['username'])) {
                     $success_count++;
                 }
-            } elseif (in_array($action, ['pending', 'confirmed', 'shipped', 'delivered'])) {
+            } elseif (in_array($action, ['pending', 'cobrada', 'shipped', 'delivered'])) {
                 if (update_order_status($order_id, $action, $_SESSION['username'])) {
                     $success_count++;
 
@@ -202,10 +202,11 @@ $user = get_logged_user();
 // Status labels
 $status_labels = [
     'pending' => ['label' => 'Pendiente', 'color' => '#FFA726'],
-    'confirmed' => ['label' => 'Confirmado', 'color' => '#4CAF50'],
+    'cobrada' => ['label' => 'Cobrada', 'color' => '#4CAF50'],
     'shipped' => ['label' => 'Enviado', 'color' => '#2196F3'],
     'delivered' => ['label' => 'Entregado', 'color' => '#4CAF50'],
-    'cancelled' => ['label' => 'Cancelado', 'color' => '#f44336']
+    'cancelled' => ['label' => 'Cancelado', 'color' => '#f44336'],
+    'rechazada' => ['label' => 'Rechazada', 'color' => '#f44336']
 ];
 
 ?>
@@ -807,8 +808,8 @@ $status_labels = [
                     <a href="?filter=pending" class="filter-btn <?php echo $filter_status === 'pending' ? 'active' : ''; ?>">
                         Pendientes
                     </a>
-                    <a href="?filter=confirmed" class="filter-btn <?php echo $filter_status === 'confirmed' ? 'active' : ''; ?>">
-                        Confirmadas
+                    <a href="?filter=cobrada" class="filter-btn <?php echo $filter_status === 'cobrada' ? 'active' : ''; ?>">
+                        Cobradas
                     </a>
                     <a href="?filter=shipped" class="filter-btn <?php echo $filter_status === 'shipped' ? 'active' : ''; ?>">
                         Enviadas
@@ -862,7 +863,7 @@ $status_labels = [
                         <select name="bulk_action" id="bulkAction" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                             <option value="">Seleccionar acción...</option>
                             <option value="pending">Marcar como Pendiente</option>
-                            <option value="confirmed">Marcar como Confirmada</option>
+                            <option value="cobrada">Marcar como Cobrada</option>
                             <option value="shipped">Marcar como Enviada</option>
                             <option value="delivered">Marcar como Entregada</option>
                             <option value="cancel">Cancelar</option>
@@ -1044,7 +1045,7 @@ $status_labels = [
     <div id="orderModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <span class="modal-close" onclick="closeModal()">&times;</span>
+                <span class="modal-close" onclick="closeOrderModal()">&times;</span>
                 <h2 id="modalOrderNumber">Orden #</h2>
             </div>
             <div id="modalOrderContent">
@@ -1099,7 +1100,8 @@ $status_labels = [
 
     <!-- Unsaved Changes Modal -->
     <div id="unsavedChangesModal" class="modal" style="z-index: 10001;">
-        <div class="modal-content" style="max-width: 500px; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+        <div class="modal-content" style="max-width: 500px; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); position: relative;">
+            <span class="modal-close" onclick="cancelCloseOrderModal()" style="position: absolute; top: 15px; right: 20px; font-size: 28px; font-weight: bold; color: #999; cursor: pointer; line-height: 20px; transition: color 0.3s;">&times;</span>
             <div style="text-align: center; margin-bottom: 20px;">
                 <div style="font-size: 48px; margin-bottom: 10px;">⚠️</div>
                 <h2 style="margin: 0; color: #333; font-size: 22px;">Cambios sin guardar</h2>
@@ -1108,11 +1110,11 @@ $status_labels = [
                 Hay cambios sin guardar en este formulario. Si cierras ahora, perderás estos cambios.
             </p>
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <button onclick="confirmCloseModal()"
+                <button onclick="confirmCloseOrderModal()"
                         style="padding: 12px 24px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
                     Salir sin guardar
                 </button>
-                <button onclick="cancelCloseModal()"
+                <button onclick="cancelCloseOrderModal()"
                         style="padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
                     Quedarme para guardar
                 </button>
@@ -1344,7 +1346,7 @@ $status_labels = [
                 <!-- Current Status Badge -->
                 <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid ${
                     order.status === 'pending' ? '#FFA726' :
-                    order.status === 'confirmed' || order.status === 'cobrada' ? '#4CAF50' :
+                    order.status === 'cobrada' ? '#4CAF50' :
                     order.status === 'shipped' ? '#2196F3' :
                     order.status === 'delivered' ? '#4CAF50' :
                     order.status === 'cancelled' || order.status === 'rechazada' ? '#f44336' : '#999'
@@ -1353,13 +1355,12 @@ $status_labels = [
                     <div style="display: inline-block;">
                         <span style="padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; color: white; background: ${
                             order.status === 'pending' ? '#FFA726' :
-                            order.status === 'confirmed' || order.status === 'cobrada' ? '#4CAF50' :
+                            order.status === 'cobrada' ? '#4CAF50' :
                             order.status === 'shipped' ? '#2196F3' :
                             order.status === 'delivered' ? '#4CAF50' :
                             order.status === 'cancelled' || order.status === 'rechazada' ? '#f44336' : '#999'
                         };">
                             ${order.status === 'pending' ? '⏳ Pendiente' :
-                              order.status === 'confirmed' ? '✅ Confirmado' :
                               order.status === 'cobrada' ? '💰 Cobrada' :
                               order.status === 'shipped' ? '🚚 Enviado' :
                               order.status === 'delivered' ? '📦 Entregado' :
@@ -1378,7 +1379,6 @@ $status_labels = [
                         <label for="status"><strong>Cambiar Estado:</strong></label>
                         <select name="status" id="status" style="font-weight: 600;">
                             <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>⏳ Pendiente</option>
-                            <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>✅ Confirmado</option>
                             <option value="cobrada" ${order.status === 'cobrada' ? 'selected' : ''}>💰 Cobrada</option>
                             <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>🚚 Enviado</option>
                             <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>📦 Entregado</option>
@@ -1425,6 +1425,7 @@ $status_labels = [
         // Track unsaved changes in modal
         let modalHasUnsavedChanges = false;
         let modalOriginalValues = {};
+        let modalUserHasInteracted = false; // Only set to true after user touches an input
 
         function setupModalChangeDetection() {
             const modalContent = document.getElementById('modalOrderContent');
@@ -1432,30 +1433,42 @@ $status_labels = [
             const inputs = modalContent.querySelectorAll('input, select, textarea');
             const saveButtons = modalContent.querySelectorAll('button[type="submit"]');
 
-            // Store original values
+            // Store original values (skip inputs without name or id)
             modalOriginalValues = {};
             inputs.forEach(input => {
                 const key = input.name || input.id;
-                modalOriginalValues[key] = input.type === 'checkbox' ? input.checked : input.value;
+                if (key) {
+                    modalOriginalValues[key] = input.type === 'checkbox' ? input.checked : input.value;
+                }
             });
 
             // Reset state
             modalHasUnsavedChanges = false;
+            modalUserHasInteracted = false; // Reset interaction flag
             saveButtons.forEach(btn => {
                 btn.style.background = '#27ae60';
                 btn.style.boxShadow = '0 2px 8px rgba(39, 174, 96, 0.3)';
             });
 
-            // Detect changes
-            inputs.forEach(input => {
-                input.addEventListener('input', () => checkModalChanges(inputs, saveButtons));
-                input.addEventListener('change', () => checkModalChanges(inputs, saveButtons));
-            });
+            // Detect changes - only after a small delay to avoid false positives from browser autocomplete
+            setTimeout(() => {
+                inputs.forEach(input => {
+                    input.addEventListener('input', () => {
+                        modalUserHasInteracted = true;
+                        checkModalChanges(inputs, saveButtons);
+                    });
+                    input.addEventListener('change', () => {
+                        modalUserHasInteracted = true;
+                        checkModalChanges(inputs, saveButtons);
+                    });
+                });
+            }, 100);
 
             // Mark as saved when form is submitted
             forms.forEach(form => {
                 form.addEventListener('submit', () => {
                     modalHasUnsavedChanges = false;
+                    modalUserHasInteracted = false;
                 });
             });
         }
@@ -1464,8 +1477,13 @@ $status_labels = [
             let hasChanges = false;
             inputs.forEach(input => {
                 const key = input.name || input.id;
+                if (!key) return; // Skip inputs without name or id
+
                 const currentValue = input.type === 'checkbox' ? input.checked : input.value;
-                if (currentValue !== modalOriginalValues[key]) {
+                const originalValue = modalOriginalValues[key];
+
+                // Only compare if we have an original value
+                if (originalValue !== undefined && currentValue !== originalValue) {
                     hasChanges = true;
                 }
             });
@@ -1484,23 +1502,28 @@ $status_labels = [
             });
         }
 
-        function closeModal() {
-            if (modalHasUnsavedChanges) {
+        function closeOrderModal() {
+            // Only show warning if user actually interacted with the form AND there are changes
+            if (modalUserHasInteracted && modalHasUnsavedChanges) {
                 // Show custom unsaved changes modal
                 document.getElementById('unsavedChangesModal').classList.add('active');
             } else {
+                // Close directly - no interaction or no changes
                 document.getElementById('orderModal').classList.remove('active');
+                modalHasUnsavedChanges = false;
+                modalUserHasInteracted = false;
             }
         }
 
-        function confirmCloseModal() {
+        function confirmCloseOrderModal() {
             // User confirmed to leave without saving
             modalHasUnsavedChanges = false;
+            modalUserHasInteracted = false;
             document.getElementById('unsavedChangesModal').classList.remove('active');
             document.getElementById('orderModal').classList.remove('active');
         }
 
-        function cancelCloseModal() {
+        function cancelCloseOrderModal() {
             // User wants to stay and save
             document.getElementById('unsavedChangesModal').classList.remove('active');
 
@@ -1542,9 +1565,28 @@ $status_labels = [
 
         function copyPaymentLink(link) {
             navigator.clipboard.writeText(link).then(() => {
-                alert('✅ Link de pago copiado al portapapeles');
+                showModal({
+                    title: 'Link Copiado',
+                    message: 'El link de pago se ha copiado al portapapeles exitosamente.',
+                    icon: '✅',
+                    iconClass: 'success',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    cancelText: null,
+                    onConfirm: function() {}
+                });
             }).catch(() => {
-                prompt('Copia este link:', link);
+                showModal({
+                    title: 'Copiar Link de Pago',
+                    message: 'No se pudo copiar automáticamente. Por favor, copia manualmente el siguiente link:',
+                    details: link,
+                    icon: '📋',
+                    iconClass: 'info',
+                    confirmText: 'Cerrar',
+                    confirmType: 'primary',
+                    cancelText: null,
+                    onConfirm: function() {}
+                });
             });
         }
 
@@ -1556,7 +1598,7 @@ $status_labels = [
         // Close modal when clicking outside
         document.getElementById('orderModal').addEventListener('click', function(e) {
             if (e.target === this) {
-                closeModal();
+                closeOrderModal();
             }
         });
 
@@ -1568,7 +1610,32 @@ $status_labels = [
 
         document.getElementById('unsavedChangesModal').addEventListener('click', function(e) {
             if (e.target === this) {
-                cancelCloseModal();
+                cancelCloseOrderModal();
+            }
+        });
+
+        // Close modals with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                // Check which modal is open and close accordingly
+                const unsavedModal = document.getElementById('unsavedChangesModal');
+                const orderModal = document.getElementById('orderModal');
+                const cancelModal = document.getElementById('cancelModal');
+                const confirmBulkModal = document.getElementById('confirmBulkModal');
+
+                if (unsavedModal.classList.contains('active')) {
+                    // Close unsaved changes modal (same as clicking X - stays in edit mode)
+                    cancelCloseOrderModal();
+                } else if (orderModal.classList.contains('active')) {
+                    // Close order detail modal (checks for unsaved changes)
+                    closeOrderModal();
+                } else if (cancelModal.classList.contains('active')) {
+                    // Close cancel order modal
+                    closeCancelModal();
+                } else if (confirmBulkModal.classList.contains('active')) {
+                    // Close bulk action confirmation modal
+                    closeConfirmModal();
+                }
             }
         });
 
@@ -1637,14 +1704,14 @@ $status_labels = [
                     btnClass: 'modal-btn-confirm',
                     btnText: 'Marcar como Pendiente'
                 },
-                'confirmed': {
-                    icon: '✅',
+                'cobrada': {
+                    icon: '💰',
                     iconClass: 'warning',
-                    title: 'Marcar como Confirmada',
-                    description: 'Las siguientes órdenes cambiarán su estado a "Confirmada":',
-                    effects: ['El estado de las órdenes será actualizado', 'Se considerarán confirmadas para reportes'],
+                    title: 'Marcar como Cobrada',
+                    description: 'Las siguientes órdenes cambiarán su estado a "Cobrada":',
+                    effects: ['El estado de las órdenes será actualizado', 'Se reducirá el stock si aún no se ha hecho', 'Se considerarán cobradas para reportes'],
                     btnClass: 'modal-btn-confirm',
-                    btnText: 'Confirmar Órdenes'
+                    btnText: 'Marcar como Cobradas'
                 },
                 'shipped': {
                     icon: '🚚',
@@ -1752,5 +1819,8 @@ $status_labels = [
         // Initialize selected count on page load
         document.addEventListener('DOMContentLoaded', updateSelectedCount);
     </script>
+
+    <!-- Modal Component -->
+    <?php include __DIR__ . '/includes/modal.php'; ?>
 </body>
 </html>

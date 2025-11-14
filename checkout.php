@@ -54,6 +54,16 @@ $_SESSION['cart'] = $valid_items;
 
 // Get configurations
 $site_config = read_json(__DIR__ . '/config/site.json');
+$telegram_config = get_telegram_config();
+
+// If bot_username is not set, try to get it from Telegram API
+if (empty($telegram_config['bot_username'])) {
+    $bot_username = update_telegram_bot_username();
+    if ($bot_username) {
+        $telegram_config['bot_username'] = $bot_username;
+    }
+}
+
 $footer_config = read_json(__DIR__ . '/config/footer.json');
 $currency_config = read_json(__DIR__ . '/config/currency.json');
 $payment_config = read_json(__DIR__ . '/config/payment.json');
@@ -95,6 +105,18 @@ foreach ($_SESSION['cart'] as $cart_item) {
 
 // Set currency based on cart contents
 $checkout_currency = ($all_products_usd) ? 'USD' : 'ARS';
+
+// Check if any product is pickup-only (no shipping available)
+$has_pickup_only = false;
+$pickup_only_products = [];
+foreach ($_SESSION['cart'] as $cart_item) {
+    $product_id = $cart_item['product_id'];
+    $product = get_product_by_id($product_id);
+    if ($product && isset($product['pickup_only']) && $product['pickup_only'] === true) {
+        $has_pickup_only = true;
+        $pickup_only_products[] = $product['name'];
+    }
+}
 
 // Second pass: calculate totals
 foreach ($_SESSION['cart'] as $cart_item) {
@@ -212,12 +234,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
     $customer_email = sanitize_input($_POST['customer_email'] ?? '');
     $country_code = sanitize_input($_POST['country_code'] ?? '+54');
     $customer_phone = sanitize_input($_POST['customer_phone'] ?? '');
-    $contact_preference = sanitize_input($_POST['contact_preference'] ?? 'whatsapp');
+    $telegram_chat_id = sanitize_input($_POST['telegram_chat_id'] ?? '');
+    $contact_preference = sanitize_input($_POST['contact_preference'] ?? 'email');
     $delivery_method = sanitize_input($_POST['delivery_method'] ?? 'pickup');
     $payment_method = sanitize_input($_POST['payment_method'] ?? '');
 
-    // Combine country code and phone
-    $full_phone = $country_code . ' ' . $customer_phone;
+    // Combine country code and phone (optional field now)
+    $full_phone = !empty($customer_phone) ? $country_code . ' ' . $customer_phone : '';
 
     // Validate required fields
     if (empty($customer_name)) {
@@ -228,11 +251,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         $errors[] = 'Email inválido';
     }
 
-    if (empty($customer_phone)) {
+    // Validar según preferencia de contacto
+    if ($contact_preference === 'telegram' && empty($telegram_chat_id)) {
+        $errors[] = 'El Telegram Chat ID es requerido';
+    } elseif ($contact_preference === 'email' && empty($customer_phone)) {
         $errors[] = 'El teléfono es requerido';
     }
 
-    if (!in_array($contact_preference, ['whatsapp', 'email'])) {
+    if (!in_array($contact_preference, ['email', 'telegram'])) {
         $errors[] = 'Preferencia de contacto inválida';
     }
 
@@ -329,6 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             'customer_name' => $customer_name,
             'customer_email' => $customer_email,
             'customer_phone' => $full_phone,
+            'telegram_chat_id' => $telegram_chat_id,
             'contact_preference' => $contact_preference,
             'delivery_method' => $delivery_method,
             'notes' => sanitize_input($_POST['notes'] ?? '')
@@ -345,14 +372,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                 increment_coupon_usage($coupon_code);
             }
 
-            // Send order confirmation email to customer (always send)
-            send_order_confirmation_email($order);
+            // Send order confirmation to customer based on their preference
+            if ($order['contact_preference'] === 'telegram') {
+                send_telegram_order_confirmation($order);
+            } else {
+                send_order_confirmation_email($order);
+            }
 
             // For non-mercadopago payments: send all notifications immediately
             // For Mercadopago: notifications will be sent when payment is processed
             if ($payment_method !== 'mercadopago') {
                 send_admin_new_order_email($order);
-                send_telegram_new_order($order);
+                send_telegram_new_order($order); // Always send to admin via Telegram
             }
 
             // Clear cart and coupon only for non-Mercadopago payments
@@ -423,6 +454,7 @@ $csrf_token = generate_csrf_token();
     <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
+    <?php include __DIR__ . '/admin/includes/modal.php'; ?>
     <!-- Header -->
     <div class="header">
         <div class="header-content">
@@ -492,9 +524,9 @@ $csrf_token = generate_csrf_token();
                             </div>
 
                             <div class="form-group">
-                                <label for="customer_phone">Teléfono / WhatsApp *</label>
+                                <label for="customer_phone">Teléfono (opcional)</label>
                                 <div class="phone-input-group">
-                                    <select id="country_code" name="country_code" class="country-select" required>
+                                    <select id="country_code" name="country_code" class="country-select">
                                         <option value="+54" data-flag="🇦🇷" selected>🇦🇷 +54</option>
                                         <option value="+1" data-flag="🇺🇸">🇺🇸 +1</option>
                                         <option value="+52" data-flag="🇲🇽">🇲🇽 +52</option>
@@ -515,23 +547,42 @@ $csrf_token = generate_csrf_token();
                                     </select>
                                     <input type="tel" id="customer_phone" name="customer_phone"
                                            value="<?php echo htmlspecialchars($_POST['customer_phone'] ?? ''); ?>"
-                                           placeholder="11 1234-5678" required>
+                                           placeholder="11 1234-5678">
                                 </div>
-                                <small style="color: #666;">Ingresa tu número sin el código de país</small>
+                                <small style="color: #666;">Para referencia (opcional)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="telegram_chat_id">Telegram Chat ID *</label>
+                                <input type="text" id="telegram_chat_id" name="telegram_chat_id"
+                                       value="<?php echo htmlspecialchars($_POST['telegram_chat_id'] ?? ''); ?>"
+                                       placeholder="123456789" required>
+                                <small style="color: #666;">
+                                    Para obtener tu Chat ID:
+                                    <?php
+                                    $bot_username = $telegram_config['bot_username'] ?? '';
+                                    if (!empty($bot_username)):
+                                    ?>
+                                    <br>1. Envía /start a nuestro bot: <a href="https://t.me/<?php echo htmlspecialchars($bot_username); ?>" target="_blank" style="color: #007bff; font-weight: 600;">@<?php echo htmlspecialchars($bot_username); ?></a>
+                                    <br>2. Luego envía /start a <a href="https://t.me/userinfobot" target="_blank" style="color: #007bff;">@userinfobot</a> para ver tu ID
+                                    <?php else: ?>
+                                    <br>El administrador debe configurar el bot de Telegram primero.
+                                    <?php endif; ?>
+                                </small>
                             </div>
 
                             <div class="form-group">
                                 <label>Preferencia de contacto *</label>
                                 <div class="radio-group">
                                     <label class="radio-option">
-                                        <input type="radio" name="contact_preference" value="whatsapp"
-                                               <?php echo (!isset($_POST['contact_preference']) || $_POST['contact_preference'] === 'whatsapp') ? 'checked' : ''; ?> required>
-                                        <span>📱 Prefiero WhatsApp</span>
+                                        <input type="radio" name="contact_preference" value="email"
+                                               <?php echo (!isset($_POST['contact_preference']) || $_POST['contact_preference'] === 'email') ? 'checked' : ''; ?> required>
+                                        <span>✉️ Prefiero Email</span>
                                     </label>
                                     <label class="radio-option">
-                                        <input type="radio" name="contact_preference" value="email"
-                                               <?php echo (isset($_POST['contact_preference']) && $_POST['contact_preference'] === 'email') ? 'checked' : ''; ?>>
-                                        <span>✉️ Prefiero Email</span>
+                                        <input type="radio" name="contact_preference" value="telegram"
+                                               <?php echo (isset($_POST['contact_preference']) && $_POST['contact_preference'] === 'telegram') ? 'checked' : ''; ?>>
+                                        <span>📱 Prefiero Telegram <small style="color: #FF9800; font-weight: 600;">(Método en etapa de prueba)</small></span>
                                     </label>
                                 </div>
                             </div>
@@ -549,13 +600,28 @@ $csrf_token = generate_csrf_token();
                         <div class="form-section">
                             <h2>🚚 Envío o Retiro</h2>
 
+                            <?php if ($has_pickup_only): ?>
+                            <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                                <p style="margin: 0; color: #856404; font-weight: 600; font-size: 15px;">
+                                    ⚠️ Tu carrito contiene productos que solo pueden retirarse en persona
+                                </p>
+                                <p style="margin: 10px 0 0 0; color: #856404; font-size: 14px;">
+                                    <?php if (count($pickup_only_products) === 1): ?>
+                                        El producto <strong><?php echo htmlspecialchars($pickup_only_products[0]); ?></strong> no tiene opción de envío a domicilio.
+                                    <?php else: ?>
+                                        Los siguientes productos no tienen opción de envío a domicilio: <strong><?php echo htmlspecialchars(implode(', ', $pickup_only_products)); ?></strong>
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                            <?php endif; ?>
+
                             <div class="form-group">
                                 <label>Método de entrega *</label>
                                 <div class="radio-group">
                                     <label class="radio-option">
                                         <input type="radio" name="delivery_method" value="pickup"
                                                onchange="toggleShippingFields()"
-                                               <?php echo (!isset($_POST['delivery_method']) || $_POST['delivery_method'] === 'pickup') ? 'checked' : ''; ?> required>
+                                               <?php echo (!isset($_POST['delivery_method']) || $_POST['delivery_method'] === 'pickup' || $has_pickup_only) ? 'checked' : ''; ?> required>
                                         <div>
                                             <strong>🏪 Retiro en persona</strong>
                                             <p style="font-size: 14px; color: #666; margin-top: 5px;">
@@ -563,14 +629,15 @@ $csrf_token = generate_csrf_token();
                                             </p>
                                         </div>
                                     </label>
-                                    <label class="radio-option">
+                                    <label class="radio-option <?php echo $has_pickup_only ? 'disabled' : ''; ?>">
                                         <input type="radio" name="delivery_method" value="shipping"
                                                onchange="toggleShippingFields()"
-                                               <?php echo (isset($_POST['delivery_method']) && $_POST['delivery_method'] === 'shipping') ? 'checked' : ''; ?>>
+                                               <?php echo $has_pickup_only ? 'disabled' : ''; ?>
+                                               <?php echo (isset($_POST['delivery_method']) && $_POST['delivery_method'] === 'shipping' && !$has_pickup_only) ? 'checked' : ''; ?>>
                                         <div>
                                             <strong>📦 Envío a domicilio</strong>
                                             <p style="font-size: 14px; color: #666; margin-top: 5px;">
-                                                Completa tu dirección de envío
+                                                <?php echo $has_pickup_only ? 'No disponible para estos productos' : 'Completa tu dirección de envío'; ?>
                                             </p>
                                         </div>
                                     </label>
@@ -803,19 +870,19 @@ $csrf_token = generate_csrf_token();
         </div>
     </div>
 
-    <!-- WhatsApp Validation Modal -->
-    <div id="whatsapp-validation-modal" class="modal" style="display: none;">
+    <!-- Telegram Validation Modal -->
+    <div id="telegram-validation-modal" class="modal" style="display: none;">
         <div class="modal-overlay"></div>
         <div class="modal-content">
-            <h3>📱 Validar WhatsApp</h3>
-            <p>Vamos a enviar un mensaje de prueba a tu WhatsApp:</p>
-            <p class="phone-display"><strong id="whatsapp-phone-display"></strong></p>
+            <h3>📱 Validar Telegram</h3>
+            <p>Vamos a enviar un mensaje de prueba a tu Telegram:</p>
+            <p class="phone-display"><strong>Chat ID: <span id="telegram-chatid-display"></span></strong></p>
             <p style="color: #ff9800; font-weight: bold;">⚠️ Por favor revisa si te llegó el mensaje, ya que es la única forma que tendremos de avisarte sobre tu compra.</p>
             <div class="modal-actions">
-                <button type="button" class="btn btn-secondary" onclick="skipWhatsAppValidation()">Omitir verificación</button>
-                <button type="button" class="btn btn-primary" onclick="sendWhatsAppTest()">Enviar mensaje de prueba</button>
+                <button type="button" class="btn btn-secondary" onclick="skipTelegramValidation()">Omitir verificación</button>
+                <button type="button" class="btn btn-primary" onclick="sendTelegramTest()">Enviar mensaje de prueba</button>
             </div>
-            <div id="whatsapp-status" style="margin-top: 15px; display: none;"></div>
+            <div id="telegram-status" style="margin-top: 15px; display: none;"></div>
         </div>
     </div>
 
@@ -899,13 +966,121 @@ $csrf_token = generate_csrf_token();
         const MERCADOPAGO_PUBLIC_KEY = '<?php echo $mp_public_key; ?>';
 
         // Step management
-        let currentStep = 1;
+        // If form was submitted (POST data exists), start at step 4 (confirmation)
+        // This handles validation errors gracefully
+        let currentStep = <?php echo (!empty($_POST) && isset($_POST['place_order'])) ? '4' : '1'; ?>;
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
             updateStepDisplay();
             toggleShippingFields();
+
+            // Load saved contact info from sessionStorage
+            loadContactInfo();
+
+            // Add click handlers to step indicators for navigation
+            document.querySelectorAll('.step-indicator').forEach(indicator => {
+                indicator.style.cursor = 'pointer';
+                indicator.addEventListener('click', function() {
+                    const targetStep = parseInt(this.dataset.step);
+
+                    // Only allow navigation to current step or previous steps
+                    // Don't allow jumping ahead without validation
+                    if (targetStep <= currentStep) {
+                        currentStep = targetStep;
+                        updateStepDisplay();
+                        window.scrollTo(0, 0);
+                    } else {
+                        // Try to validate current steps before jumping ahead
+                        let canProceed = true;
+                        for (let i = currentStep; i < targetStep; i++) {
+                            if (!validateStep(i)) {
+                                canProceed = false;
+                                break;
+                            }
+                        }
+
+                        if (canProceed) {
+                            // Update confirmation if jumping to step 4
+                            if (targetStep === 4) {
+                                updateConfirmationSummary();
+                            }
+                            currentStep = targetStep;
+                            updateStepDisplay();
+                            window.scrollTo(0, 0);
+                        }
+                    }
+                });
+            });
+
+            // Save contact info when fields change
+            const contactFields = ['customer_name', 'customer_email', 'customer_phone', 'country_code'];
+            contactFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('change', saveContactInfo);
+                    field.addEventListener('input', saveContactInfo);
+                }
+            });
+
+            // Save contact preference when changed
+            document.querySelectorAll('input[name="contact_preference"]').forEach(radio => {
+                radio.addEventListener('change', saveContactInfo);
+            });
         });
+
+        // Save contact information to sessionStorage
+        function saveContactInfo() {
+            const contactData = {
+                customer_name: document.getElementById('customer_name')?.value || '',
+                customer_email: document.getElementById('customer_email')?.value || '',
+                customer_phone: document.getElementById('customer_phone')?.value || '',
+                country_code: document.getElementById('country_code')?.value || '+54',
+                contact_preference: document.querySelector('input[name="contact_preference"]:checked')?.value || 'email'
+            };
+
+            sessionStorage.setItem('checkout_contact_info', JSON.stringify(contactData));
+        }
+
+        // Load contact information from sessionStorage
+        function loadContactInfo() {
+            const savedData = sessionStorage.getItem('checkout_contact_info');
+            if (!savedData) return;
+
+            try {
+                const contactData = JSON.parse(savedData);
+
+                // Load name
+                if (contactData.customer_name && document.getElementById('customer_name')) {
+                    document.getElementById('customer_name').value = contactData.customer_name;
+                }
+
+                // Load email
+                if (contactData.customer_email && document.getElementById('customer_email')) {
+                    document.getElementById('customer_email').value = contactData.customer_email;
+                }
+
+                // Load phone
+                if (contactData.customer_phone && document.getElementById('customer_phone')) {
+                    document.getElementById('customer_phone').value = contactData.customer_phone;
+                }
+
+                // Load country code
+                if (contactData.country_code && document.getElementById('country_code')) {
+                    document.getElementById('country_code').value = contactData.country_code;
+                }
+
+                // Load contact preference
+                if (contactData.contact_preference) {
+                    const radio = document.querySelector(`input[name="contact_preference"][value="${contactData.contact_preference}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading contact info:', e);
+            }
+        }
 
         // Validate current step
         function validateStep(stepNumber) {
@@ -924,25 +1099,51 @@ $csrf_token = generate_csrf_token();
                     const radioGroup = step.querySelectorAll(`input[name="${input.name}"]`);
                     const isChecked = Array.from(radioGroup).some(radio => radio.checked);
                     if (!isChecked) {
-                        alert('Por favor completa todos los campos requeridos');
+                        showModal({
+                            title: 'Campos incompletos',
+                            message: 'Por favor completa todos los campos requeridos',
+                            icon: '⚠️',
+                            iconClass: 'warning',
+                            confirmText: 'Entendido',
+                            onConfirm: () => {}
+                        });
                         return false;
                     }
                 } else if (input.type === 'checkbox') {
                     if (!input.checked && input.required) {
-                        alert('Por favor completa todos los campos requeridos');
+                        showModal({
+                            title: 'Campos incompletos',
+                            message: 'Por favor completa todos los campos requeridos',
+                            icon: '⚠️',
+                            iconClass: 'warning',
+                            confirmText: 'Entendido',
+                            onConfirm: () => {}
+                        });
                         return false;
                     }
                 } else {
                     if (!input.value.trim()) {
-                        alert('Por favor completa todos los campos requeridos');
-                        input.focus();
+                        showModal({
+                            title: 'Campos incompletos',
+                            message: 'Por favor completa todos los campos requeridos',
+                            icon: '⚠️',
+                            iconClass: 'warning',
+                            confirmText: 'Entendido',
+                            onConfirm: () => { input.focus(); }
+                        });
                         return false;
                     }
 
                     // Email validation
                     if (input.type === 'email' && !isValidEmail(input.value)) {
-                        alert('Por favor ingresa un email válido');
-                        input.focus();
+                        showModal({
+                            title: 'Email inválido',
+                            message: 'Por favor ingresa un email válido',
+                            icon: '⚠️',
+                            iconClass: 'warning',
+                            confirmText: 'Entendido',
+                            onConfirm: () => { input.focus(); }
+                        });
                         return false;
                     }
                 }
@@ -1034,7 +1235,7 @@ $csrf_token = generate_csrf_token();
 
             const contactPref = document.querySelector('input[name="contact_preference"]:checked');
             document.getElementById('confirm-contact-pref').textContent =
-                contactPref.value === 'whatsapp' ? '📱 WhatsApp' : '📞 Llamada telefónica';
+                contactPref.value === 'email' ? '✉️ Email' : '📱 Telegram';
 
             // Delivery info
             const deliveryMethod = document.querySelector('input[name="delivery_method"]:checked');
@@ -1084,12 +1285,12 @@ $csrf_token = generate_csrf_token();
             }
 
             // Check if user already validated or skipped in this session
-            const whatsappValidated = sessionStorage.getItem('whatsappValidated');
+            const telegramValidated = sessionStorage.getItem('telegramValidated');
             const emailValidated = sessionStorage.getItem('emailValidated');
             const contactPref = document.querySelector('input[name="contact_preference"]:checked').value;
 
             // If already validated or skipped for this preference, proceed
-            if ((contactPref === 'whatsapp' && whatsappValidated) ||
+            if ((contactPref === 'telegram' && telegramValidated) ||
                 (contactPref === 'email' && emailValidated)) {
                 contactValidated = true;
                 nextStep();
@@ -1103,64 +1304,86 @@ $csrf_token = generate_csrf_token();
             }
 
             // Show validation modal
-            if (contactPref === 'whatsapp') {
-                showWhatsAppValidationModal();
+            if (contactPref === 'telegram') {
+                showTelegramValidationModal();
             } else if (contactPref === 'email') {
                 showEmailValidationModal();
             }
         }
 
-        // WhatsApp Validation Modal functions
-        function showWhatsAppValidationModal() {
-            const countryCode = document.getElementById('country_code').value;
-            const phone = document.getElementById('customer_phone').value;
-            const fullPhone = countryCode + ' ' + phone;
+        // Telegram Validation Modal functions
+        function showTelegramValidationModal() {
+            const chatId = document.getElementById('telegram_chat_id').value;
 
-            document.getElementById('whatsapp-phone-display').textContent = fullPhone;
-            document.getElementById('whatsapp-validation-modal').style.display = 'flex';
+            document.getElementById('telegram-chatid-display').textContent = chatId;
+            document.getElementById('telegram-validation-modal').style.display = 'flex';
         }
 
-        function closeWhatsAppModal() {
-            document.getElementById('whatsapp-validation-modal').style.display = 'none';
-            document.getElementById('whatsapp-status').style.display = 'none';
+        function closeTelegramModal() {
+            document.getElementById('telegram-validation-modal').style.display = 'none';
+            document.getElementById('telegram-status').style.display = 'none';
         }
 
-        function skipWhatsAppValidation() {
-            sessionStorage.setItem('whatsappValidated', 'skipped');
+        function skipTelegramValidation() {
+            sessionStorage.setItem('telegramValidated', 'skipped');
             contactValidated = true;
-            closeWhatsAppModal();
+            closeTelegramModal();
             nextStep();
         }
 
-        function sendWhatsAppTest() {
-            const countryCode = document.getElementById('country_code').value;
-            const phone = document.getElementById('customer_phone').value;
+        async function sendTelegramTest() {
+            const chatId = document.getElementById('telegram_chat_id').value;
+
             const name = document.getElementById('customer_name').value;
 
             // Show loading status
-            const statusDiv = document.getElementById('whatsapp-status');
+            const statusDiv = document.getElementById('telegram-status');
             statusDiv.style.display = 'block';
-            statusDiv.innerHTML = '<p style="color: #007bff;">Enviando mensaje...</p>';
+            statusDiv.innerHTML = '<p style="color: #007bff;">Preparando mensaje de prueba...</p>';
 
-            // Send test message via WhatsApp link
-            const message = encodeURIComponent(`Hola ${name}, este es un mensaje de prueba de ${<?php echo json_encode($site_config['site_name']); ?>}. Si recibiste este mensaje, tu WhatsApp está correctamente configurado para recibir notificaciones de tu pedido. ✅`);
-            const whatsappURL = `https://wa.me/${countryCode.replace('+', '')}${phone}?text=${message}`;
+            try {
+                // Send test message via API
+                const response = await fetch('<?php echo url('/api/send-telegram-test.php'); ?>', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        customer_name: name
+                    })
+                });
 
-            // Open WhatsApp in new window
-            window.open(whatsappURL, '_blank');
+                const result = await response.json();
 
-            statusDiv.innerHTML = `
-                <p style="color: #28a745;">✅ Se abrió WhatsApp con el mensaje de prueba.</p>
-                <p><strong>¿Recibiste el mensaje?</strong></p>
-                <button type="button" class="btn btn-primary" onclick="confirmWhatsAppValidation()">Sí, lo recibí</button>
-                <button type="button" class="btn btn-secondary" onclick="closeWhatsAppModal()">No, intentar de nuevo</button>
-            `;
+                if (result.success) {
+                    statusDiv.innerHTML = `
+                        <p style="color: #28a745;">✅ Mensaje enviado exitosamente.</p>
+                        <p><strong>¿Recibiste el mensaje en Telegram?</strong></p>
+                        <button type="button" class="btn btn-primary" onclick="confirmTelegramValidation()">Sí, lo recibí</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeTelegramModal()">No, intentar de nuevo</button>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `
+                        <p style="color: #dc3545;">❌ Error: ${result.error}</p>
+                        <p style="font-size: 14px;">Verifica que el Chat ID sea correcto y que hayas iniciado una conversación con nuestro bot.</p>
+                        <button type="button" class="btn btn-secondary" onclick="closeTelegramModal()">Cerrar</button>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error sending Telegram test:', error);
+                statusDiv.innerHTML = `
+                    <p style="color: #dc3545;">❌ Error al enviar el mensaje.</p>
+                    <button type="button" class="btn btn-secondary" onclick="closeTelegramModal()">Cerrar</button>
+                `;
+            }
+
         }
 
-        function confirmWhatsAppValidation() {
-            sessionStorage.setItem('whatsappValidated', 'confirmed');
+        function confirmTelegramValidation() {
+            sessionStorage.setItem('telegramValidated', 'confirmed');
             contactValidated = true;
-            closeWhatsAppModal();
+            closeTelegramModal();
             nextStep();
         }
 
@@ -1229,21 +1452,27 @@ $csrf_token = generate_csrf_token();
         }
 
         // Form submission handler
-        let formSubmitAllowed = false;
+        let paymentWarningShown = false;
         let mercadopagoOrder = null;
 
         document.getElementById('checkout-form').addEventListener('submit', function(e) {
             const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
 
+            // If warning was already shown, allow the form to submit normally
+            if (paymentWarningShown) {
+                // Allow form submission - will redirect to gracias.php
+                return true;
+            }
+
             // If Mercadopago, create order via AJAX and show modal
-            if (paymentMethod && paymentMethod.value === 'mercadopago' && !formSubmitAllowed) {
+            if (paymentMethod && paymentMethod.value === 'mercadopago') {
                 e.preventDefault();
                 createOrderAndShowMercadopagoModal();
                 return false;
             }
 
-            // Show warning modal for non-mercadopago payments
-            if (paymentMethod && paymentMethod.value !== 'mercadopago' && !formSubmitAllowed) {
+            // Show warning modal for non-mercadopago payments (only once)
+            if (paymentMethod && paymentMethod.value !== 'mercadopago') {
                 e.preventDefault();
                 showPaymentWarningModal();
                 return false;
@@ -1307,14 +1536,29 @@ $csrf_token = generate_csrf_token();
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
                 } else {
-                    alert('Error al crear la orden: ' + (data.error || 'Error desconocido'));
+                    showModal({
+                        title: 'Error al crear la orden',
+                        message: data.error || 'Error desconocido',
+                        icon: '❌',
+                        iconClass: 'danger',
+                        confirmText: 'Entendido',
+                        onConfirm: () => {}
+                    });
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
                 }
             })
             .catch(error => {
                 console.error('Error completo:', error);
-                alert('Error al procesar la orden. Por favor intenta nuevamente.\n\nDetalle: ' + error.message);
+                showModal({
+                    title: 'Error al procesar la orden',
+                    message: 'Por favor intenta nuevamente.',
+                    details: '<strong>Detalle técnico:</strong><br>' + error.message,
+                    icon: '❌',
+                    iconClass: 'danger',
+                    confirmText: 'Entendido',
+                    onConfirm: () => {}
+                });
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             });
@@ -1421,13 +1665,34 @@ $csrf_token = generate_csrf_token();
 
         function closePaymentWarningModal() {
             document.getElementById('payment-warning-modal').style.display = 'none';
-            // Allow form submission after modal is closed
-            formSubmitAllowed = true;
-            document.getElementById('checkout-form').submit();
+            // Mark that warning was shown so next submit will go through
+            paymentWarningShown = true;
+
+            // Add hidden input to ensure place_order parameter is sent
+            // When we programmatically submit, button values aren't included
+            const form = document.getElementById('checkout-form');
+
+            // Remove any existing hidden place_order field first
+            const existingHidden = form.querySelector('input[name="place_order"][type="hidden"]');
+            if (existingHidden) {
+                existingHidden.remove();
+            }
+
+            // Add new hidden field
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'place_order';
+            hiddenInput.value = '1';
+            form.appendChild(hiddenInput);
+
+            // Submit the form
+            form.submit();
         }
 
         function backToPaymentMethod() {
             document.getElementById('payment-warning-modal').style.display = 'none';
+            // Reset the warning shown flag
+            paymentWarningShown = false;
             // Go back to step 3 (payment method)
             currentStep = 3;
             updateStepDisplay();
@@ -1599,6 +1864,27 @@ $csrf_token = generate_csrf_token();
         .radio-option:has(input[type="radio"]:checked) {
             border-color: #007bff;
             background: #e7f3ff;
+        }
+
+        /* Disabled radio option */
+        .radio-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f5f5f5;
+            border-color: #ccc;
+        }
+
+        .radio-option.disabled:hover {
+            border-color: #ccc;
+            background: #f5f5f5;
+        }
+
+        .radio-option.disabled input[type="radio"] {
+            cursor: not-allowed;
+        }
+
+        .radio-option.disabled div {
+            color: #999;
         }
 
         /* Confirmation summary */

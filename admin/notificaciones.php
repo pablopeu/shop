@@ -183,10 +183,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (file_put_contents($credentials_path, $json_content) !== false) {
             @chmod($credentials_path, 0600);
             $telegram_credentials = $new_telegram_credentials;
+
+            // Get bot username from Telegram API
+            $bot_username = update_telegram_bot_username();
+            if ($bot_username) {
+                $telegram_config['bot_username'] = $bot_username;
+            }
         }
 
         if (write_json($telegram_config_file, $telegram_config)) {
             $message = '✅ Configuración de Telegram y credenciales guardadas exitosamente';
+            if ($bot_username) {
+                $message .= ' (Bot: @' . htmlspecialchars($bot_username) . ')';
+            }
         } else {
             $error = '❌ Error al guardar la configuración de Telegram';
         }
@@ -257,6 +266,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (file_put_contents($credentials_path, $json_content) !== false) {
             @chmod($credentials_path, 0600);
             $telegram_credentials = $new_telegram_credentials;
+
+            // Get bot username from Telegram API
+            $bot_username = update_telegram_bot_username();
+            if ($bot_username) {
+                $telegram_config['bot_username'] = $bot_username;
+                write_json($telegram_config_file, $telegram_config);
+            }
         }
 
         // Now test
@@ -264,6 +280,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($result) {
             $test_result = '✅ Mensaje de prueba enviado correctamente a Telegram';
+            if ($bot_username) {
+                $test_result .= ' (Bot: @' . htmlspecialchars($bot_username) . ')';
+            }
         } else {
             $test_result = '❌ Error al enviar mensaje de prueba. Verifica tu bot_token y chat_id.';
         }

@@ -318,3 +318,15 @@ function change_admin_password($user_id, $old_password, $new_password) {
         'message' => 'Error al actualizar la contraseña.'
     ];
 }
+
+/**
+ * Check if user is logged in as admin
+ * @return bool Whether user is logged in as admin
+ */
+function is_admin_logged_in() {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true &&
+           isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+}
