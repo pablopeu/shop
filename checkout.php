@@ -1368,6 +1368,12 @@ $csrf_token = generate_csrf_token();
         document.getElementById('checkout-form').addEventListener('submit', function(e) {
             const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
 
+            // If warning was already shown, allow the form to submit normally
+            if (paymentWarningShown) {
+                // Allow form submission - will redirect to gracias.php
+                return true;
+            }
+
             // If Mercadopago, create order via AJAX and show modal
             if (paymentMethod && paymentMethod.value === 'mercadopago') {
                 e.preventDefault();
@@ -1376,14 +1382,11 @@ $csrf_token = generate_csrf_token();
             }
 
             // Show warning modal for non-mercadopago payments (only once)
-            if (paymentMethod && paymentMethod.value !== 'mercadopago' && !paymentWarningShown) {
+            if (paymentMethod && paymentMethod.value !== 'mercadopago') {
                 e.preventDefault();
                 showPaymentWarningModal();
                 return false;
             }
-
-            // If we get here with non-mercadopago payment, allow form submission
-            // This happens after the warning modal was shown and user clicked "Entendido"
         });
 
         // Create order via AJAX and show Mercadopago modal
@@ -1575,15 +1578,25 @@ $csrf_token = generate_csrf_token();
             // Mark that warning was shown so next submit will go through
             paymentWarningShown = true;
 
-            // Find and click the submit button to properly submit the form
-            // This ensures the place_order parameter is included
-            const submitBtn = document.querySelector('button[name="place_order"]');
-            if (submitBtn) {
-                submitBtn.click();
-            } else {
-                // Fallback: submit the form directly
-                document.getElementById('checkout-form').submit();
+            // Add hidden input to ensure place_order parameter is sent
+            // When we programmatically submit, button values aren't included
+            const form = document.getElementById('checkout-form');
+
+            // Remove any existing hidden place_order field first
+            const existingHidden = form.querySelector('input[name="place_order"][type="hidden"]');
+            if (existingHidden) {
+                existingHidden.remove();
             }
+
+            // Add new hidden field
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'place_order';
+            hiddenInput.value = '1';
+            form.appendChild(hiddenInput);
+
+            // Submit the form
+            form.submit();
         }
 
         function backToPaymentMethod() {
