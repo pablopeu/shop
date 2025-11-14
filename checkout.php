@@ -212,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
     $customer_email = sanitize_input($_POST['customer_email'] ?? '');
     $country_code = sanitize_input($_POST['country_code'] ?? '+54');
     $customer_phone = sanitize_input($_POST['customer_phone'] ?? '');
-    $contact_preference = sanitize_input($_POST['contact_preference'] ?? 'whatsapp');
+    $contact_preference = sanitize_input($_POST['contact_preference'] ?? 'email');
     $delivery_method = sanitize_input($_POST['delivery_method'] ?? 'pickup');
     $payment_method = sanitize_input($_POST['payment_method'] ?? '');
 
@@ -232,7 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         $errors[] = 'El teléfono es requerido';
     }
 
-    if (!in_array($contact_preference, ['whatsapp', 'email'])) {
+    if (!in_array($contact_preference, ['email', 'telegram'])) {
         $errors[] = 'Preferencia de contacto inválida';
     }
 
@@ -423,6 +423,7 @@ $csrf_token = generate_csrf_token();
     <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
+    <?php include __DIR__ . '/admin/includes/modal.php'; ?>
     <!-- Header -->
     <div class="header">
         <div class="header-content">
@@ -524,14 +525,14 @@ $csrf_token = generate_csrf_token();
                                 <label>Preferencia de contacto *</label>
                                 <div class="radio-group">
                                     <label class="radio-option">
-                                        <input type="radio" name="contact_preference" value="whatsapp"
-                                               <?php echo (!isset($_POST['contact_preference']) || $_POST['contact_preference'] === 'whatsapp') ? 'checked' : ''; ?> required>
-                                        <span>📱 Prefiero WhatsApp</span>
+                                        <input type="radio" name="contact_preference" value="email"
+                                               <?php echo (!isset($_POST['contact_preference']) || $_POST['contact_preference'] === 'email') ? 'checked' : ''; ?> required>
+                                        <span>✉️ Prefiero Email</span>
                                     </label>
                                     <label class="radio-option">
-                                        <input type="radio" name="contact_preference" value="email"
-                                               <?php echo (isset($_POST['contact_preference']) && $_POST['contact_preference'] === 'email') ? 'checked' : ''; ?>>
-                                        <span>✉️ Prefiero Email</span>
+                                        <input type="radio" name="contact_preference" value="telegram"
+                                               <?php echo (isset($_POST['contact_preference']) && $_POST['contact_preference'] === 'telegram') ? 'checked' : ''; ?>>
+                                        <span>📱 Prefiero Telegram</span>
                                     </label>
                                 </div>
                             </div>
@@ -803,19 +804,19 @@ $csrf_token = generate_csrf_token();
         </div>
     </div>
 
-    <!-- WhatsApp Validation Modal -->
-    <div id="whatsapp-validation-modal" class="modal" style="display: none;">
+    <!-- Telegram Validation Modal -->
+    <div id="telegram-validation-modal" class="modal" style="display: none;">
         <div class="modal-overlay"></div>
         <div class="modal-content">
-            <h3>📱 Validar WhatsApp</h3>
-            <p>Vamos a enviar un mensaje de prueba a tu WhatsApp:</p>
-            <p class="phone-display"><strong id="whatsapp-phone-display"></strong></p>
+            <h3>📱 Validar Telegram</h3>
+            <p>Vamos a enviar un mensaje de prueba a tu Telegram:</p>
+            <p class="phone-display"><strong id="telegram-phone-display"></strong></p>
             <p style="color: #ff9800; font-weight: bold;">⚠️ Por favor revisa si te llegó el mensaje, ya que es la única forma que tendremos de avisarte sobre tu compra.</p>
             <div class="modal-actions">
-                <button type="button" class="btn btn-secondary" onclick="skipWhatsAppValidation()">Omitir verificación</button>
-                <button type="button" class="btn btn-primary" onclick="sendWhatsAppTest()">Enviar mensaje de prueba</button>
+                <button type="button" class="btn btn-secondary" onclick="skipTelegramValidation()">Omitir verificación</button>
+                <button type="button" class="btn btn-primary" onclick="sendTelegramTest()">Enviar mensaje de prueba</button>
             </div>
-            <div id="whatsapp-status" style="margin-top: 15px; display: none;"></div>
+            <div id="telegram-status" style="margin-top: 15px; display: none;"></div>
         </div>
     </div>
 
@@ -905,6 +906,41 @@ $csrf_token = generate_csrf_token();
         document.addEventListener('DOMContentLoaded', () => {
             updateStepDisplay();
             toggleShippingFields();
+
+            // Add click handlers to step indicators for navigation
+            document.querySelectorAll('.step-indicator').forEach(indicator => {
+                indicator.style.cursor = 'pointer';
+                indicator.addEventListener('click', function() {
+                    const targetStep = parseInt(this.dataset.step);
+
+                    // Only allow navigation to current step or previous steps
+                    // Don't allow jumping ahead without validation
+                    if (targetStep <= currentStep) {
+                        currentStep = targetStep;
+                        updateStepDisplay();
+                        window.scrollTo(0, 0);
+                    } else {
+                        // Try to validate current steps before jumping ahead
+                        let canProceed = true;
+                        for (let i = currentStep; i < targetStep; i++) {
+                            if (!validateStep(i)) {
+                                canProceed = false;
+                                break;
+                            }
+                        }
+
+                        if (canProceed) {
+                            // Update confirmation if jumping to step 4
+                            if (targetStep === 4) {
+                                updateConfirmationSummary();
+                            }
+                            currentStep = targetStep;
+                            updateStepDisplay();
+                            window.scrollTo(0, 0);
+                        }
+                    }
+                });
+            });
         });
 
         // Validate current step
@@ -924,25 +960,51 @@ $csrf_token = generate_csrf_token();
                     const radioGroup = step.querySelectorAll(`input[name="${input.name}"]`);
                     const isChecked = Array.from(radioGroup).some(radio => radio.checked);
                     if (!isChecked) {
-                        alert('Por favor completa todos los campos requeridos');
+                        showModal({
+                            title: 'Campos incompletos',
+                            message: 'Por favor completa todos los campos requeridos',
+                            icon: '⚠️',
+                            iconClass: 'warning',
+                            confirmText: 'Entendido',
+                            onConfirm: () => {}
+                        });
                         return false;
                     }
                 } else if (input.type === 'checkbox') {
                     if (!input.checked && input.required) {
-                        alert('Por favor completa todos los campos requeridos');
+                        showModal({
+                            title: 'Campos incompletos',
+                            message: 'Por favor completa todos los campos requeridos',
+                            icon: '⚠️',
+                            iconClass: 'warning',
+                            confirmText: 'Entendido',
+                            onConfirm: () => {}
+                        });
                         return false;
                     }
                 } else {
                     if (!input.value.trim()) {
-                        alert('Por favor completa todos los campos requeridos');
-                        input.focus();
+                        showModal({
+                            title: 'Campos incompletos',
+                            message: 'Por favor completa todos los campos requeridos',
+                            icon: '⚠️',
+                            iconClass: 'warning',
+                            confirmText: 'Entendido',
+                            onConfirm: () => { input.focus(); }
+                        });
                         return false;
                     }
 
                     // Email validation
                     if (input.type === 'email' && !isValidEmail(input.value)) {
-                        alert('Por favor ingresa un email válido');
-                        input.focus();
+                        showModal({
+                            title: 'Email inválido',
+                            message: 'Por favor ingresa un email válido',
+                            icon: '⚠️',
+                            iconClass: 'warning',
+                            confirmText: 'Entendido',
+                            onConfirm: () => { input.focus(); }
+                        });
                         return false;
                     }
                 }
@@ -1034,7 +1096,7 @@ $csrf_token = generate_csrf_token();
 
             const contactPref = document.querySelector('input[name="contact_preference"]:checked');
             document.getElementById('confirm-contact-pref').textContent =
-                contactPref.value === 'whatsapp' ? '📱 WhatsApp' : '📞 Llamada telefónica';
+                contactPref.value === 'email' ? '✉️ Email' : '📱 Telegram';
 
             // Delivery info
             const deliveryMethod = document.querySelector('input[name="delivery_method"]:checked');
@@ -1084,12 +1146,12 @@ $csrf_token = generate_csrf_token();
             }
 
             // Check if user already validated or skipped in this session
-            const whatsappValidated = sessionStorage.getItem('whatsappValidated');
+            const telegramValidated = sessionStorage.getItem('telegramValidated');
             const emailValidated = sessionStorage.getItem('emailValidated');
             const contactPref = document.querySelector('input[name="contact_preference"]:checked').value;
 
             // If already validated or skipped for this preference, proceed
-            if ((contactPref === 'whatsapp' && whatsappValidated) ||
+            if ((contactPref === 'telegram' && telegramValidated) ||
                 (contactPref === 'email' && emailValidated)) {
                 contactValidated = true;
                 nextStep();
@@ -1103,64 +1165,64 @@ $csrf_token = generate_csrf_token();
             }
 
             // Show validation modal
-            if (contactPref === 'whatsapp') {
-                showWhatsAppValidationModal();
+            if (contactPref === 'telegram') {
+                showTelegramValidationModal();
             } else if (contactPref === 'email') {
                 showEmailValidationModal();
             }
         }
 
-        // WhatsApp Validation Modal functions
-        function showWhatsAppValidationModal() {
+        // Telegram Validation Modal functions
+        function showTelegramValidationModal() {
             const countryCode = document.getElementById('country_code').value;
             const phone = document.getElementById('customer_phone').value;
             const fullPhone = countryCode + ' ' + phone;
 
-            document.getElementById('whatsapp-phone-display').textContent = fullPhone;
-            document.getElementById('whatsapp-validation-modal').style.display = 'flex';
+            document.getElementById('telegram-phone-display').textContent = fullPhone;
+            document.getElementById('telegram-validation-modal').style.display = 'flex';
         }
 
-        function closeWhatsAppModal() {
-            document.getElementById('whatsapp-validation-modal').style.display = 'none';
-            document.getElementById('whatsapp-status').style.display = 'none';
+        function closeTelegramModal() {
+            document.getElementById('telegram-validation-modal').style.display = 'none';
+            document.getElementById('telegram-status').style.display = 'none';
         }
 
-        function skipWhatsAppValidation() {
-            sessionStorage.setItem('whatsappValidated', 'skipped');
+        function skipTelegramValidation() {
+            sessionStorage.setItem('telegramValidated', 'skipped');
             contactValidated = true;
-            closeWhatsAppModal();
+            closeTelegramModal();
             nextStep();
         }
 
-        function sendWhatsAppTest() {
+        function sendTelegramTest() {
             const countryCode = document.getElementById('country_code').value;
             const phone = document.getElementById('customer_phone').value;
             const name = document.getElementById('customer_name').value;
 
             // Show loading status
-            const statusDiv = document.getElementById('whatsapp-status');
+            const statusDiv = document.getElementById('telegram-status');
             statusDiv.style.display = 'block';
-            statusDiv.innerHTML = '<p style="color: #007bff;">Enviando mensaje...</p>';
+            statusDiv.innerHTML = '<p style="color: #007bff;">Preparando mensaje de prueba...</p>';
 
-            // Send test message via WhatsApp link
-            const message = encodeURIComponent(`Hola ${name}, este es un mensaje de prueba de ${<?php echo json_encode($site_config['site_name']); ?>}. Si recibiste este mensaje, tu WhatsApp está correctamente configurado para recibir notificaciones de tu pedido. ✅`);
-            const whatsappURL = `https://wa.me/${countryCode.replace('+', '')}${phone}?text=${message}`;
+            // Send test message via Telegram link (t.me)
+            const message = encodeURIComponent(`Hola ${name}, este es un mensaje de prueba de ${<?php echo json_encode($site_config['site_name']); ?>}. Si recibiste este mensaje, tu Telegram está correctamente configurado para recibir notificaciones de tu pedido. ✅`);
+            const telegramURL = `https://t.me/${countryCode.replace('+', '')}${phone}?text=${message}`;
 
-            // Open WhatsApp in new window
-            window.open(whatsappURL, '_blank');
+            // Open Telegram in new window
+            window.open(telegramURL, '_blank');
 
             statusDiv.innerHTML = `
-                <p style="color: #28a745;">✅ Se abrió WhatsApp con el mensaje de prueba.</p>
+                <p style="color: #28a745;">✅ Se abrió Telegram con el mensaje de prueba.</p>
                 <p><strong>¿Recibiste el mensaje?</strong></p>
-                <button type="button" class="btn btn-primary" onclick="confirmWhatsAppValidation()">Sí, lo recibí</button>
-                <button type="button" class="btn btn-secondary" onclick="closeWhatsAppModal()">No, intentar de nuevo</button>
+                <button type="button" class="btn btn-primary" onclick="confirmTelegramValidation()">Sí, lo recibí</button>
+                <button type="button" class="btn btn-secondary" onclick="closeTelegramModal()">No, intentar de nuevo</button>
             `;
         }
 
-        function confirmWhatsAppValidation() {
-            sessionStorage.setItem('whatsappValidated', 'confirmed');
+        function confirmTelegramValidation() {
+            sessionStorage.setItem('telegramValidated', 'confirmed');
             contactValidated = true;
-            closeWhatsAppModal();
+            closeTelegramModal();
             nextStep();
         }
 
@@ -1307,14 +1369,29 @@ $csrf_token = generate_csrf_token();
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
                 } else {
-                    alert('Error al crear la orden: ' + (data.error || 'Error desconocido'));
+                    showModal({
+                        title: 'Error al crear la orden',
+                        message: data.error || 'Error desconocido',
+                        icon: '❌',
+                        iconClass: 'danger',
+                        confirmText: 'Entendido',
+                        onConfirm: () => {}
+                    });
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
                 }
             })
             .catch(error => {
                 console.error('Error completo:', error);
-                alert('Error al procesar la orden. Por favor intenta nuevamente.\n\nDetalle: ' + error.message);
+                showModal({
+                    title: 'Error al procesar la orden',
+                    message: 'Por favor intenta nuevamente.',
+                    details: '<strong>Detalle técnico:</strong><br>' + error.message,
+                    icon: '❌',
+                    iconClass: 'danger',
+                    confirmText: 'Entendido',
+                    onConfirm: () => {}
+                });
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             });
