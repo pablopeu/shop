@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
                 if (cancel_order($order_id, 'Cancelado en masa por admin', $_SESSION['username'])) {
                     $success_count++;
                 }
-            } elseif (in_array($action, ['pending', 'confirmed', 'shipped', 'delivered'])) {
+            } elseif (in_array($action, ['pending', 'cobrada', 'shipped', 'delivered'])) {
                 if (update_order_status($order_id, $action, $_SESSION['username'])) {
                     $success_count++;
 
@@ -202,10 +202,11 @@ $user = get_logged_user();
 // Status labels
 $status_labels = [
     'pending' => ['label' => 'Pendiente', 'color' => '#FFA726'],
-    'confirmed' => ['label' => 'Confirmado', 'color' => '#4CAF50'],
+    'cobrada' => ['label' => 'Cobrada', 'color' => '#4CAF50'],
     'shipped' => ['label' => 'Enviado', 'color' => '#2196F3'],
     'delivered' => ['label' => 'Entregado', 'color' => '#4CAF50'],
-    'cancelled' => ['label' => 'Cancelado', 'color' => '#f44336']
+    'cancelled' => ['label' => 'Cancelado', 'color' => '#f44336'],
+    'rechazada' => ['label' => 'Rechazada', 'color' => '#f44336']
 ];
 
 ?>
@@ -807,8 +808,8 @@ $status_labels = [
                     <a href="?filter=pending" class="filter-btn <?php echo $filter_status === 'pending' ? 'active' : ''; ?>">
                         Pendientes
                     </a>
-                    <a href="?filter=confirmed" class="filter-btn <?php echo $filter_status === 'confirmed' ? 'active' : ''; ?>">
-                        Confirmadas
+                    <a href="?filter=cobrada" class="filter-btn <?php echo $filter_status === 'cobrada' ? 'active' : ''; ?>">
+                        Cobradas
                     </a>
                     <a href="?filter=shipped" class="filter-btn <?php echo $filter_status === 'shipped' ? 'active' : ''; ?>">
                         Enviadas
@@ -862,7 +863,7 @@ $status_labels = [
                         <select name="bulk_action" id="bulkAction" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                             <option value="">Seleccionar acción...</option>
                             <option value="pending">Marcar como Pendiente</option>
-                            <option value="confirmed">Marcar como Confirmada</option>
+                            <option value="cobrada">Marcar como Cobrada</option>
                             <option value="shipped">Marcar como Enviada</option>
                             <option value="delivered">Marcar como Entregada</option>
                             <option value="cancel">Cancelar</option>
@@ -1345,7 +1346,7 @@ $status_labels = [
                 <!-- Current Status Badge -->
                 <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid ${
                     order.status === 'pending' ? '#FFA726' :
-                    order.status === 'confirmed' || order.status === 'cobrada' ? '#4CAF50' :
+                    order.status === 'cobrada' ? '#4CAF50' :
                     order.status === 'shipped' ? '#2196F3' :
                     order.status === 'delivered' ? '#4CAF50' :
                     order.status === 'cancelled' || order.status === 'rechazada' ? '#f44336' : '#999'
@@ -1354,13 +1355,12 @@ $status_labels = [
                     <div style="display: inline-block;">
                         <span style="padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; color: white; background: ${
                             order.status === 'pending' ? '#FFA726' :
-                            order.status === 'confirmed' || order.status === 'cobrada' ? '#4CAF50' :
+                            order.status === 'cobrada' ? '#4CAF50' :
                             order.status === 'shipped' ? '#2196F3' :
                             order.status === 'delivered' ? '#4CAF50' :
                             order.status === 'cancelled' || order.status === 'rechazada' ? '#f44336' : '#999'
                         };">
                             ${order.status === 'pending' ? '⏳ Pendiente' :
-                              order.status === 'confirmed' ? '✅ Confirmado' :
                               order.status === 'cobrada' ? '💰 Cobrada' :
                               order.status === 'shipped' ? '🚚 Enviado' :
                               order.status === 'delivered' ? '📦 Entregado' :
@@ -1379,7 +1379,6 @@ $status_labels = [
                         <label for="status"><strong>Cambiar Estado:</strong></label>
                         <select name="status" id="status" style="font-weight: 600;">
                             <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>⏳ Pendiente</option>
-                            <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>✅ Confirmado</option>
                             <option value="cobrada" ${order.status === 'cobrada' ? 'selected' : ''}>💰 Cobrada</option>
                             <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>🚚 Enviado</option>
                             <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>📦 Entregado</option>
@@ -1705,14 +1704,14 @@ $status_labels = [
                     btnClass: 'modal-btn-confirm',
                     btnText: 'Marcar como Pendiente'
                 },
-                'confirmed': {
-                    icon: '✅',
+                'cobrada': {
+                    icon: '💰',
                     iconClass: 'warning',
-                    title: 'Marcar como Confirmada',
-                    description: 'Las siguientes órdenes cambiarán su estado a "Confirmada":',
-                    effects: ['El estado de las órdenes será actualizado', 'Se considerarán confirmadas para reportes'],
+                    title: 'Marcar como Cobrada',
+                    description: 'Las siguientes órdenes cambiarán su estado a "Cobrada":',
+                    effects: ['El estado de las órdenes será actualizado', 'Se reducirá el stock si aún no se ha hecho', 'Se considerarán cobradas para reportes'],
                     btnClass: 'modal-btn-confirm',
-                    btnText: 'Confirmar Órdenes'
+                    btnText: 'Marcar como Cobradas'
                 },
                 'shipped': {
                     icon: '🚚',

@@ -205,30 +205,31 @@ function update_order_status($order_id, $new_status, $user = 'system') {
                 'user' => $user
             ];
 
-            // Reduce stock when order is marked as "cobrada" (paid/confirmed)
-            // and stock hasn't been reduced yet
+            // Reduce stock when changing to "cobrada" if not already reduced
             if ($new_status === 'cobrada' && !($order['stock_reduced'] ?? false)) {
-                require_once __DIR__ . '/products.php';
                 foreach ($order['items'] as $item) {
-                    $product = get_product_by_id($item['product_id']);
-                    if ($product) {
-                        update_product_stock($item['product_id'], $product['stock'] - $item['quantity']);
-                    }
+                    update_stock($item['product_id'], -$item['quantity'], "Orden {$order['order_number']} marcada como cobrada por {$user}");
                 }
                 $order['stock_reduced'] = true;
+
+                log_admin_action('stock_reduced_on_payment', $user, [
+                    'order_id' => $order_id,
+                    'order_number' => $order['order_number']
+                ]);
             }
 
             // Restore stock when order is cancelled or rejected
             // and stock was previously reduced
             if (in_array($new_status, ['cancelada', 'rechazada']) && ($order['stock_reduced'] ?? false)) {
-                require_once __DIR__ . '/products.php';
                 foreach ($order['items'] as $item) {
-                    $product = get_product_by_id($item['product_id']);
-                    if ($product) {
-                        update_product_stock($item['product_id'], $product['stock'] + $item['quantity']);
-                    }
+                    update_stock($item['product_id'], $item['quantity'], "Orden {$order['order_number']} cancelada/rechazada por {$user}");
                 }
                 $order['stock_reduced'] = false;
+
+                log_admin_action('stock_restored_on_cancellation', $user, [
+                    'order_id' => $order_id,
+                    'order_number' => $order['order_number']
+                ]);
             }
 
             $found = true;
@@ -241,9 +242,8 @@ function update_order_status($order_id, $new_status, $user = 'system') {
         write_json($orders_file, $data);
         log_admin_action('order_status_updated', $user, [
             'order_id' => $order_id,
-            'old_status' => $old_status ?? 'unknown',
-            'new_status' => $new_status,
-            'stock_reduced' => $data['orders'][$order_index]['stock_reduced'] ?? false
+            'old_status' => $old_status,
+            'new_status' => $new_status
         ]);
         return true;
     }
