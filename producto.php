@@ -602,5 +602,8 @@ write_json($visits_file, $visits_data);
     <footer class="footer">
         <?php render_footer($site_config, $footer_config); ?>
     </footer>
+
+    <!-- Auto-update Exchange Rate -->
+    <?php include __DIR__ . '/includes/auto-update-exchange.php'; ?>
 </body>
 </html>

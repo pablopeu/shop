@@ -12,21 +12,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fetch_api'])) {
     if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
         $error = 'Token de seguridad inválido';
     } else {
-        $api_data = get_bluelytics_rate();
+        $config = read_json(__DIR__ . '/../config/currency.json');
+        $dollar_type = $config['dollar_type'] ?? 'blue';
+        $api_data = get_dolarapi_rate($dollar_type);
         if ($api_data) {
-            $config = read_json(__DIR__ . '/../config/currency.json');
-            $config['api_blue_rate'] = $api_data['blue'];
-            $config['api_oficial_rate'] = $api_data['oficial'];
-            $config['last_update'] = date('Y-m-d\TH:i:s\Z');
+            $config['api_compra'] = $api_data['compra'];
+            $config['api_venta'] = $api_data['venta'];
+            $config['api_casa'] = $api_data['casa'];
+            $config['api_nombre'] = $api_data['nombre'];
+            $config['last_update'] = $api_data['fechaActualizacion'];
 
             if (write_json(__DIR__ . '/../config/currency.json', $config)) {
-                $message = 'Tipo de cambio actualizado desde la API: $' . number_format($api_data['blue'], 2);
+                $message = 'Tipo de cambio actualizado desde la API: $' . number_format($api_data['venta'], 2);
                 log_admin_action('currency_api_fetched', $_SESSION['username'], $api_data);
             } else {
                 $error = 'Error al guardar datos de la API';
             }
         } else {
-            $error = 'No se pudo conectar con la API de Bluelytics';
+            $error = 'No se pudo conectar con la API de DolarAPI';
         }
     }
 }
@@ -40,6 +43,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
         $config['primary'] = sanitize_input($_POST['primary'] ?? 'ARS');
         $config['secondary'] = sanitize_input($_POST['secondary'] ?? 'USD');
 
+        // Dollar type configuration (blue, oficial, bolsa)
+        $dollar_type = sanitize_input($_POST['dollar_type'] ?? 'blue');
+        if (!in_array($dollar_type, ['blue', 'oficial', 'bolsa'])) {
+            $dollar_type = 'blue';
+        }
+        $config['dollar_type'] = $dollar_type;
+
         // API configuration
         $config['api_enabled'] = isset($_POST['api_enabled']);
         $config['manual_override'] = isset($_POST['manual_override']);
@@ -51,13 +61,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
             $config['exchange_rate_source'] = 'manual';
         } else if ($config['api_enabled']) {
             // API enabled without override - fetch from API
-            $api_data = get_bluelytics_rate();
+            $api_data = get_dolarapi_rate($dollar_type);
             if ($api_data) {
-                $config['exchange_rate'] = $api_data['blue'];
+                $config['exchange_rate'] = $api_data['venta'];
                 $config['exchange_rate_source'] = 'api';
-                $config['api_blue_rate'] = $api_data['blue'];
-                $config['api_oficial_rate'] = $api_data['oficial'];
-                $config['last_update'] = date('Y-m-d\TH:i:s\Z');
+                $config['api_compra'] = $api_data['compra'];
+                $config['api_venta'] = $api_data['venta'];
+                $config['api_casa'] = $api_data['casa'];
+                $config['api_nombre'] = $api_data['nombre'];
+                $config['last_update'] = $api_data['fechaActualizacion'];
             } else {
                 // API failed, keep current value
                 $error = 'Advertencia: API no disponible, se mantiene el valor actual';
@@ -154,15 +166,23 @@ if (isset($config['last_update'])) {
         <!-- API Status Card -->
         <?php if ($config['api_enabled'] ?? false): ?>
         <div class="card">
-            <h3>📊 Cotización Actual (Bluelytics)</h3>
+            <h3>📊 Cotización Actual (DolarAPI)</h3>
+            <?php if (isset($config['api_nombre'])): ?>
+            <div style="text-align: center; margin-bottom: 10px; font-size: 14px; color: #666;">
+                <strong><?= htmlspecialchars($config['api_nombre']) ?></strong>
+                <?php if (isset($config['api_casa'])): ?>
+                    <span style="font-size: 12px;"> - <?= htmlspecialchars($config['api_casa']) ?></span>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
             <div class="rate-display">
                 <div class="rate-card">
-                    <div class="label">💵 DÓLAR BLUE</div>
-                    <div class="value">$<?= number_format($config['api_blue_rate'] ?? 0, 2) ?></div>
+                    <div class="label">💰 COMPRA</div>
+                    <div class="value">$<?= number_format($config['api_compra'] ?? 0, 2) ?></div>
                 </div>
                 <div class="rate-card">
-                    <div class="label">🏦 DÓLAR OFICIAL</div>
-                    <div class="value">$<?= number_format($config['api_oficial_rate'] ?? 0, 2) ?></div>
+                    <div class="label">💵 VENTA</div>
+                    <div class="value">$<?= number_format($config['api_venta'] ?? 0, 2) ?></div>
                 </div>
             </div>
             <div style="text-align: center; color: #666; font-size: 13px;">
@@ -199,12 +219,35 @@ if (isset($config['last_update'])) {
 
                 <hr style="margin: 20px 0; border: none; border-top: 1px solid #e0e0e0;">
 
+                <div class="form-group">
+                    <label>Tipo de Cotización del Dólar</label>
+                    <div style="display: flex; gap: 20px; margin-top: 10px;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="dollar_type" value="blue" <?= ($config['dollar_type'] ?? 'blue') === 'blue' ? 'checked' : '' ?> style="margin-right: 8px; width: auto;">
+                            <span>💵 Dólar Blue</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="dollar_type" value="oficial" <?= ($config['dollar_type'] ?? 'blue') === 'oficial' ? 'checked' : '' ?> style="margin-right: 8px; width: auto;">
+                            <span>🏦 Dólar Oficial</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="dollar_type" value="bolsa" <?= ($config['dollar_type'] ?? 'blue') === 'bolsa' ? 'checked' : '' ?> style="margin-right: 8px; width: auto;">
+                            <span>📈 Dólar Bolsa (MEP)</span>
+                        </label>
+                    </div>
+                    <div class="help-text" style="margin-top: 8px;">
+                        Selecciona el tipo de cotización que se usará para calcular los precios en tu tienda
+                    </div>
+                </div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #e0e0e0;">
+
                 <div class="checkbox-group">
                     <input type="checkbox" id="api_enabled" name="api_enabled" <?= ($config['api_enabled'] ?? false) ? 'checked' : '' ?>>
-                    <label for="api_enabled">Usar API de Bluelytics para obtener tipo de cambio automáticamente</label>
+                    <label for="api_enabled">Usar API de DolarAPI para obtener tipo de cambio automáticamente</label>
                 </div>
                 <div class="help-text" style="margin-left: 28px; margin-bottom: 15px;">
-                    La cotización se actualizará automáticamente cada hora desde la API de Bluelytics
+                    La cotización se actualizará automáticamente cada 30 minutos desde la API de DolarAPI
                 </div>
 
                 <div class="checkbox-group" id="override-group">
@@ -234,7 +277,7 @@ if (isset($config['last_update'])) {
                     <div class="help-text">
                         Valor actual: $1 USD = $<?= number_format($config['exchange_rate'] ?? 1000, 2) ?> ARS
                         <?php if (isset($config['exchange_rate_source'])): ?>
-                            (Fuente: <?= $config['exchange_rate_source'] === 'api' ? 'API Bluelytics' : 'Manual' ?>)
+                            (Fuente: <?= $config['exchange_rate_source'] === 'api' ? 'API DolarAPI' : 'Manual' ?>)
                         <?php endif; ?>
                     </div>
                 </div>
@@ -245,7 +288,8 @@ if (isset($config['last_update'])) {
 
         <div class="info-box">
             <strong>ℹ️ Cómo funciona:</strong><br>
-            • Con API activada: El tipo de cambio se actualiza automáticamente cada hora desde Bluelytics<br>
+            • Con API activada: El tipo de cambio se actualiza automáticamente cada 30 minutos desde DolarAPI<br>
+            • Tipo de cotización: Elige entre Dólar Blue, Oficial o Bolsa (MEP) según tu necesidad<br>
             • Con override manual: Puedes establecer tu propio valor del dólar<br>
             • Sin API: El tipo de cambio es completamente manual
         </div>
@@ -262,7 +306,13 @@ if (isset($config['last_update'])) {
         let originalValues = {};
         let saveSuccess = <?= $message ? 'true' : 'false' ?>;
 
-        inputs.forEach(i => originalValues[i.name] = i.type === 'checkbox' ? i.checked : i.value);
+        inputs.forEach(i => {
+            if (i.type === 'checkbox' || i.type === 'radio') {
+                originalValues[i.name] = i.type === 'checkbox' ? i.checked : i.value;
+            } else {
+                originalValues[i.name] = i.value;
+            }
+        });
 
         // Update UI based on checkbox states
         function updateUI() {
@@ -282,18 +332,29 @@ if (isset($config['last_update'])) {
             }
         }
 
-        apiEnabled.addEventListener('change', updateUI);
-        manualOverride.addEventListener('change', updateUI);
-        updateUI();
-
-        inputs.forEach(i => i.addEventListener('input', () => {
+        // Check for changes
+        function checkChanges() {
             let changed = Array.from(inputs).some(inp => {
-                if (inp.type === 'checkbox') return inp.checked !== originalValues[inp.name];
+                if (inp.type === 'checkbox') {
+                    return inp.checked !== originalValues[inp.name];
+                } else if (inp.type === 'radio') {
+                    const selectedRadio = form.querySelector(`input[name="${inp.name}"]:checked`);
+                    return selectedRadio && selectedRadio.value !== originalValues[inp.name];
+                }
                 return inp.value !== originalValues[inp.name];
             });
             saveBtn.classList.toggle('changed', changed);
             saveBtn.classList.toggle('saved', !changed && saveSuccess);
-        }));
+        }
+
+        apiEnabled.addEventListener('change', updateUI);
+        manualOverride.addEventListener('change', updateUI);
+        updateUI();
+
+        inputs.forEach(i => {
+            i.addEventListener('input', checkChanges);
+            i.addEventListener('change', checkChanges);
+        });
 
         if (saveSuccess) {
             saveBtn.classList.add('saved');

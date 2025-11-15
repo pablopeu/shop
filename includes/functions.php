@@ -349,7 +349,63 @@ function convert_currency($price, $from, $to) {
 }
 
 /**
- * Get exchange rate from Bluelytics API
+ * Get exchange rate from DolarAPI
+ * @param string $type Type of dollar rate: 'blue', 'oficial', or 'bolsa'
+ * @return array|null Returns array with rate data or null on failure
+ */
+function get_dolarapi_rate($type = 'blue') {
+    // Validate type
+    $valid_types = ['blue', 'oficial', 'bolsa'];
+    if (!in_array($type, $valid_types)) {
+        error_log("DolarAPI: Invalid type '$type', defaulting to 'blue'");
+        $type = 'blue';
+    }
+
+    $api_url = "https://dolarapi.com/v1/dolares/{$type}";
+
+    // Set timeout and user agent
+    $context = stream_context_create([
+        'http' => [
+            'timeout' => 5,
+            'user_agent' => 'Mozilla/5.0 (compatible; ShopBot/1.0)',
+            'ignore_errors' => true
+        ]
+    ]);
+
+    try {
+        $response = @file_get_contents($api_url, false, $context);
+
+        if ($response === false) {
+            error_log("DolarAPI: Failed to fetch data for type '{$type}'");
+            return null;
+        }
+
+        $data = json_decode($response, true);
+
+        if (!$data || !isset($data['venta'])) {
+            error_log("DolarAPI: Invalid response format for type '{$type}'");
+            return null;
+        }
+
+        return [
+            'compra' => $data['compra'] ?? 0,
+            'venta' => $data['venta'] ?? 0,
+            'casa' => $data['casa'] ?? '',
+            'nombre' => $data['nombre'] ?? '',
+            'moneda' => $data['moneda'] ?? 'USD',
+            'fechaActualizacion' => $data['fechaActualizacion'] ?? date('Y-m-d\TH:i:s\Z'),
+            'type' => $type
+        ];
+
+    } catch (Exception $e) {
+        error_log("DolarAPI Exception for type '{$type}': " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Get exchange rate from Bluelytics API (deprecated - kept for backward compatibility)
+ * @deprecated Use get_dolarapi_rate() instead
  * @return array|null Returns array with 'blue' rate or null on failure
  */
 function get_bluelytics_rate() {
@@ -405,17 +461,20 @@ function update_exchange_rate($force_update = false) {
         return false;
     }
 
-    // Check if we need to update (only if more than 1 hour old)
+    // Check if we need to update (only if more than 30 minutes old)
     if (!$force_update && isset($config['last_update'])) {
         $last_update = strtotime($config['last_update']);
         $now = time();
-        if ($now - $last_update < 3600) { // 1 hour
+        if ($now - $last_update < 1800) { // 30 minutes
             return false; // Too recent, skip update
         }
     }
 
-    // Get rate from API
-    $api_data = get_bluelytics_rate();
+    // Get the selected dollar type (default to 'blue')
+    $dollar_type = $config['dollar_type'] ?? 'blue';
+
+    // Get rate from DolarAPI
+    $api_data = get_dolarapi_rate($dollar_type);
 
     if ($api_data === null) {
         return false; // API failed
@@ -423,14 +482,16 @@ function update_exchange_rate($force_update = false) {
 
     // Update config only if no manual override is active
     if (!($config['manual_override'] ?? false)) {
-        $config['exchange_rate'] = $api_data['blue'];
+        $config['exchange_rate'] = $api_data['venta'];
         $config['exchange_rate_source'] = 'api';
     }
 
     // Always update API values for display
-    $config['api_blue_rate'] = $api_data['blue'];
-    $config['api_oficial_rate'] = $api_data['oficial'];
-    $config['last_update'] = date('Y-m-d\TH:i:s\Z');
+    $config['api_compra'] = $api_data['compra'];
+    $config['api_venta'] = $api_data['venta'];
+    $config['api_casa'] = $api_data['casa'];
+    $config['api_nombre'] = $api_data['nombre'];
+    $config['last_update'] = $api_data['fechaActualizacion'];
 
     return write_json($config_file, $config);
 }
