@@ -168,29 +168,41 @@ try {
         'date' => date('Y-m-d H:i:s'),
         'channel' => $channel,
         'message' => $custom_message,
-        'sent_by' => $_SESSION['admin_username'] ?? 'admin'
+        'sent_by' => $_SESSION['username'] ?? $_SESSION['admin_username'] ?? 'admin'
     ];
+
+    error_log("Creating message record: " . print_r($message_record, true));
 
     // Initialize messages array if it doesn't exist
     if (!isset($order['messages']) || !is_array($order['messages'])) {
         $order['messages'] = [];
+        error_log("Initialized empty messages array");
     }
 
     // Add new message to the beginning of the array (newest first)
     array_unshift($order['messages'], $message_record);
+    error_log("Added message to array. Total messages: " . count($order['messages']));
 
     // Update order with new message history
     $orders_file = __DIR__ . '/../../data/orders.json';
     $orders_data = read_json($orders_file);
 
+    $updated = false;
     foreach ($orders_data['orders'] as &$o) {
         if ($o['id'] === $order_id) {
             $o['messages'] = $order['messages'];
+            $updated = true;
+            error_log("Updated order {$order_id} with messages");
             break;
         }
     }
 
-    write_json($orders_file, $orders_data);
+    if (!$updated) {
+        error_log("ERROR: Could not find order {$order_id} to update");
+    }
+
+    $write_result = write_json($orders_file, $orders_data);
+    error_log("Write JSON result: " . ($write_result ? 'SUCCESS' : 'FAILED'));
 
     // Success response
     echo json_encode([
