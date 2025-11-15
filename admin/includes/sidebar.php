@@ -44,16 +44,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
         background: rgba(255,255,255,0.5);
     }
 
-    /* Desktop Sidebar - Always visible */
-    @media (min-width: 769px) {
-        .sidebar {
-            transform: translateX(0) !important;
-            position: fixed !important;
-        }
-    }
-
     /* Mobile Sidebar */
-    @media (max-width: 768px) {
+    @media (max-width: 1024px) {
         .sidebar {
             transform: translateX(-100%);
         }
@@ -198,7 +190,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         transition: opacity 0.3s ease;
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 1024px) {
         .sidebar-overlay.active {
             display: block;
             opacity: 1;
