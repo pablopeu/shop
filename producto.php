@@ -158,6 +158,78 @@ write_json($visits_file, $visits_data);
 
     <!-- Mobile Menu Styles -->
     <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
+
+    <!-- Quantity Selector Styles -->
+    <style>
+        .actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .quantity-selector {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            border: 2px solid var(--primary-color, #007bff);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .quantity-btn {
+            background: var(--primary-color, #007bff);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .quantity-btn:hover:not(:disabled) {
+            background: var(--primary-hover, #0056b3);
+        }
+
+        .quantity-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #quantity-input {
+            width: 60px;
+            height: 40px;
+            border: none;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            -moz-appearance: textfield;
+        }
+
+        #quantity-input::-webkit-outer-spin-button,
+        #quantity-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        #quantity-input:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .quantity-selector {
+                justify-content: center;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -289,8 +361,18 @@ write_json($visits_file, $visits_data);
 
                     <!-- Actions -->
                     <div class="actions">
+                        <div class="quantity-selector">
+                            <button class="quantity-btn" onclick="decreaseQuantity()" <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>-</button>
+                            <input type="number"
+                                   id="quantity-input"
+                                   value="1"
+                                   min="1"
+                                   max="<?php echo $product['stock']; ?>"
+                                   <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>
+                            <button class="quantity-btn" onclick="increaseQuantity()" <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>+</button>
+                        </div>
                         <button class="btn btn-primary"
-                                onclick="addToCart('<?php echo $product['id']; ?>')"
+                                onclick="addToCartWithQuantity('<?php echo $product['id']; ?>')"
                                 <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>
                             <?php echo $product['stock'] === 0 ? '🚫 Agotado' : '🛒 Agregar al Carrito'; ?>
                         </button>
@@ -528,6 +610,55 @@ write_json($visits_file, $visits_data);
         checkCartExpiration();
 
         // Add to cart
+        // Increase quantity
+        function increaseQuantity() {
+            const input = document.getElementById('quantity-input');
+            const max = parseInt(input.getAttribute('max'));
+            const current = parseInt(input.value);
+            if (current < max) {
+                input.value = current + 1;
+            }
+        }
+
+        // Decrease quantity
+        function decreaseQuantity() {
+            const input = document.getElementById('quantity-input');
+            const min = parseInt(input.getAttribute('min'));
+            const current = parseInt(input.value);
+            if (current > min) {
+                input.value = current - 1;
+            }
+        }
+
+        // Add to cart with selected quantity
+        function addToCartWithQuantity(productId) {
+            const input = document.getElementById('quantity-input');
+            const quantity = parseInt(input.value);
+
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+            // Check if product already in cart (support both formats)
+            const existingItem = cart.find(item => (item.product_id || item.id) === productId);
+
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                cart.push({
+                    product_id: productId,
+                    quantity: quantity,
+                    added_at: new Date().toISOString()
+                });
+            }
+
+            saveCart(cart);
+            updateCartCount();
+            renderCartPanel();
+            openCartPanel();
+
+            // Reset quantity to 1 after adding to cart
+            input.value = 1;
+        }
+
         function addToCart(productId) {
             let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 
