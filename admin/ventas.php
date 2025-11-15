@@ -1880,7 +1880,8 @@ $status_labels = [
             const activeTab = document.querySelector('.modal-tab-content.active');
 
             if (!activeTab) {
-                showToast('⚠️ No hay cambios para guardar');
+                // No active tab, just close
+                closeOrderModal();
                 return;
             }
 
@@ -1888,13 +1889,15 @@ $status_labels = [
             const forms = activeTab.querySelectorAll('form');
 
             if (forms.length === 0) {
-                showToast('⚠️ No hay formularios en esta pestaña');
+                // No forms in this tab, just close
+                closeOrderModal();
                 return;
             }
 
             // Check if forms have changed
             if (!modalHasUnsavedChanges) {
-                showToast('✅ No hay cambios para guardar');
+                // No changes to save, just close
+                closeOrderModal();
                 return;
             }
 
