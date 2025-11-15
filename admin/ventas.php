@@ -1833,6 +1833,29 @@ $status_labels = [
                 console.log('Parsed data:', data);
                 if (data.success) {
                     showNotification('Mensaje enviado exitosamente', 'success');
+
+                    // Update local orders array with new message
+                    const orderIndex = orders.findIndex(o => o.id === orderId);
+                    if (orderIndex !== -1) {
+                        const message = formData.get('custom_message');
+                        const newMessage = {
+                            date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                            channel: data.channel,
+                            message: message,
+                            sent_by: '<?php echo $_SESSION['username'] ?? 'admin'; ?>'
+                        };
+
+                        // Initialize messages array if it doesn't exist
+                        if (!orders[orderIndex].messages) {
+                            orders[orderIndex].messages = [];
+                        }
+
+                        // Add new message to the beginning
+                        orders[orderIndex].messages.unshift(newMessage);
+
+                        console.log('Updated order with new message:', newMessage);
+                    }
+
                     form.reset();
                     // Reload order to show new message in history
                     viewOrder(orderId);
