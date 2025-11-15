@@ -203,8 +203,10 @@
 
 .header-compact .logo img,
 .header-compact .compact-logo {
-    height: 40px;
-    width: auto;
+    max-height: 40px !important;
+    height: auto !important;
+    max-width: 120px !important;
+    width: auto !important;
     object-fit: contain;
 }
 
