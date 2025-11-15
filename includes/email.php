@@ -462,6 +462,26 @@ function send_order_shipped_email($order) {
 }
 
 /**
+ * Send order paid notification to customer
+ */
+function send_order_paid_email($order) {
+    $config = read_json(__DIR__ . '/../config/email.json');
+
+    if (!($config['notifications']['customer']['order_paid'] ?? true)) {
+        return false;
+    }
+
+    $to = $order['customer_email'];
+    $subject = "¡Pago Confirmado! - #{$order['order_number']}";
+
+    $html = get_email_template('order_paid', [
+        'order' => $order
+    ]);
+
+    return send_email($to, $subject, $html);
+}
+
+/**
  * Send new order notification to admin
  */
 function send_admin_new_order_email($order) {

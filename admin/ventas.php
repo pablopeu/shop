@@ -32,11 +32,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     if (update_order_status($order_id, $new_status, $_SESSION['username'])) {
         $message = 'Estado actualizado exitosamente';
 
-        // Send email notification when order is marked as shipped
+        // Send notification when order is marked as shipped
         if ($new_status === 'shipped') {
             $updated_order = get_order_by_id($order_id);
             if ($updated_order && !empty($updated_order['customer_email'])) {
                 send_order_shipped_email($updated_order);
+            }
+        }
+
+        // Send notification when order is marked as paid
+        if ($new_status === 'paid') {
+            $updated_order = get_order_by_id($order_id);
+            if ($updated_order) {
+                // Send notification based on customer's contact preference
+                $contact_preference = $updated_order['contact_preference'] ?? 'email';
+
+                if ($contact_preference === 'telegram' && !empty($updated_order['telegram_chat_id'])) {
+                    // Send via Telegram
+                    require_once __DIR__ . '/../includes/telegram.php';
+                    send_telegram_order_paid_to_customer($updated_order);
+                } elseif (!empty($updated_order['customer_email'])) {
+                    // Send via Email (default)
+                    send_order_paid_email($updated_order);
+                }
             }
         }
     } else {
