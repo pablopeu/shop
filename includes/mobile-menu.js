@@ -26,6 +26,12 @@
     function initMobileMenu() {
         console.log('Mobile menu: Initializing...');
 
+        // Only initialize on mobile devices (768px or less)
+        if (window.innerWidth > 768) {
+            console.log('Mobile menu: Desktop detected, skipping initialization');
+            return;
+        }
+
         // Check if drawer exists (should be included via mobile-menu.php)
         const drawer = document.querySelector('.mobile-menu-drawer');
         if (!drawer) {
