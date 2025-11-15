@@ -1803,14 +1803,34 @@ $status_labels = [
             submitBtn.disabled = true;
             submitBtn.innerHTML = '⏳ Enviando...';
 
+            // Debug: Log FormData contents
+            console.log('=== SENDING MESSAGE ===');
+            console.log('Order ID:', formData.get('order_id'));
+            console.log('CSRF Token:', formData.get('csrf_token'));
+            console.log('Message:', formData.get('custom_message'));
+            console.log('=======================');
+
             // Send message via AJAX
             fetch('api/send-custom-message.php', {
                 method: 'POST',
                 body: formData,
                 credentials: 'same-origin'
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                return response.text().then(text => {
+                    console.log('Response text:', text);
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Failed to parse JSON:', e);
+                        throw new Error('Invalid JSON response: ' + text.substring(0, 100));
+                    }
+                });
+            })
             .then(data => {
+                console.log('Parsed data:', data);
                 if (data.success) {
                     showNotification('Mensaje enviado exitosamente', 'success');
                     form.reset();
@@ -1822,7 +1842,7 @@ $status_labels = [
             })
             .catch(error => {
                 console.error('Error:', error);
-                showNotification('Error al enviar el mensaje', 'error');
+                showNotification('Error: ' + error.message, 'error');
             })
             .finally(() => {
                 submitBtn.disabled = false;

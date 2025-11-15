@@ -15,6 +15,16 @@ header('Content-Type: application/json');
 // Check if user is logged in
 session_start();
 
+// Debug logging
+error_log("=== SEND CUSTOM MESSAGE DEBUG ===");
+error_log("Session ID: " . session_id());
+error_log("Session file: " . session_save_path() . "/sess_" . session_id());
+error_log("Logged in? " . (isset($_SESSION['logged_in']) ? $_SESSION['logged_in'] : 'NOT SET'));
+error_log("Role: " . (isset($_SESSION['role']) ? $_SESSION['role'] : 'NOT SET'));
+error_log("Username: " . (isset($_SESSION['username']) ? $_SESSION['username'] : 'NOT SET'));
+error_log("Full session: " . print_r($_SESSION, true));
+error_log("=== END DEBUG ===");
+
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== 1) {
     error_log("UNAUTHORIZED: User not logged in");
     http_response_code(401);
