@@ -1806,7 +1806,8 @@ $status_labels = [
             // Send message via AJAX
             fetch('api/send-custom-message.php', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'same-origin'
             })
             .then(response => response.json())
             .then(data => {

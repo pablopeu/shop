@@ -14,9 +14,14 @@ header('Content-Type: application/json');
 
 // Check if user is logged in
 session_start();
+error_log("Session ID: " . session_id());
+error_log("Session admin_logged_in: " . (isset($_SESSION['admin_logged_in']) ? 'YES' : 'NO'));
+error_log("Session data: " . print_r($_SESSION, true));
+
 if (!isset($_SESSION['admin_logged_in'])) {
+    error_log("UNAUTHORIZED: admin_logged_in not set in session");
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'No autorizado']);
+    echo json_encode(['success' => false, 'message' => 'No autorizado - sesión no válida']);
     exit;
 }
 
