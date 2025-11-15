@@ -8,7 +8,7 @@
 
     // Configuration
     const CHECK_INTERVAL = 60000; // Check every 60 seconds
-    const SESSION_API = '/admin/api/check_session.php';
+    const SESSION_API = 'api/check_session.php';
 
     let checkInProgress = false;
     let lastCheckTime = Date.now();
