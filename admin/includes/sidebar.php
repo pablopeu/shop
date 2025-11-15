@@ -45,7 +45,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     }
 
     /* Mobile Sidebar */
-    @media (max-width: 1024px) {
+    @media (max-width: 768px) {
         .sidebar {
             transform: translateX(-100%);
         }
@@ -190,7 +190,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         transition: opacity 0.3s ease;
     }
 
-    @media (max-width: 1024px) {
+    @media (max-width: 768px) {
         .sidebar-overlay.active {
             display: block;
             opacity: 1;
