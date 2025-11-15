@@ -25,15 +25,15 @@ error_log("Username: " . (isset($_SESSION['username']) ? $_SESSION['username'] :
 error_log("Full session: " . print_r($_SESSION, true));
 error_log("=== END DEBUG ===");
 
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== 1) {
-    error_log("UNAUTHORIZED: User not logged in");
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] != 1) {
+    error_log("UNAUTHORIZED: User not logged in. Value: " . var_export($_SESSION['logged_in'] ?? null, true));
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'No autorizado - sesión no válida']);
     exit;
 }
 
 // Check if user is admin
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['role']) || $_SESSION['role'] != 'admin') {
     error_log("UNAUTHORIZED: User is not admin. Role: " . ($_SESSION['role'] ?? 'none'));
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'No autorizado - se requieren permisos de administrador']);
