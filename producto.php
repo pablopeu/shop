@@ -59,6 +59,9 @@ usort($product_reviews, function($a, $b) {
     return strtotime($b['created_at']) - strtotime($a['created_at']);
 });
 
+// Get all products for cart panel
+$all_products = get_all_products(true); // Only active products
+
 // Get only last 5 reviews for display
 $display_reviews = array_slice($product_reviews, 0, 5);
 
@@ -378,6 +381,47 @@ write_json($visits_file, $visits_data);
         // Base path for subdirectory support
         const basePath = '<?php echo BASE_PATH; ?>';
 
+        // Current product data
+        const productData = <?php
+            $current_product = $product;
+            if (isset($current_product['thumbnail'])) {
+                $current_product['thumbnail'] = url($current_product['thumbnail']);
+            }
+            if (isset($current_product['images']) && is_array($current_product['images'])) {
+                foreach ($current_product['images'] as &$img) {
+                    if (is_array($img) && isset($img['url'])) {
+                        $img['url'] = url($img['url']);
+                    } elseif (is_string($img)) {
+                        $img = url($img);
+                    }
+                }
+                unset($img);
+            }
+            echo json_encode($current_product);
+        ?>;
+
+        // All products data for cart panel
+        const products = <?php
+            $products_for_js = json_decode(json_encode($all_products), true);
+            foreach ($products_for_js as &$p) {
+                if (isset($p['thumbnail'])) {
+                    $p['thumbnail'] = url($p['thumbnail']);
+                }
+                if (isset($p['images']) && is_array($p['images'])) {
+                    foreach ($p['images'] as &$img) {
+                        if (is_array($img) && isset($img['url'])) {
+                            $img['url'] = url($img['url']);
+                        } elseif (is_string($img)) {
+                            $img = url($img);
+                        }
+                    }
+                    unset($img);
+                }
+            }
+            unset($p);
+            echo json_encode($products_for_js);
+        ?>;
+
         // Product images data - normalize to consistent format
         const rawImages = <?php echo json_encode($product['images'] ?? []); ?>;
         const productImages = rawImages.map(img => {
@@ -502,7 +546,8 @@ write_json($visits_file, $visits_data);
 
             saveCart(cart);
             updateCartCount();
-            showToast('✅ Producto agregado al carrito');
+            renderCartPanel();
+            openCartPanel();
         }
 
         // Toggle favorite
@@ -590,10 +635,159 @@ write_json($visits_file, $visits_data);
                 }
             }, { passive: true });
         }
+
+        // Cart Panel Functions
+        function renderCartPanel() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const body = document.getElementById('cart-panel-body');
+            const footer = document.getElementById('cart-panel-footer');
+            const totalEl = document.getElementById('cart-total');
+
+            if (cart.length === 0) {
+                body.innerHTML = '<div class="cart-empty">Tu carrito está vacío</div>';
+                footer.style.display = 'none';
+                return;
+            }
+
+            const exchangeRate = <?php echo $currency_config['exchange_rate']; ?>;
+            let totalARS = 0;
+            let totalUSD = 0;
+            let allProductsUSD = true;
+            let html = '';
+            let validCart = [];
+
+            cart.forEach(item => {
+                const product = products.find(p => p.id === item.product_id);
+
+                if (!product) {
+                    console.warn('Product not found:', item.product_id);
+                    return;
+                }
+
+                // Add to valid cart
+                validCart.push(item);
+
+                const priceARS = parseFloat(product.price_ars) || 0;
+                const priceUSD = parseFloat(product.price_usd) || 0;
+
+                let itemPriceARS = 0;
+                let itemPriceUSD = 0;
+                let displayPrice = '';
+
+                if (priceUSD > 0 && priceARS === 0) {
+                    itemPriceUSD = priceUSD;
+                    itemPriceARS = priceUSD * exchangeRate;
+                    displayPrice = 'U$D ' + priceUSD.toFixed(2);
+                } else if (priceARS > 0 && priceUSD === 0) {
+                    allProductsUSD = false;
+                    itemPriceARS = priceARS;
+                    displayPrice = '$' + priceARS.toFixed(2);
+                } else if (priceARS > 0 && priceUSD > 0) {
+                    allProductsUSD = false;
+                    itemPriceARS = priceARS;
+                    displayPrice = '$' + priceARS.toFixed(2);
+                }
+
+                totalARS += itemPriceARS * item.quantity;
+                totalUSD += itemPriceUSD * item.quantity;
+
+                html += `
+                    <div class="cart-item">
+                        <img src="${product.thumbnail || ''}" class="cart-item-image" alt="${product.name}">
+                        <div class="cart-item-details">
+                            <div class="cart-item-name">${product.name}</div>
+                            <div class="cart-item-price">${displayPrice}</div>
+                            <div class="cart-item-quantity">
+                                <button class="qty-btn" onclick="updateQuantity('${product.id}', -1)">-</button>
+                                <span>${item.quantity}</span>
+                                <button class="qty-btn" onclick="updateQuantity('${product.id}', 1)">+</button>
+                                <button class="cart-item-remove" onclick="removeFromCart('${product.id}')">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Clean invalid items from localStorage
+            if (validCart.length !== cart.length) {
+                saveCart(validCart);
+                updateCartCount();
+            }
+
+            body.innerHTML = html || '<div class="cart-empty">Tu carrito está vacío</div>';
+
+            if (allProductsUSD && totalUSD > 0) {
+                totalEl.textContent = 'U$D ' + totalUSD.toFixed(2);
+            } else {
+                totalEl.textContent = '$' + totalARS.toFixed(2);
+            }
+
+            footer.style.display = validCart.length > 0 ? 'block' : 'none';
+        }
+
+        function updateQuantity(productId, change) {
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const item = cart.find(i => i.product_id === productId);
+
+            if (item) {
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    cart = cart.filter(i => i.product_id !== productId);
+                }
+            }
+
+            saveCart(cart);
+            updateCartCount();
+            renderCartPanel();
+        }
+
+        function removeFromCart(productId) {
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            cart = cart.filter(i => i.product_id !== productId);
+            saveCart(cart);
+            updateCartCount();
+            renderCartPanel();
+        }
+
+        function openCartPanel() {
+            renderCartPanel();
+            document.getElementById('cart-panel').classList.add('open');
+            document.getElementById('cart-overlay').classList.add('open');
+        }
+
+        function closeCartPanel() {
+            document.getElementById('cart-panel').classList.remove('open');
+            document.getElementById('cart-overlay').classList.remove('open');
+        }
+
+        async function goToCheckout() {
+            window.location.href = '<?php echo url('/carrito.php'); ?>';
+        }
     </script>
 
     <!-- Cart Validator -->
     <script src="<?php echo url('/includes/cart-validator.js'); ?>"></script>
+
+    <!-- Cart Overlay -->
+    <div class="cart-overlay" id="cart-overlay" onclick="closeCartPanel()"></div>
+
+    <!-- Cart Panel -->
+    <div class="cart-panel" id="cart-panel">
+        <div class="cart-panel-header">
+            <h2>🛒 Tu Carrito</h2>
+            <button class="cart-close" onclick="closeCartPanel()">&times;</button>
+        </div>
+        <div class="cart-panel-body" id="cart-panel-body">
+            <div class="cart-empty">Tu carrito está vacío</div>
+        </div>
+        <div class="cart-panel-footer" id="cart-panel-footer" style="display: none;">
+            <div class="cart-total">
+                <span>Total:</span>
+                <span id="cart-total">$0.00</span>
+            </div>
+            <button onclick="goToCheckout()" class="btn" style="width: 100%; text-align: center; border: none; cursor: pointer;">Ver Carrito Completo</button>
+        </div>
+    </div>
 
     <!-- Mobile Menu -->
     <?php include __DIR__ . '/includes/mobile-menu.php'; ?>

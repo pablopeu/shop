@@ -214,7 +214,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         <!-- Productos -->
         <li>
-            <div class="menu-item" onclick="toggleSubmenu('productos')">
+            <div class="menu-item" onclick="toggleSubmenu('productos', '<?php echo url('/admin/productos-listado.php'); ?>')">
                 <span>📦 Productos</span>
                 <span class="menu-arrow" id="arrow-productos">▶</span>
             </div>
@@ -243,7 +243,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         <!-- Ventas -->
         <li>
-            <div class="menu-item" onclick="toggleSubmenu('ventas')">
+            <div class="menu-item" onclick="toggleSubmenu('ventas', '<?php echo url('/admin/ventas.php'); ?>')">
                 <span>💰 Ventas</span>
                 <span class="menu-arrow" id="arrow-ventas">▶</span>
             </div>
@@ -422,7 +422,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         }
     });
 
-    function toggleSubmenu(menuId) {
+    function toggleSubmenu(menuId, redirectUrl) {
         const submenu = document.getElementById('submenu-' + menuId);
         const arrow = document.getElementById('arrow-' + menuId);
 
@@ -432,6 +432,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
         } else {
             submenu.classList.add('open');
             arrow.classList.add('rotated');
+        }
+
+        // Redirect if URL is provided
+        if (redirectUrl) {
+            window.location.href = redirectUrl;
         }
     }
 

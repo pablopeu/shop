@@ -111,9 +111,10 @@
 
         function handleScroll() {
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const isMobile = window.innerWidth <= 768;
 
-            // On both mobile and desktop, show compact header when scrolling down
-            if (scrollTop > scrollThreshold) {
+            // Only show compact header on mobile devices
+            if (isMobile && scrollTop > scrollThreshold) {
                 compactHeader.classList.add('visible');
                 // Hide normal header if it exists
                 if (normalHeader) {

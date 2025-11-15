@@ -80,6 +80,7 @@ function get_email_config() {
                     'payment_approved' => true,
                     'payment_rejected' => true,
                     'payment_pending' => true,
+                    'order_paid' => true,
                     'order_shipped' => true,
                     'chargeback_notice' => true
                 ],
@@ -455,6 +456,26 @@ function send_order_shipped_email($order) {
     $subject = "¡Tu Pedido Fue Enviado! - #{$order['order_number']}";
 
     $html = get_email_template('order_shipped', [
+        'order' => $order
+    ]);
+
+    return send_email($to, $subject, $html);
+}
+
+/**
+ * Send order paid notification to customer
+ */
+function send_order_paid_email($order) {
+    $config = read_json(__DIR__ . '/../config/email.json');
+
+    if (!($config['notifications']['customer']['order_paid'] ?? true)) {
+        return false;
+    }
+
+    $to = $order['customer_email'];
+    $subject = "¡Pago Confirmado! - #{$order['order_number']}";
+
+    $html = get_email_template('order_paid', [
         'order' => $order
     ]);
 

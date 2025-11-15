@@ -7,6 +7,7 @@ require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/orders.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/email.php';
+require_once __DIR__ . '/../includes/telegram.php';
 
 // Start session
 session_start();
@@ -32,11 +33,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     if (update_order_status($order_id, $new_status, $_SESSION['username'])) {
         $message = 'Estado actualizado exitosamente';
 
-        // Send email notification when order is marked as shipped
+        // Send notification when order is marked as shipped
         if ($new_status === 'shipped') {
             $updated_order = get_order_by_id($order_id);
             if ($updated_order && !empty($updated_order['customer_email'])) {
                 send_order_shipped_email($updated_order);
+            }
+        }
+
+        // Send notification when order is marked as cobrada (paid)
+        if ($new_status === 'cobrada') {
+            $updated_order = get_order_by_id($order_id);
+            if ($updated_order) {
+                // Send notification based on customer's contact preference
+                $contact_preference = $updated_order['contact_preference'] ?? 'email';
+
+                error_log("Order {$order_id} marked as cobrada. Contact preference: {$contact_preference}");
+
+                if ($contact_preference === 'telegram' && !empty($updated_order['telegram_chat_id'])) {
+                    // Send via Telegram
+                    error_log("Sending Telegram notification to chat_id: {$updated_order['telegram_chat_id']}");
+                    $telegram_result = send_telegram_order_paid_to_customer($updated_order);
+                    error_log("Telegram notification result: " . ($telegram_result ? 'SUCCESS' : 'FAILED'));
+                } elseif (!empty($updated_order['customer_email'])) {
+                    // Send via Email (default)
+                    error_log("Sending email notification to: {$updated_order['customer_email']}");
+                    $email_result = send_order_paid_email($updated_order);
+                    error_log("Email notification result: " . ($email_result ? 'SUCCESS' : 'FAILED'));
+                } else {
+                    error_log("No valid contact method found for order {$order_id}");
+                }
+            } else {
+                error_log("Could not retrieve updated order {$order_id}");
             }
         }
     } else {
@@ -926,7 +954,17 @@ $status_labels = [
                                         <strong><?php echo format_price($order['total'], $order['currency']); ?></strong>
                                     </td>
                                     <td>
-                                        <?php echo $order['payment_method'] === 'presencial' ? '💵 Presencial' : '💳 Mercadopago'; ?>
+                                        <?php
+                                        if ($order['payment_method'] === 'mercadopago') {
+                                            echo '💳 Mercadopago';
+                                        } elseif ($order['payment_method'] === 'arrangement') {
+                                            echo '🤝 Arreglo';
+                                        } elseif ($order['payment_method'] === 'pickup_payment') {
+                                            echo '💵 Pago al retirar';
+                                        } else {
+                                            echo '💵 Presencial';
+                                        }
+                                        ?>
                                     </td>
                                     <td>
                                         <?php
@@ -1005,7 +1043,17 @@ $status_labels = [
                                     <div class="mobile-card-row">
                                         <span class="mobile-card-label">Método de Pago:</span>
                                         <span class="mobile-card-value">
-                                            <?php echo $order['payment_method'] === 'presencial' ? 'Presencial' : 'Mercadopago'; ?>
+                                            <?php
+                                            if ($order['payment_method'] === 'mercadopago') {
+                                                echo 'Mercadopago';
+                                            } elseif ($order['payment_method'] === 'arrangement') {
+                                                echo 'Arreglo';
+                                            } elseif ($order['payment_method'] === 'pickup_payment') {
+                                                echo 'Pago al retirar';
+                                            } else {
+                                                echo 'Presencial';
+                                            }
+                                            ?>
                                         </span>
                                     </div>
                                     <div class="mobile-card-row">
@@ -1142,7 +1190,12 @@ $status_labels = [
 
                 <div class="form-group">
                     <label><strong>Método de Pago:</strong></label>
-                    <p>${order.payment_method === 'presencial' ? '💵 Pago Presencial' : '💳 Mercadopago'}</p>
+                    <p>${
+                        order.payment_method === 'mercadopago' ? '💳 Mercadopago' :
+                        order.payment_method === 'arrangement' ? '🤝 Arreglo con vendedor' :
+                        order.payment_method === 'pickup_payment' ? '💵 Pago al retirar' :
+                        '💵 Presencial'
+                    }</p>
                 </div>
 
                 ${order.mercadopago_data ? `

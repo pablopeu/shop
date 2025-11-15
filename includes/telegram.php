@@ -563,3 +563,58 @@ function send_telegram_payment_rejected_to_customer($order, $status_detail = '')
     return send_telegram_to_user($order['telegram_chat_id'], $message);
 }
 
+/**
+ * Send order paid notification to customer via Telegram
+ */
+function send_telegram_order_paid_to_customer($order) {
+    if (empty($order['telegram_chat_id'])) {
+        error_log("No telegram_chat_id in order");
+        return false;
+    }
+
+    $site_config = read_json(__DIR__ . '/../config/site.json');
+    $site_name = $site_config['site_name'] ?? 'Nuestra Tienda';
+
+    $currency = $order['currency'] === 'USD' ? 'U$D' : '$';
+    $total = number_format($order['total'], 2);
+
+    $message = "✅ <b>¡Pago Confirmado!</b>\n\n";
+    $message .= "Hemos confirmado el pago de tu pedido en <b>{$site_name}</b>.\n\n";
+    $message .= "📝 Orden: <code>#{$order['order_number']}</code>\n";
+    $message .= "💰 Monto: <b>{$currency} {$total}</b>\n";
+    $message .= "📅 Estado: <b>Cobrado</b> ✓\n\n";
+
+    // Payment method
+    $payment_method = 'N/A';
+    if (isset($order['payment_method'])) {
+        switch ($order['payment_method']) {
+            case 'mercadopago':
+                $payment_method = '💳 Mercadopago';
+                break;
+            case 'arrangement':
+                $payment_method = '🤝 Arreglo';
+                break;
+            case 'pickup_payment':
+                $payment_method = '💵 Pago al retirar';
+                break;
+            default:
+                $payment_method = ucfirst($order['payment_method']);
+        }
+    }
+    $message .= "💳 Método de pago: {$payment_method}\n\n";
+
+    $message .= "📦 <b>Productos:</b>\n";
+    foreach ($order['items'] as $item) {
+        $message .= "• {$item['name']} x{$item['quantity']}\n";
+    }
+
+    $message .= "\n🎯 <b>Próximos pasos:</b>\n";
+    $message .= "• Estamos preparando tu pedido\n";
+    $message .= "• Te notificaremos cuando sea enviado\n";
+    $message .= "• Recibirás un número de seguimiento\n";
+
+    $message .= "\n¡Gracias por tu compra! 🎉";
+
+    return send_telegram_to_user($order['telegram_chat_id'], $message);
+}
+

@@ -208,9 +208,17 @@ if ($payment_status && $payment_status !== 'approved') {
     </div>
 
     <script>
-        // Clear cart from localStorage after successful purchase
+        // Clear cart and customer data after successful purchase
         localStorage.removeItem('cart');
-        console.log('Cart cleared from localStorage');
+        localStorage.removeItem('cart_timestamp');
+        localStorage.removeItem('applied_coupon');
+
+        // Clear customer contact info and validation data
+        sessionStorage.removeItem('checkout_contact_info');
+        sessionStorage.removeItem('telegramValidated');
+        sessionStorage.removeItem('emailValidated');
+
+        console.log('Cart and customer data cleared');
     </script>
 
     <!-- Footer -->

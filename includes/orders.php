@@ -143,7 +143,8 @@ function create_order($order_data) {
         'customer_email' => $order_data['customer_email'] ?? null,
         'customer_phone' => $order_data['customer_phone'] ?? null,
         'customer_name' => $order_data['customer_name'] ?? null,
-        'contact_preference' => $order_data['contact_preference'] ?? 'whatsapp',
+        'contact_preference' => $order_data['contact_preference'] ?? 'email',
+        'telegram_chat_id' => $order_data['telegram_chat_id'] ?? null,
         'delivery_method' => $order_data['delivery_method'] ?? 'pickup',
         'notes' => $order_data['notes'] ?? '',
         'emails_sent' => [
