@@ -926,7 +926,17 @@ $status_labels = [
                                         <strong><?php echo format_price($order['total'], $order['currency']); ?></strong>
                                     </td>
                                     <td>
-                                        <?php echo $order['payment_method'] === 'presencial' ? '💵 Presencial' : '💳 Mercadopago'; ?>
+                                        <?php
+                                        if ($order['payment_method'] === 'mercadopago') {
+                                            echo '💳 Mercadopago';
+                                        } elseif ($order['payment_method'] === 'arrangement') {
+                                            echo '🤝 Arreglo';
+                                        } elseif ($order['payment_method'] === 'pickup_payment') {
+                                            echo '💵 Pago al retirar';
+                                        } else {
+                                            echo '💵 Presencial';
+                                        }
+                                        ?>
                                     </td>
                                     <td>
                                         <?php
@@ -1005,7 +1015,17 @@ $status_labels = [
                                     <div class="mobile-card-row">
                                         <span class="mobile-card-label">Método de Pago:</span>
                                         <span class="mobile-card-value">
-                                            <?php echo $order['payment_method'] === 'presencial' ? 'Presencial' : 'Mercadopago'; ?>
+                                            <?php
+                                            if ($order['payment_method'] === 'mercadopago') {
+                                                echo 'Mercadopago';
+                                            } elseif ($order['payment_method'] === 'arrangement') {
+                                                echo 'Arreglo';
+                                            } elseif ($order['payment_method'] === 'pickup_payment') {
+                                                echo 'Pago al retirar';
+                                            } else {
+                                                echo 'Presencial';
+                                            }
+                                            ?>
                                         </span>
                                     </div>
                                     <div class="mobile-card-row">
@@ -1142,7 +1162,12 @@ $status_labels = [
 
                 <div class="form-group">
                     <label><strong>Método de Pago:</strong></label>
-                    <p>${order.payment_method === 'presencial' ? '💵 Pago Presencial' : '💳 Mercadopago'}</p>
+                    <p>${
+                        order.payment_method === 'mercadopago' ? '💳 Mercadopago' :
+                        order.payment_method === 'arrangement' ? '🤝 Arreglo con vendedor' :
+                        order.payment_method === 'pickup_payment' ? '💵 Pago al retirar' :
+                        '💵 Presencial'
+                    }</p>
                 </div>
 
                 ${order.mercadopago_data ? `

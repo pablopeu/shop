@@ -1816,6 +1816,11 @@
     margin-top: var(--spacing-2xl);
 }
 
+.buttons .btn {
+    flex: 1;
+    max-width: 250px;
+}
+
 /* ========================================
    SEARCH PAGE (buscar.php)
    ======================================== */

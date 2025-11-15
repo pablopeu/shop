@@ -502,7 +502,8 @@ write_json($visits_file, $visits_data);
 
             saveCart(cart);
             updateCartCount();
-            showToast('✅ Producto agregado al carrito');
+            renderCartPanel();
+            openCartPanel();
         }
 
         // Toggle favorite
@@ -590,10 +591,148 @@ write_json($visits_file, $visits_data);
                 }
             }, { passive: true });
         }
+
+        // Cart Panel Functions
+        function renderCartPanel() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const body = document.getElementById('cart-panel-body');
+            const footer = document.getElementById('cart-panel-footer');
+            const totalEl = document.getElementById('cart-total');
+
+            if (cart.length === 0) {
+                body.innerHTML = '<div class="cart-empty">Tu carrito está vacío</div>';
+                footer.style.display = 'none';
+                return;
+            }
+
+            const exchangeRate = <?php echo $currency_config['exchange_rate']; ?>;
+            let totalARS = 0;
+            let totalUSD = 0;
+            let allProductsUSD = true;
+            let html = '';
+
+            cart.forEach(item => {
+                // For current product
+                if (item.product_id === productData.id) {
+                    const priceARS = parseFloat(productData.price_ars) || 0;
+                    const priceUSD = parseFloat(productData.price_usd) || 0;
+
+                    let itemPriceARS = 0;
+                    let itemPriceUSD = 0;
+                    let displayPrice = '';
+
+                    if (priceUSD > 0 && priceARS === 0) {
+                        itemPriceUSD = priceUSD;
+                        itemPriceARS = priceUSD * exchangeRate;
+                        displayPrice = 'U$D ' + priceUSD.toFixed(2);
+                    } else if (priceARS > 0 && priceUSD === 0) {
+                        allProductsUSD = false;
+                        itemPriceARS = priceARS;
+                        displayPrice = '$' + priceARS.toFixed(2);
+                    } else if (priceARS > 0 && priceUSD > 0) {
+                        allProductsUSD = false;
+                        itemPriceARS = priceARS;
+                        displayPrice = '$' + priceARS.toFixed(2);
+                    }
+
+                    totalARS += itemPriceARS * item.quantity;
+                    totalUSD += itemPriceUSD * item.quantity;
+
+                    html += `
+                        <div class="cart-item">
+                            <img src="${productData.thumbnail || (productData.images && productData.images[0] ? productData.images[0].url : '')}" class="cart-item-image" alt="${productData.name}">
+                            <div class="cart-item-details">
+                                <div class="cart-item-name">${productData.name}</div>
+                                <div class="cart-item-price">${displayPrice}</div>
+                                <div class="cart-item-quantity">
+                                    <button class="qty-btn" onclick="updateQuantity('${productData.id}', -1)">-</button>
+                                    <span>${item.quantity}</span>
+                                    <button class="qty-btn" onclick="updateQuantity('${productData.id}', 1)">+</button>
+                                    <button class="cart-item-remove" onclick="removeFromCart('${productData.id}')">Eliminar</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // For other products in cart, just count them
+                    // We don't have their data here, so just skip rendering
+                }
+            });
+
+            body.innerHTML = html || '<div class="cart-empty">Tu carrito está vacío</div>';
+
+            if (allProductsUSD && totalUSD > 0) {
+                totalEl.textContent = 'U$D ' + totalUSD.toFixed(2);
+            } else {
+                totalEl.textContent = '$' + totalARS.toFixed(2);
+            }
+
+            footer.style.display = cart.length > 0 ? 'block' : 'none';
+        }
+
+        function updateQuantity(productId, change) {
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const item = cart.find(i => i.product_id === productId);
+
+            if (item) {
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    cart = cart.filter(i => i.product_id !== productId);
+                }
+            }
+
+            saveCart(cart);
+            updateCartCount();
+            renderCartPanel();
+        }
+
+        function removeFromCart(productId) {
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            cart = cart.filter(i => i.product_id !== productId);
+            saveCart(cart);
+            updateCartCount();
+            renderCartPanel();
+        }
+
+        function openCartPanel() {
+            renderCartPanel();
+            document.getElementById('cart-panel').classList.add('open');
+            document.getElementById('cart-overlay').classList.add('open');
+        }
+
+        function closeCartPanel() {
+            document.getElementById('cart-panel').classList.remove('open');
+            document.getElementById('cart-overlay').classList.remove('open');
+        }
+
+        async function goToCheckout() {
+            window.location.href = '<?php echo url('/carrito.php'); ?>';
+        }
     </script>
 
     <!-- Cart Validator -->
     <script src="<?php echo url('/includes/cart-validator.js'); ?>"></script>
+
+    <!-- Cart Overlay -->
+    <div class="cart-overlay" id="cart-overlay" onclick="closeCartPanel()"></div>
+
+    <!-- Cart Panel -->
+    <div class="cart-panel" id="cart-panel">
+        <div class="cart-panel-header">
+            <h2>🛒 Tu Carrito</h2>
+            <button class="cart-close" onclick="closeCartPanel()">&times;</button>
+        </div>
+        <div class="cart-panel-body" id="cart-panel-body">
+            <div class="cart-empty">Tu carrito está vacío</div>
+        </div>
+        <div class="cart-panel-footer" id="cart-panel-footer" style="display: none;">
+            <div class="cart-total">
+                <span>Total:</span>
+                <span id="cart-total">$0.00</span>
+            </div>
+            <button onclick="goToCheckout()" class="btn" style="width: 100%; text-align: center; border: none; cursor: pointer;">Ver Carrito Completo</button>
+        </div>
+    </div>
 
     <!-- Mobile Menu -->
     <?php include __DIR__ . '/includes/mobile-menu.php'; ?>
