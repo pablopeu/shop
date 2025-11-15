@@ -1807,10 +1807,12 @@
     margin-bottom: var(--spacing-2xl);
 }
 
-.success-actions {
+.success-actions,
+.buttons {
     display: flex;
     gap: var(--spacing-md);
     justify-content: center;
+    align-items: center;
     margin-top: var(--spacing-2xl);
 }
 
