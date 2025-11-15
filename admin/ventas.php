@@ -1523,7 +1523,7 @@ $status_labels = [
                             ` : ''}
                         </div>
                         ${order.mercadopago_data.payment_id ? `
-                        <a href="/admin/verificar-pago-mp.php?payment_id=${order.mercadopago_data.payment_id}"
+                        <a href="verificar-pago-mp.php?payment_id=${order.mercadopago_data.payment_id}"
                            target="_blank"
                            style="display: inline-block; margin-top: 12px; padding: 6px 12px; background: #667eea; color: white;
                                   text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 600;">
@@ -1804,7 +1804,7 @@ $status_labels = [
             submitBtn.innerHTML = '⏳ Enviando...';
 
             // Send message via AJAX
-            fetch('/admin/api/send-custom-message.php', {
+            fetch('api/send-custom-message.php', {
                 method: 'POST',
                 body: formData
             })
