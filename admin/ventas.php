@@ -461,19 +461,20 @@ $status_labels = [
         .modal-content {
             background: white;
             border-radius: 8px;
-            padding: 20px;
-            max-width: 600px;
+            padding: 0;
+            max-width: 800px;
             width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
+            max-height: 85vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .modal-header {
             font-size: 16px;
             font-weight: 600;
-            margin-bottom: 12px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #f0f0f0;
+            padding: 20px 20px 0 20px;
+            flex-shrink: 0;
         }
 
         .modal-close {
@@ -481,6 +482,62 @@ $status_labels = [
             font-size: 28px;
             cursor: pointer;
             color: #999;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px;
+            min-height: 400px;
+        }
+
+        .modal-footer {
+            flex-shrink: 0;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 2px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-save {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-save.has-changes {
+            background: #dc3545;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .btn-save:hover {
+            opacity: 0.9;
+        }
+
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
         }
 
         .form-group {
@@ -518,10 +575,9 @@ $status_labels = [
         .modal-tabs {
             display: flex;
             gap: 0;
-            margin: -20px -20px 20px -20px;
             border-bottom: 2px solid #e0e0e0;
             background: #f8f9fa;
-            border-radius: 8px 8px 0 0;
+            flex-shrink: 0;
         }
 
         .modal-tab {
@@ -887,6 +943,29 @@ $status_labels = [
         .modal-btn-danger:hover {
             background: #c82333;
         }
+
+        /* Toast animations */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1213,8 +1292,14 @@ $status_labels = [
                 <span class="modal-close" onclick="closeOrderModal()">&times;</span>
                 <h2 id="modalOrderNumber">Orden #</h2>
             </div>
-            <div id="modalOrderContent">
+            <div id="modalOrderContent" class="modal-body">
                 <!-- Content will be loaded via JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeOrderModal()">Cancelar</button>
+                <button type="button" id="btnSaveChanges" class="btn-save" onclick="saveAllChanges()">
+                    💾 Guardar Cambios
+                </button>
             </div>
         </div>
     </div>
@@ -1561,9 +1646,10 @@ $status_labels = [
                         </div>
                     </div>
 
-                    <form method="POST" action="">
+                    <form method="POST" action="" id="formStatus" onsubmit="return false;">
                         <input type="hidden" name="csrf_token" value="${csrfToken}">
                         <input type="hidden" name="order_id" value="${order.id}">
+                        <input type="hidden" name="update_status" value="1">
 
                         <div class="form-group">
                             <label for="status"><strong>Cambiar Estado:</strong></label>
@@ -1575,17 +1661,14 @@ $status_labels = [
                                 <option value="rechazada" ${order.status === 'rechazada' ? 'selected' : ''}>⛔ Rechazada</option>
                             </select>
                         </div>
-
-                        <button type="submit" name="update_status" class="btn btn-primary">
-                            💾 Actualizar Estado
-                        </button>
                     </form>
 
                     <hr style="margin: 20px 0;">
 
-                    <form method="POST" action="">
+                    <form method="POST" action="" id="formTracking" onsubmit="return false;">
                         <input type="hidden" name="csrf_token" value="${csrfToken}">
                         <input type="hidden" name="order_id" value="${order.id}">
+                        <input type="hidden" name="add_tracking" value="1">
 
                         <div class="form-group">
                             <label for="tracking_number"><strong>Número de Seguimiento:</strong></label>
@@ -1598,10 +1681,6 @@ $status_labels = [
                             <input type="text" name="tracking_url" id="tracking_url"
                                    value="${order.tracking_url || ''}" placeholder="https://...">
                         </div>
-
-                        <button type="submit" name="add_tracking" class="btn btn-primary">
-                            📦 Guardar Seguimiento
-                        </button>
                     </form>
                 </div>
 
@@ -1711,6 +1790,74 @@ $status_labels = [
             });
         }
 
+        function saveAllChanges() {
+            const btnSave = document.getElementById('btnSaveChanges');
+
+            // Get current tab to know which form to submit
+            const activeTab = document.querySelector('.modal-tab-content.active');
+
+            if (!activeTab) {
+                showToast('⚠️ No hay cambios para guardar');
+                return;
+            }
+
+            // Find forms in the active tab
+            const forms = activeTab.querySelectorAll('form');
+
+            if (forms.length === 0) {
+                showToast('⚠️ No hay formularios en esta pestaña');
+                return;
+            }
+
+            // Check if forms have changed
+            if (!modalHasUnsavedChanges) {
+                showToast('✅ No hay cambios para guardar');
+                return;
+            }
+
+            // Submit the first form found (should be the only one per tab that needs backend submission)
+            const form = forms[0];
+
+            // Check if this is the sendCustomMessage form (skip it)
+            if (form.getAttribute('onsubmit') && form.getAttribute('onsubmit').includes('sendCustomMessage')) {
+                showToast('ℹ️ Usa el botón "Enviar Mensaje" para este formulario');
+                return;
+            }
+
+            // Disable button to prevent double submission
+            btnSave.disabled = true;
+            btnSave.textContent = '⏳ Guardando...';
+
+            // Remove the onsubmit="return false;" temporarily to allow real submission
+            form.removeAttribute('onsubmit');
+
+            // Submit the form
+            form.submit();
+        }
+
+        function showToast(message) {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #333;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 6px;
+                z-index: 10000;
+                animation: slideIn 0.3s ease-out;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
         // Track unsaved changes in modal
         let modalHasUnsavedChanges = false;
         let modalOriginalValues = {};
@@ -1720,7 +1867,7 @@ $status_labels = [
             const modalContent = document.getElementById('modalOrderContent');
             const forms = modalContent.querySelectorAll('form');
             const inputs = modalContent.querySelectorAll('input, select, textarea');
-            const saveButtons = modalContent.querySelectorAll('button[type="submit"]');
+            const globalSaveButton = document.getElementById('btnSaveChanges');
 
             // Store original values (skip inputs without name or id)
             modalOriginalValues = {};
@@ -1734,21 +1881,22 @@ $status_labels = [
             // Reset state
             modalHasUnsavedChanges = false;
             modalUserHasInteracted = false; // Reset interaction flag
-            saveButtons.forEach(btn => {
-                btn.style.background = '#27ae60';
-                btn.style.boxShadow = '0 2px 8px rgba(39, 174, 96, 0.3)';
-            });
+
+            // Reset global save button style
+            if (globalSaveButton) {
+                globalSaveButton.classList.remove('has-changes');
+            }
 
             // Detect changes - only after a small delay to avoid false positives from browser autocomplete
             setTimeout(() => {
                 inputs.forEach(input => {
                     input.addEventListener('input', () => {
                         modalUserHasInteracted = true;
-                        checkModalChanges(inputs, saveButtons);
+                        checkModalChanges(inputs, globalSaveButton);
                     });
                     input.addEventListener('change', () => {
                         modalUserHasInteracted = true;
-                        checkModalChanges(inputs, saveButtons);
+                        checkModalChanges(inputs, globalSaveButton);
                     });
                 });
             }, 100);
@@ -1762,7 +1910,7 @@ $status_labels = [
             });
         }
 
-        function checkModalChanges(inputs, saveButtons) {
+        function checkModalChanges(inputs, globalSaveButton) {
             let hasChanges = false;
             inputs.forEach(input => {
                 const key = input.name || input.id;
@@ -1779,16 +1927,14 @@ $status_labels = [
 
             modalHasUnsavedChanges = hasChanges;
 
-            // Update button colors
-            saveButtons.forEach(btn => {
+            // Update global button class
+            if (globalSaveButton) {
                 if (hasChanges) {
-                    btn.style.background = '#e74c3c';
-                    btn.style.boxShadow = '0 2px 8px rgba(231, 76, 60, 0.3)';
+                    globalSaveButton.classList.add('has-changes');
                 } else {
-                    btn.style.background = '#27ae60';
-                    btn.style.boxShadow = '0 2px 8px rgba(39, 174, 96, 0.3)';
+                    globalSaveButton.classList.remove('has-changes');
                 }
-            });
+            }
         }
 
         function closeOrderModal() {
