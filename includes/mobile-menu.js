@@ -18,19 +18,26 @@
             return;
         }
 
-        // Check if already initialized
-        const header = document.querySelector('.header-content');
-        if (!header) {
-            console.error('Mobile menu: Header not found!');
+        // Get compact header (always exists from mobile-menu.php)
+        const compactHeader = document.querySelector('.header-compact');
+        if (!compactHeader) {
+            console.error('Mobile menu: Compact header not found!');
             return;
         }
 
-        if (header.querySelector('.mobile-menu-toggle')) {
+        const headerContent = compactHeader.querySelector('.header-content');
+        if (!headerContent) {
+            console.error('Mobile menu: Header content not found!');
+            return;
+        }
+
+        // Check if already initialized
+        if (headerContent.querySelector('.mobile-menu-toggle')) {
             console.log('Mobile menu: Already initialized');
             return;
         }
 
-        console.log('Mobile menu: Header found');
+        console.log('Mobile menu: Compact header found');
 
         // Create hamburger button
         const hamburgerBtn = document.createElement('button');
@@ -44,9 +51,9 @@
             </div>
         `;
 
-        // Add button to header
-        header.appendChild(hamburgerBtn);
-        console.log('Mobile menu: Hamburger button added to header');
+        // Add button to compact header
+        headerContent.appendChild(hamburgerBtn);
+        console.log('Mobile menu: Hamburger button added to compact header');
 
         // Setup event listeners
         const overlay = document.querySelector('.mobile-menu-overlay');
@@ -56,15 +63,15 @@
         if (overlay) overlay.addEventListener('click', closeMenu);
         if (closeBtn) closeBtn.addEventListener('click', closeMenu);
 
-        console.log('Mobile menu: Event listeners attached');
-        console.log('Mobile menu: Initialization complete!');
-
         // Close on ESC key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && drawer.classList.contains('active')) {
                 closeMenu();
             }
         });
+
+        // Setup scroll detection for compact header
+        setupScrollHeader(compactHeader);
 
         // Update cart count when it changes
         const cartCountElement = document.getElementById('cart-count');
@@ -79,6 +86,51 @@
                 subtree: true
             });
         }
+
+        console.log('Mobile menu: Initialization complete!');
+    }
+
+    // Setup scroll detection for compact header
+    function setupScrollHeader(compactHeader) {
+        let lastScrollTop = 0;
+        const scrollThreshold = 100; // Show header after scrolling 100px
+
+        function handleScroll() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+            // On mobile, always show compact header
+            if (window.innerWidth <= 768) {
+                compactHeader.classList.add('visible');
+                return;
+            }
+
+            // On desktop, show when scrolling down past threshold
+            if (scrollTop > scrollThreshold) {
+                compactHeader.classList.add('visible');
+            } else {
+                compactHeader.classList.remove('visible');
+            }
+
+            lastScrollTop = scrollTop;
+        }
+
+        // Initial check
+        handleScroll();
+
+        // Listen to scroll events (throttled)
+        let ticking = false;
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    handleScroll();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+
+        // Listen to resize events
+        window.addEventListener('resize', handleScroll);
     }
 
     function updateCartBadge() {

@@ -716,18 +716,20 @@ function validate_theme($theme_slug) {
  * @param array $site_config Site configuration
  * @return void Echoes HTML
  */
-function render_site_logo($site_config) {
+function render_site_logo($site_config, $css_class = '') {
     if (!empty($site_config['logo']['enabled']) && !empty($site_config['logo']['path'])) {
         // Render logo image
         $logo_path = htmlspecialchars(url($site_config['logo']['path']));
         $logo_alt = htmlspecialchars($site_config['logo']['alt'] ?? $site_config['site_name']);
         $logo_width = (int)($site_config['logo']['width'] ?? 170);
         $logo_height = (int)($site_config['logo']['height'] ?? 85);
+        $class_attr = $css_class ? ' class="' . htmlspecialchars($css_class) . '"' : '';
 
         echo '<img src="' . $logo_path . '"
                    alt="' . $logo_alt . '"
                    width="' . $logo_width . '"
-                   height="' . $logo_height . '"
+                   height="' . $logo_height . '"' .
+                   $class_attr . '
                    style="max-width: 100%; height: auto;">';
     } else {
         // Render site name as text

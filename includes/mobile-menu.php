@@ -13,6 +13,20 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
 }
 ?>
 
+<!-- Compact Header (Mobile + Scroll) -->
+<div class="header-compact">
+    <div class="header-content">
+        <a href="<?php echo url('/'); ?>" class="logo">
+            <?php
+            if (isset($site_config)) {
+                render_site_logo($site_config, 'compact-logo');
+            }
+            ?>
+        </a>
+        <!-- Hamburger button will be injected here by JS -->
+    </div>
+</div>
+
 <!-- Mobile Menu Overlay -->
 <div class="mobile-menu-overlay"></div>
 

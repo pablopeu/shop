@@ -169,14 +169,62 @@
     font-weight: 700;
 }
 
+/* Compact Header on Scroll */
+.header-compact {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+    padding: 10px 0;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+}
+
+.header-compact.visible {
+    transform: translateY(0);
+}
+
+.header-compact .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: var(--container-width, 1200px);
+    margin: 0 auto;
+    padding: 0 var(--spacing-md, 16px);
+}
+
+.header-compact .logo {
+    display: flex;
+    align-items: center;
+}
+
+.header-compact .logo img,
+.header-compact .compact-logo {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+}
+
+.header-compact .mobile-menu-toggle {
+    display: block;
+}
+
 /* Mobile specific styles */
 @media (max-width: 768px) {
+    /* Always show compact header on mobile */
+    .header-compact {
+        transform: translateY(0);
+    }
+
     /* Show hamburger button */
     .mobile-menu-toggle {
         display: block;
     }
 
-    /* Hide desktop nav */
+    /* Hide desktop nav if exists */
     .header .nav {
         display: none !important;
     }
@@ -184,6 +232,18 @@
     /* Show mobile components */
     .mobile-menu-overlay,
     .mobile-menu-drawer {
+        display: block;
+    }
+
+    /* Add padding to body to account for fixed header */
+    body {
+        padding-top: 60px;
+    }
+}
+
+@media (min-width: 769px) {
+    /* On desktop, hide by default and show on scroll */
+    .header-compact {
         display: block;
     }
 }
