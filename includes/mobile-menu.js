@@ -7,6 +7,21 @@
 (function() {
     'use strict';
 
+    // Create hamburger button element
+    function createHamburgerButton() {
+        const btn = document.createElement('button');
+        btn.className = 'mobile-menu-toggle';
+        btn.setAttribute('aria-label', 'Menú');
+        btn.innerHTML = `
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        `;
+        return btn;
+    }
+
     // Initialize mobile menu
     function initMobileMenu() {
         console.log('Mobile menu: Initializing...');
@@ -39,27 +54,25 @@
 
         console.log('Mobile menu: Compact header found');
 
-        // Create hamburger button
-        const hamburgerBtn = document.createElement('button');
-        hamburgerBtn.className = 'mobile-menu-toggle';
-        hamburgerBtn.setAttribute('aria-label', 'Menú');
-        hamburgerBtn.innerHTML = `
-            <div class="hamburger">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        `;
-
-        // Add button to compact header
-        headerContent.appendChild(hamburgerBtn);
+        // Create hamburger button for compact header
+        const compactHamburgerBtn = createHamburgerButton();
+        headerContent.appendChild(compactHamburgerBtn);
         console.log('Mobile menu: Hamburger button added to compact header');
+
+        // Also add hamburger to normal header if it exists (for pages with header)
+        const normalHeader = document.querySelector('.header .header-content');
+        if (normalHeader && !normalHeader.querySelector('.mobile-menu-toggle')) {
+            const normalHamburgerBtn = createHamburgerButton();
+            normalHeader.appendChild(normalHamburgerBtn);
+            normalHamburgerBtn.addEventListener('click', openMenu);
+            console.log('Mobile menu: Hamburger button added to normal header');
+        }
 
         // Setup event listeners
         const overlay = document.querySelector('.mobile-menu-overlay');
         const closeBtn = drawer.querySelector('.mobile-menu-close');
 
-        hamburgerBtn.addEventListener('click', openMenu);
+        compactHamburgerBtn.addEventListener('click', openMenu);
         if (overlay) overlay.addEventListener('click', closeMenu);
         if (closeBtn) closeBtn.addEventListener('click', closeMenu);
 
@@ -93,18 +106,12 @@
     // Setup scroll detection for compact header
     function setupScrollHeader(compactHeader) {
         let lastScrollTop = 0;
-        const scrollThreshold = 100; // Show header after scrolling 100px
+        const scrollThreshold = 50; // Show compact header after scrolling 50px
 
         function handleScroll() {
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 
-            // On mobile, always show compact header
-            if (window.innerWidth <= 768) {
-                compactHeader.classList.add('visible');
-                return;
-            }
-
-            // On desktop, show when scrolling down past threshold
+            // On both mobile and desktop, show compact header when scrolling down
             if (scrollTop > scrollThreshold) {
                 compactHeader.classList.add('visible');
             } else {
@@ -159,16 +166,17 @@
 
     function openMenu() {
         console.log('Mobile menu: Opening menu...');
-        const toggle = document.querySelector('.mobile-menu-toggle');
+        const toggles = document.querySelectorAll('.mobile-menu-toggle');
         const overlay = document.querySelector('.mobile-menu-overlay');
         const drawer = document.querySelector('.mobile-menu-drawer');
 
-        if (!toggle || !overlay || !drawer) {
-            console.error('Mobile menu: Cannot open - elements not found', { toggle, overlay, drawer });
+        if (!overlay || !drawer) {
+            console.error('Mobile menu: Cannot open - elements not found', { overlay, drawer });
             return;
         }
 
-        toggle.classList.add('active');
+        // Add active class to all toggle buttons
+        toggles.forEach(toggle => toggle.classList.add('active'));
         overlay.classList.add('active');
         drawer.classList.add('active');
         document.body.classList.add('mobile-menu-open');
@@ -183,16 +191,17 @@
 
     function closeMenu() {
         console.log('Mobile menu: Closing menu...');
-        const toggle = document.querySelector('.mobile-menu-toggle');
+        const toggles = document.querySelectorAll('.mobile-menu-toggle');
         const overlay = document.querySelector('.mobile-menu-overlay');
         const drawer = document.querySelector('.mobile-menu-drawer');
 
-        if (!toggle || !overlay || !drawer) {
+        if (!overlay || !drawer) {
             console.error('Mobile menu: Cannot close - elements not found');
             return;
         }
 
-        toggle.classList.remove('active');
+        // Remove active class from all toggle buttons
+        toggles.forEach(toggle => toggle.classList.remove('active'));
         overlay.classList.remove('active');
         drawer.classList.remove('active');
         document.body.classList.remove('mobile-menu-open');

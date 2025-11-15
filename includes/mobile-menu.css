@@ -214,11 +214,6 @@
 
 /* Mobile specific styles */
 @media (max-width: 768px) {
-    /* Always show compact header on mobile */
-    .header-compact {
-        transform: translateY(0);
-    }
-
     /* Show hamburger button */
     .mobile-menu-toggle {
         display: block;
@@ -233,11 +228,6 @@
     .mobile-menu-overlay,
     .mobile-menu-drawer {
         display: block;
-    }
-
-    /* Add padding to body to account for fixed header */
-    body {
-        padding-top: 60px;
     }
 }
 
