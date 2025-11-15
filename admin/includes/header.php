@@ -35,11 +35,11 @@ $username = $_SESSION['username'] ?? 'Admin';
     }
 
     .admin-topbar-top {
-        display: none;
+        display: none !important;
     }
 
     .admin-logo {
-        display: none;
+        display: none !important;
     }
 
     .admin-topbar h1 {
@@ -73,6 +73,21 @@ $username = $_SESSION['username'] ?? 'Admin';
     @media (max-width: 768px) {
         .hamburger-btn {
             display: block;
+        }
+    }
+
+    /* Ensure mini-header is hidden on desktop */
+    @media (min-width: 769px) {
+        .admin-topbar-top {
+            display: none !important;
+        }
+
+        .admin-logo {
+            display: none !important;
+        }
+
+        .hamburger-btn {
+            display: none !important;
         }
     }
 
