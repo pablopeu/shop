@@ -6,23 +6,48 @@
 (function() {
     'use strict';
 
-    // Detect BASE_PATH from script URL
+    // Detect BASE_PATH using multiple methods
     function getBasePath() {
-        const script = document.querySelector('script[src*="mobile-menu.js"]');
-        if (script) {
+        // Method 1: From script tag
+        const scripts = document.querySelectorAll('script[src]');
+        for (let script of scripts) {
             const src = script.getAttribute('src');
-            // Extract base path from script URL
-            // e.g., /shop/includes/mobile-menu.js -> /shop
-            const match = src.match(/^(.*?)\/includes\/mobile-menu\.js/);
-            if (match && match[1]) {
-                return match[1];
+            if (src && src.includes('mobile-menu.js')) {
+                const match = src.match(/^(.*?)\/includes\/mobile-menu\.js/);
+                if (match && match[1]) {
+                    console.log('Mobile menu: BASE_PATH detected from script:', match[1]);
+                    return match[1];
+                }
             }
         }
+
+        // Method 2: From current page path
+        const currentPath = window.location.pathname;
+        // If we're at /shop/index.php, BASE_PATH is /shop
+        const pathParts = currentPath.split('/').filter(p => p);
+        if (pathParts.length > 0 && pathParts[0] !== 'index.php' && !pathParts[0].includes('.php')) {
+            const detectedPath = '/' + pathParts[0];
+            console.log('Mobile menu: BASE_PATH detected from URL:', detectedPath);
+            return detectedPath;
+        }
+
+        // Method 3: Check if we're in a subdirectory by looking at document.baseURI
+        if (document.baseURI) {
+            const baseUrl = new URL(document.baseURI);
+            const basePath = baseUrl.pathname.split('/').filter(p => p && !p.includes('.'))[0];
+            if (basePath) {
+                const detectedPath = '/' + basePath;
+                console.log('Mobile menu: BASE_PATH detected from baseURI:', detectedPath);
+                return detectedPath;
+            }
+        }
+
+        console.log('Mobile menu: No BASE_PATH detected, using empty string');
         return '';
     }
 
     const BASE_PATH = getBasePath();
-    console.log('Mobile menu: Detected BASE_PATH =', BASE_PATH);
+    console.log('Mobile menu: Final BASE_PATH =', BASE_PATH);
 
     // Helper function to create URL with BASE_PATH
     function url(path) {
