@@ -6,6 +6,32 @@
 (function() {
     'use strict';
 
+    // Detect BASE_PATH from script URL
+    function getBasePath() {
+        const script = document.querySelector('script[src*="mobile-menu.js"]');
+        if (script) {
+            const src = script.getAttribute('src');
+            // Extract base path from script URL
+            // e.g., /shop/includes/mobile-menu.js -> /shop
+            const match = src.match(/^(.*?)\/includes\/mobile-menu\.js/);
+            if (match && match[1]) {
+                return match[1];
+            }
+        }
+        return '';
+    }
+
+    const BASE_PATH = getBasePath();
+    console.log('Mobile menu: Detected BASE_PATH =', BASE_PATH);
+
+    // Helper function to create URL with BASE_PATH
+    function url(path) {
+        if (!path.startsWith('/')) {
+            path = '/' + path;
+        }
+        return BASE_PATH + path;
+    }
+
     // Create mobile menu HTML structure
     function initMobileMenu() {
         console.log('Mobile menu: Initializing...');
@@ -57,24 +83,24 @@
                 <button class="mobile-menu-close" aria-label="Cerrar menú">&times;</button>
             </div>
             <nav class="mobile-menu-nav">
-                <a href="/">
+                <a href="${url('/')}">
                     <span class="mobile-menu-icon">🏠</span>
                     Inicio
                 </a>
-                <a href="/buscar.php">
+                <a href="${url('/buscar.php')}">
                     <span class="mobile-menu-icon">🔍</span>
                     Buscar
                 </a>
-                <a href="/favoritos.php">
+                <a href="${url('/favoritos.php')}">
                     <span class="mobile-menu-icon">❤️</span>
                     Favoritos
                 </a>
-                <a href="/carrito.php">
+                <a href="${url('/carrito.php')}">
                     <span class="mobile-menu-icon">🛒</span>
                     Carrito
                     ${cartCount !== '0' ? `<span class="mobile-menu-badge">${cartCount}</span>` : ''}
                 </a>
-                <a href="/pedido.php">
+                <a href="${url('/pedido.php')}">
                     <span class="mobile-menu-icon">📦</span>
                     Mis Pedidos
                 </a>
@@ -105,7 +131,7 @@
             const observer = new MutationObserver(() => {
                 const newCount = cartCountElement.textContent;
                 const badge = drawer.querySelector('.mobile-menu-badge');
-                const cartLink = drawer.querySelector('a[href="/carrito.php"]');
+                const cartLink = drawer.querySelector(`a[href="${url('/carrito.php')}"]`);
 
                 if (newCount !== '0') {
                     if (!badge) {
