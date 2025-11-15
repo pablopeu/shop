@@ -186,12 +186,14 @@
     padding: 10px 0;
     transform-origin: top center;
     transform: scaleY(0);
-    transition: transform 1.5s ease;
+    opacity: 0;
+    transition: transform 1.5s ease, opacity 1.5s ease;
     overflow: hidden;
 }
 
 .header-compact.visible {
     transform: scaleY(1);
+    opacity: 1;
 }
 
 .header-compact .header-content {
