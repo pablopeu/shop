@@ -1614,6 +1614,45 @@ $status_labels = [
                         </small>
                     </div>
                     ` : ''}
+
+                    <!-- Historial de Cambios de Estado -->
+                    <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea;">
+                        <label><strong>📋 Historial de Cambios de Estado:</strong></label>
+                        <div style="margin-top: 15px;">
+                            ${order.status_history && order.status_history.length > 0 ?
+                                order.status_history.map((change, index) => `
+                                    <div style="background: white; padding: 12px; margin-bottom: ${index < order.status_history.length - 1 ? '10px' : '0'}; border-radius: 4px; border-left: 3px solid ${
+                                        change.status === 'pending' ? '#FFA726' :
+                                        change.status === 'cobrada' ? '#4CAF50' :
+                                        change.status === 'shipped' ? '#2196F3' :
+                                        change.status === 'delivered' ? '#4CAF50' :
+                                        change.status === 'cancelled' || change.status === 'rechazada' ? '#f44336' : '#999'
+                                    };">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                            <span style="font-weight: 600; color: #333;">
+                                                ${change.status === 'pending' ? '⏳ Pendiente' :
+                                                  change.status === 'cobrada' ? '💰 Cobrada' :
+                                                  change.status === 'shipped' ? '🚚 Enviado' :
+                                                  change.status === 'delivered' ? '📦 Entregado' :
+                                                  change.status === 'cancelled' ? '❌ Cancelado' :
+                                                  change.status === 'rechazada' ? '⛔ Rechazada' :
+                                                  change.status}
+                                            </span>
+                                            <span style="font-size: 12px; color: #666;">
+                                                ${new Date(change.date).toLocaleString('es-AR')}
+                                            </span>
+                                        </div>
+                                        ${change.user ? `
+                                        <div style="font-size: 12px; color: #999;">
+                                            👤 Por: ${change.user}
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                `).join('') :
+                                '<div style="text-align: center; color: #999; padding: 20px; font-style: italic;">No hay cambios de estado registrados</div>'
+                            }
+                        </div>
+                    </div>
                 </div>
 
                 <!-- TAB 3: Estado & Tracking -->

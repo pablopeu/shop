@@ -66,6 +66,7 @@ try {
     if ($contact_preference === 'telegram') {
         // Send via Telegram
         if (empty($order['telegram_chat_id'])) {
+            error_log("Custom message error: No telegram_chat_id for order {$order_id}");
             echo json_encode(['success' => false, 'message' => 'No hay chat_id de Telegram registrado para este cliente']);
             exit;
         }
@@ -75,16 +76,19 @@ try {
         $message .= "\n\n";
         $message .= "Pedido: <b>#{$order['order_number']}</b>";
 
+        error_log("Sending Telegram message to chat_id: {$order['telegram_chat_id']}");
         $sent = send_telegram_to_user($order['telegram_chat_id'], $message);
         $channel = 'telegram';
+        error_log("Telegram send result: " . ($sent ? 'SUCCESS' : 'FAILED'));
 
         if (!$sent) {
-            echo json_encode(['success' => false, 'message' => 'Error al enviar mensaje por Telegram']);
+            echo json_encode(['success' => false, 'message' => 'Error al enviar mensaje por Telegram. Verifica la configuración del bot.']);
             exit;
         }
     } else {
         // Send via Email
         if (empty($order['customer_email'])) {
+            error_log("Custom message error: No email for order {$order_id}");
             echo json_encode(['success' => false, 'message' => 'No hay email registrado para este cliente']);
             exit;
         }
@@ -128,11 +132,13 @@ try {
 </body>
 </html>';
 
+        error_log("Sending email to: {$order['customer_email']}");
         $sent = send_email($order['customer_email'], $subject, $html);
         $channel = 'email';
+        error_log("Email send result: " . ($sent ? 'SUCCESS' : 'FAILED'));
 
         if (!$sent) {
-            echo json_encode(['success' => false, 'message' => 'Error al enviar email']);
+            echo json_encode(['success' => false, 'message' => 'Error al enviar email. Verifica la configuración de email.']);
             exit;
         }
     }
