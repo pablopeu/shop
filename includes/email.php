@@ -80,6 +80,7 @@ function get_email_config() {
                     'payment_approved' => true,
                     'payment_rejected' => true,
                     'payment_pending' => true,
+                    'order_paid' => true,
                     'order_shipped' => true,
                     'chargeback_notice' => true
                 ],

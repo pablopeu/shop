@@ -7,6 +7,7 @@ require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/orders.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/email.php';
+require_once __DIR__ . '/../includes/telegram.php';
 
 // Start session
 session_start();
@@ -47,14 +48,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
                 // Send notification based on customer's contact preference
                 $contact_preference = $updated_order['contact_preference'] ?? 'email';
 
+                error_log("Order {$order_id} marked as paid. Contact preference: {$contact_preference}");
+
                 if ($contact_preference === 'telegram' && !empty($updated_order['telegram_chat_id'])) {
                     // Send via Telegram
-                    require_once __DIR__ . '/../includes/telegram.php';
-                    send_telegram_order_paid_to_customer($updated_order);
+                    error_log("Sending Telegram notification to chat_id: {$updated_order['telegram_chat_id']}");
+                    $telegram_result = send_telegram_order_paid_to_customer($updated_order);
+                    error_log("Telegram notification result: " . ($telegram_result ? 'SUCCESS' : 'FAILED'));
                 } elseif (!empty($updated_order['customer_email'])) {
                     // Send via Email (default)
-                    send_order_paid_email($updated_order);
+                    error_log("Sending email notification to: {$updated_order['customer_email']}");
+                    $email_result = send_order_paid_email($updated_order);
+                    error_log("Email notification result: " . ($email_result ? 'SUCCESS' : 'FAILED'));
+                } else {
+                    error_log("No valid contact method found for order {$order_id}");
                 }
+            } else {
+                error_log("Could not retrieve updated order {$order_id}");
             }
         }
     } else {
