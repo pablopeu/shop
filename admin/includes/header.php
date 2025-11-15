@@ -23,6 +23,9 @@ $username = $_SESSION['username'] ?? 'Admin';
         align-items: center;
         gap: 15px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        position: sticky;
+        top: 0;
+        z-index: 100;
     }
 
     .admin-topbar-left {
