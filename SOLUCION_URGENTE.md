@@ -7,7 +7,7 @@
 **Los webhooks están siendo RECHAZADOS por validación de firma inválida**
 
 Análisis de logs:
-- ✅ 100 webhooks recibidos
+- ✅ 100 webhooks recibidos 
 - ✅ IP validation: PASSED
 - ❌ Signature validation: FAILED (17 rechazos)
 - 23 webhooks de tipo "payment" fueron bloqueados
