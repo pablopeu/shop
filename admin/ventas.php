@@ -41,14 +41,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
             }
         }
 
-        // Send notification when order is marked as paid
-        if ($new_status === 'paid') {
+        // Send notification when order is marked as cobrada (paid)
+        if ($new_status === 'cobrada') {
             $updated_order = get_order_by_id($order_id);
             if ($updated_order) {
                 // Send notification based on customer's contact preference
                 $contact_preference = $updated_order['contact_preference'] ?? 'email';
 
-                error_log("Order {$order_id} marked as paid. Contact preference: {$contact_preference}");
+                error_log("Order {$order_id} marked as cobrada. Contact preference: {$contact_preference}");
 
                 if ($contact_preference === 'telegram' && !empty($updated_order['telegram_chat_id'])) {
                     // Send via Telegram
