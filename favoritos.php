@@ -313,6 +313,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
     <!-- Cart Validator -->
     <script src="<?php echo url('/includes/cart-validator.js'); ?>"></script>
     <!-- Mobile Menu -->
+    <?php include __DIR__ . '/includes/mobile-menu.php'; ?>
     <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
     <!-- Footer -->

@@ -131,6 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
     <!-- Mobile Menu -->
+    <?php include __DIR__ . '/includes/mobile-menu.php'; ?>
     <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
     <!-- Footer -->

@@ -505,6 +505,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
     <script src="<?php echo url('/includes/carousel.js'); ?>"></script>
 
     <!-- Mobile Menu -->
+    <?php include __DIR__ . '/includes/mobile-menu.php'; ?>
     <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
     <!-- Auto-update Exchange Rate -->

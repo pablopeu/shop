@@ -2144,6 +2144,7 @@ $csrf_token = generate_csrf_token();
     <script src="https://sdk.mercadopago.com/js/v2"></script>
 
     <!-- Mobile Menu -->
+    <?php include __DIR__ . '/includes/mobile-menu.php'; ?>
     <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
 
     <!-- Footer -->
