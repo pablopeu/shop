@@ -70,7 +70,7 @@ $username = $_SESSION['username'] ?? 'Admin';
         transform: scale(0.95);
     }
 
-    @media (max-width: 1024px) {
+    @media (max-width: 768px) {
         .hamburger-btn {
             display: block;
         }
