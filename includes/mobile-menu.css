@@ -169,6 +169,11 @@
     font-weight: 700;
 }
 
+/* Hide normal header when compact header is visible */
+.header.hidden-on-scroll {
+    display: none !important;
+}
+
 /* Compact Header on Scroll */
 .header-compact {
     position: fixed;

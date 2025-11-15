@@ -105,6 +105,7 @@
 
     // Setup scroll detection for compact header
     function setupScrollHeader(compactHeader) {
+        const normalHeader = document.querySelector('.header');
         let lastScrollTop = 0;
         const scrollThreshold = 50; // Show compact header after scrolling 50px
 
@@ -114,8 +115,16 @@
             // On both mobile and desktop, show compact header when scrolling down
             if (scrollTop > scrollThreshold) {
                 compactHeader.classList.add('visible');
+                // Hide normal header if it exists
+                if (normalHeader) {
+                    normalHeader.classList.add('hidden-on-scroll');
+                }
             } else {
                 compactHeader.classList.remove('visible');
+                // Show normal header if it exists
+                if (normalHeader) {
+                    normalHeader.classList.remove('hidden-on-scroll');
+                }
             }
 
             lastScrollTop = scrollTop;
