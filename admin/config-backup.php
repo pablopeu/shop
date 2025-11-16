@@ -130,18 +130,30 @@ function createBackup($project_root, $backups_dir) {
     // Execute tar command
     exec($command . ' 2>&1', $output, $return_var);
 
+    // Debug: log command and output
+    error_log("Backup command: " . $command);
+    error_log("Backup output: " . implode("\n", $output));
+    error_log("Backup return code: " . $return_var);
+
     // Check if backup was created successfully
     if ($return_var !== 0) {
         return [
             'success' => false,
-            'message' => 'Error al crear el backup: ' . implode("\n", $output)
+            'message' => 'Error al crear el backup (código ' . $return_var . '): ' . implode("<br>", $output)
         ];
     }
 
-    if (!file_exists($backup_filepath) || filesize($backup_filepath) === 0) {
+    if (!file_exists($backup_filepath)) {
         return [
             'success' => false,
-            'message' => 'El archivo de backup no se creó correctamente'
+            'message' => 'El archivo de backup no se creó. Verifica permisos del directorio: ' . $backups_dir
+        ];
+    }
+
+    if (filesize($backup_filepath) === 0) {
+        return [
+            'success' => false,
+            'message' => 'El archivo de backup se creó pero está vacío'
         ];
     }
 
@@ -319,6 +331,73 @@ if (!isset($_SESSION['csrf_token'])) {
         .mt-3 { margin-top: 15px; }
         .mt-4 { margin-top: 20px; }
 
+        /* Progress Overlay */
+        .progress-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .progress-overlay.active {
+            display: flex;
+        }
+        .progress-container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 500px;
+        }
+        .progress-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .progress-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .progress-message {
+            font-size: 16px;
+            color: #6c757d;
+            line-height: 1.6;
+        }
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            border-radius: 4px;
+            animation: progress-animation 2s ease-in-out infinite;
+        }
+        @keyframes progress-animation {
+            0% { width: 30%; }
+            50% { width: 70%; }
+            100% { width: 30%; }
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .main-content { margin-left: 0; }
@@ -328,6 +407,7 @@ if (!isset($_SESSION['csrf_token'])) {
             .info-grid { grid-template-columns: 1fr; }
             .table { font-size: 13px; }
             .btn { width: 100%; margin-bottom: 5px; }
+            .progress-container { padding: 30px 20px; }
         }
     </style>
     <?php include __DIR__ . '/includes/admin-common-styles.php'; ?>
@@ -554,9 +634,39 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
 
     </div>
 
+    <!-- Progress Overlay -->
+    <div class="progress-overlay" id="progressOverlay">
+        <div class="progress-container">
+            <div class="progress-spinner"></div>
+            <div class="progress-title">💾 Creando Backup</div>
+            <div class="progress-message">
+                Generando backup completo del sitio...<br>
+                <strong>Por favor, no cierres esta ventana.</strong>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar"></div>
+            </div>
+            <p style="color: #6c757d; font-size: 14px; margin-top: 15px;">
+                ⏱️ Este proceso puede tomar varios minutos
+            </p>
+        </div>
+    </div>
+
     <?php include __DIR__ . '/includes/modal.php'; ?>
 
     <script>
+        // Mostrar overlay de progreso
+        function showProgressOverlay() {
+            document.getElementById('progressOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Ocultar overlay de progreso
+        function hideProgressOverlay() {
+            document.getElementById('progressOverlay').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
         // Confirmar creación de backup usando modal
         function confirmBackup(event) {
             event.preventDefault();
@@ -571,7 +681,13 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
                 cancelText: 'Cancelar',
                 confirmType: 'primary',
                 onConfirm: function() {
-                    document.getElementById('backupForm').submit();
+                    // Mostrar overlay de progreso
+                    showProgressOverlay();
+
+                    // Enviar formulario
+                    setTimeout(function() {
+                        document.getElementById('backupForm').submit();
+                    }, 100);
                 }
             });
 
