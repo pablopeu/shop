@@ -10,4 +10,4 @@ require_once __DIR__ . '/../includes/auth.php';
 destroy_admin_session();
 
 // Redirect to login
-redirect('/admin/login.php?logged_out=1');
+redirect(url('/admin/login.php?logged_out=1'));

@@ -14,7 +14,7 @@ session_start();
 
 // If already logged in, redirect to dashboard
 if (is_admin()) {
-    redirect('/admin/index.php');
+    redirect(url('/admin/index.php'));
 }
 
 $error = '';
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($result['success']) {
                 create_admin_session($result['user']);
-                redirect('/admin/index.php');
+                redirect(url('/admin/index.php'));
             } else {
                 $error = $result['message'];
             }

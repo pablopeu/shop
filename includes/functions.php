@@ -631,13 +631,13 @@ function is_admin() {
  */
 function require_admin() {
     if (!is_admin()) {
-        redirect('/admin/login.php');
+        redirect(url('/admin/login.php'));
     }
 
     // Check session timeout (default: 2 hours)
     require_once __DIR__ . '/auth.php';
     if (!check_session_timeout(7200)) {
-        redirect('/admin/login.php?timeout=1');
+        redirect(url('/admin/login.php?timeout=1'));
     }
 }
 

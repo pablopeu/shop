@@ -454,4 +454,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
 </script>
 
 <!-- Session Monitor - Auto-redirects if session expires -->
+<script>
+    // Define BASE_PATH for JavaScript to use
+    window.BASE_PATH = '<?php echo BASE_PATH; ?>';
+</script>
 <script src="<?php echo url('/admin/includes/session-monitor.js'); ?>"></script>

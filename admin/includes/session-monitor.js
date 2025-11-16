@@ -108,7 +108,8 @@
 
         // Redirect to login after showing message
         setTimeout(() => {
-            window.location.href = '/admin/login.php?timeout=1';
+            const basePath = window.BASE_PATH || '';
+            window.location.href = basePath + '/admin/login.php?timeout=1';
         }, 1500);
     }
 

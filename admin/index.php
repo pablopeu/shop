@@ -22,7 +22,7 @@ $credentials = file_exists(__DIR__ . '/../config/credentials.php')
     : ['security' => ['session_lifetime' => 3600]];
 
 if (!check_session_timeout($credentials['security']['session_lifetime'])) {
-    redirect('/admin/login.php?timeout=1');
+    redirect(url('/admin/login.php?timeout=1'));
 }
 
 // Get statistics

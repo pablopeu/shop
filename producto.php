@@ -23,7 +23,7 @@ session_start();
 $slug = $_GET['slug'] ?? '';
 
 if (empty($slug)) {
-    redirect('/');
+    redirect(url('/'));
 }
 
 $product = get_product_by_slug($slug);
