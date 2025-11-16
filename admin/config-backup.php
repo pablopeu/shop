@@ -549,7 +549,8 @@ Resultado del Backup:
 
                     <form method="POST" id="backupForm" onsubmit="return confirmBackup(event)">
                         <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-                        <button type="submit" name="create_backup" class="btn btn-primary btn-lg">
+                        <input type="hidden" name="create_backup" value="1">
+                        <button type="submit" class="btn btn-primary btn-lg">
                             💾 Crear Backup Ahora
                         </button>
                     </form>
