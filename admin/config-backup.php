@@ -88,15 +88,7 @@ function getAvailableSpace($path) {
 }
 
 /**
- * Safe shell argument escaping (alternative to escapeshellarg)
- */
-function safe_shell_arg($arg) {
-    // Replace single quotes with '\'' (end quote, escaped quote, start quote)
-    return "'" . str_replace("'", "'\\''", $arg) . "'";
-}
-
-/**
- * Create complete site backup
+ * Create complete site backup using PHP PharData
  */
 function createBackup($project_root, $backups_dir) {
     error_log(">>> createBackup() INICIADA");
@@ -122,38 +114,45 @@ function createBackup($project_root, $backups_dir) {
         ];
     }
 
-    // Build tar command
-    // -c: create archive
-    // -z: compress with gzip
-    // -p: preserve permissions
-    // -f: output file
-    // --exclude: exclude backups directory to avoid recursion
-    $exclude_path = 'data/backups';
+    // Create backup using PHP PharData (no shell commands needed)
+    error_log(">>> Creando backup con PharData");
 
-    $command = sprintf(
-        'tar -czpf %s --exclude=%s -C %s .',
-        safe_shell_arg($backup_filepath),
-        safe_shell_arg($exclude_path),
-        safe_shell_arg($project_root)
-    );
+    try {
+        // Create temporary .tar file first
+        $temp_tar = $backup_filepath . '.temp.tar';
 
-    // Execute tar command
-    exec($command . ' 2>&1', $output, $return_var);
+        // Create Phar archive
+        $phar = new PharData($temp_tar);
 
-    // Debug: log command and output
-    error_log("Backup command: " . $command);
-    error_log("Backup output: " . implode("\n", $output));
-    error_log("Backup return code: " . $return_var);
+        // Build directory recursively, excluding backups directory
+        error_log(">>> Construyendo archivo tar...");
+        $phar->buildFromDirectory($project_root, '/^(?!.*data\/backups).*$/');
 
-    // Check if backup was created successfully
-    if ($return_var !== 0) {
+        // Compress to .tar.gz
+        error_log(">>> Comprimiendo a gzip...");
+        $phar->compress(Phar::GZ);
+
+        // Remove temporary .tar file
+        @unlink($temp_tar);
+
+        // Rename .tar.gz file to final name
+        if (file_exists($temp_tar . '.gz')) {
+            rename($temp_tar . '.gz', $backup_filepath);
+        }
+
+        error_log(">>> Backup creado con PharData");
+
+    } catch (Exception $e) {
+        error_log(">>> ERROR en PharData: " . $e->getMessage());
         return [
             'success' => false,
-            'message' => 'Error al crear el backup (código ' . $return_var . '): ' . implode("<br>", $output)
+            'message' => 'Error al crear el backup: ' . $e->getMessage()
         ];
     }
 
+    // Verify backup was created
     if (!file_exists($backup_filepath)) {
+        error_log(">>> ERROR: El archivo no existe después de crear");
         return [
             'success' => false,
             'message' => 'El archivo de backup no se creó. Verifica permisos del directorio: ' . $backups_dir
@@ -161,11 +160,14 @@ function createBackup($project_root, $backups_dir) {
     }
 
     if (filesize($backup_filepath) === 0) {
+        error_log(">>> ERROR: El archivo está vacío");
         return [
             'success' => false,
             'message' => 'El archivo de backup se creó pero está vacío'
         ];
     }
+
+    error_log(">>> Backup exitoso: " . formatBytes(filesize($backup_filepath)));
 
     // Set restrictive permissions on backup file
     chmod($backup_filepath, 0600);
