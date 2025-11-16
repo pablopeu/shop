@@ -88,6 +88,14 @@ function getAvailableSpace($path) {
 }
 
 /**
+ * Safe shell argument escaping (alternative to escapeshellarg)
+ */
+function safe_shell_arg($arg) {
+    // Replace single quotes with '\'' (end quote, escaped quote, start quote)
+    return "'" . str_replace("'", "'\\''", $arg) . "'";
+}
+
+/**
  * Create complete site backup
  */
 function createBackup($project_root, $backups_dir) {
@@ -114,9 +122,9 @@ function createBackup($project_root, $backups_dir) {
 
     $command = sprintf(
         'tar -czpf %s --exclude=%s -C %s .',
-        escapeshellarg($backup_filepath),
-        escapeshellarg($exclude_path),
-        escapeshellarg($project_root)
+        safe_shell_arg($backup_filepath),
+        safe_shell_arg($exclude_path),
+        safe_shell_arg($project_root)
     );
 
     // Execute tar command
@@ -240,8 +248,7 @@ if (!isset($_SESSION['csrf_token'])) {
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
 
         /* Layout */
-        .dashboard-container { display: flex; }
-        .main-content { margin-left: 260px; padding: 20px; max-width: 1200px; flex: 1; }
+        .main-content { margin-left: 260px; padding: 20px; max-width: 1200px; }
 
         /* Header */
         .content-header { margin-bottom: 20px; }
@@ -326,12 +333,10 @@ if (!isset($_SESSION['csrf_token'])) {
     <?php include __DIR__ . '/includes/admin-common-styles.php'; ?>
 </head>
 <body>
-    <?php include __DIR__ . '/includes/header.php'; ?>
+    <?php include __DIR__ . '/includes/sidebar.php'; ?>
 
-    <div class="dashboard-container">
-        <?php include __DIR__ . '/includes/sidebar.php'; ?>
-
-        <main class="main-content">
+    <div class="main-content">
+        <?php include __DIR__ . '/includes/header.php'; ?>
             <div class="content-header">
                 <h1><?php echo $page_title; ?></h1>
                 <p>Crear y gestionar copias de seguridad completas del sitio</p>
@@ -401,7 +406,7 @@ if (!isset($_SESSION['csrf_token'])) {
                         </ul>
                     </div>
 
-                    <form method="POST" onsubmit="return confirmBackup()">
+                    <form method="POST" id="backupForm" onsubmit="return confirmBackup(event)">
                         <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                         <button type="submit" name="create_backup" class="btn btn-primary btn-lg">
                             💾 Crear Backup Ahora
@@ -452,7 +457,7 @@ if (!isset($_SESSION['csrf_token'])) {
                                                 </a>
 
                                                 <form method="POST" style="display: inline;"
-                                                      onsubmit="return confirm('¿Estás seguro de eliminar este backup?\n\n<?php echo $backup['filename']; ?>');">
+                                                      onsubmit="return confirmDelete(event, '<?php echo htmlspecialchars($backup['filename'], ENT_QUOTES); ?>');">
                                                     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                                                     <input type="hidden" name="backup_filename" value="<?php echo htmlspecialchars($backup['filename']); ?>">
                                                     <button type="submit" name="delete_backup"
@@ -547,12 +552,52 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
                 </div>
             </div>
 
-        </main>
     </div>
 
+    <?php include __DIR__ . '/includes/modal.php'; ?>
+
     <script>
-        function confirmBackup() {
-            return confirm('¿Deseas crear un backup completo del sitio?\n\nEsto puede tomar varios minutos.\nEl backup se descargará automáticamente al completarse.');
+        // Confirmar creación de backup usando modal
+        function confirmBackup(event) {
+            event.preventDefault();
+
+            showModal({
+                title: '💾 Crear Backup Completo',
+                message: '¿Deseas crear un backup completo del sitio?',
+                details: '<strong>⏱️ Nota:</strong> Este proceso puede tomar varios minutos dependiendo del tamaño del sitio.<br><br><strong>📥</strong> El backup se descargará automáticamente al completarse.',
+                icon: '💾',
+                iconClass: 'info',
+                confirmText: 'Crear Backup',
+                cancelText: 'Cancelar',
+                confirmType: 'primary',
+                onConfirm: function() {
+                    document.getElementById('backupForm').submit();
+                }
+            });
+
+            return false;
+        }
+
+        // Confirmar eliminación de backup
+        function confirmDelete(event, filename) {
+            event.preventDefault();
+            const form = event.target;
+
+            showModal({
+                title: '🗑️ Eliminar Backup',
+                message: '¿Estás seguro de eliminar este backup?',
+                details: '<strong>Archivo:</strong> ' + filename + '<br><br><strong>⚠️ Esta acción no se puede deshacer.</strong>',
+                icon: '🗑️',
+                iconClass: 'danger',
+                confirmText: 'Eliminar',
+                cancelText: 'Cancelar',
+                confirmType: 'danger',
+                onConfirm: function() {
+                    form.submit();
+                }
+            });
+
+            return false;
         }
     </script>
 </body>
