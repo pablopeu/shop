@@ -52,7 +52,6 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
 - ✅ Gestión de ventas con filtros avanzados
 - ✅ Gestión de promociones y cupones
 - ✅ Configuración centralizada (sitio, footer, hero, carrusel, etc.)
-- ✅ Sistema de backup automático
 - ✅ Modo mantenimiento
 - ✅ Logs de acciones administrativas
 
@@ -115,7 +114,6 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
 │   ├── config-mantenimiento.php # Modo mantenimiento
 │   ├── config-themes.php   # Selector de themes
 │   ├── config-analytics.php # Google Analytics, Facebook Pixel
-│   ├── backup.php          # Sistema de backup
 │   ├── verificar-pago-mp.php # Herramienta de verificación de pagos
 │   ├── reprocesar-pago-mp.php # Reprocesar pagos manualmente
 │   └── includes/
@@ -132,7 +130,6 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
 │   ├── reviews.json        # Reviews
 │   ├── admin_logs.json     # Logs de acciones administrativas
 │   ├── webhook_log.json    # Logs de webhooks (auto-generado)
-│   ├── backups/            # Backups automáticos
 │   ├── rate_limits/        # Rate limiting data
 │   └── passwords/          # Usuarios (protegido con .htaccess)
 ├── images/                  # Imágenes
@@ -367,17 +364,6 @@ Para activar el modo mantenimiento:
 3. Los admins pueden acceder normalmente
 4. Bypass URL: `/?bypass=codigo-secreto`
 
-## Sistema de Backup
-
-**Manual:**
-- Ir a Admin → Backup
-- Click en "Crear Backup Ahora"
-- Descargar archivo ZIP
-
-**Automático** (opcional):
-- Configurar cron job para backup diario
-- Mantiene últimos 7 backups automáticamente
-
 ## Multi-Moneda
 
 El sistema soporta ARS y USD:
@@ -583,7 +569,7 @@ Copyright © 2025. Todos los derechos reservados.
 - **Configurar todo desde el panel de administración** (no editar archivos JSON manualmente)
 - **Cambiar contraseña de admin al primer login**
 - **Empezar con Mercadopago en modo sandbox** para pruebas
-- **Hacer backups regulares antes de cambios importantes**
+- **Hacer backups regulares** (usar herramientas del hosting: cPanel, FTP, etc.)
 - **Verificar permisos de escritura en `/data/`, `/config/`, `/images/`, `/assets/`**
 - **Probar emails en ambiente de desarrollo primero**
 - **Configurar y probar el webhook de Mercadopago antes de producción**
@@ -612,7 +598,6 @@ Copyright © 2025. Todos los derechos reservados.
   - [ ] IP whitelisting verificado
 - [ ] **Analytics configurado (opcional)** (Admin → Configuración → Analytics)
 - [ ] SSL certificado instalado
-- [ ] Backup inicial creado
 - [ ] Theme seleccionado (Admin → Configuración → Themes)
 - [ ] Productos de prueba agregados
 - [ ] Proceso de compra testeado end-to-end
