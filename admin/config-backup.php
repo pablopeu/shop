@@ -217,20 +217,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($result['success']) {
                 $size_formatted = formatBytes($result['size']);
-                $message = "✅ Backup creado exitosamente: {$result['filename']} ({$size_formatted})";
-                error_log("Backup exitoso: " . $result['filename']);
-
-                // Auto-download the backup
-                if (file_exists($result['filepath'])) {
-                    error_log("Iniciando descarga del backup");
-                    header('Content-Type: application/x-gzip');
-                    header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
-                    header('Content-Length: ' . filesize($result['filepath']));
-                    readfile($result['filepath']);
-                    exit;
-                } else {
-                    error_log("ERROR: El archivo de backup no existe para descarga: " . $result['filepath']);
-                }
+                $message = "✅ Backup creado exitosamente: <strong>{$result['filename']}</strong> ({$size_formatted})<br>📥 Puedes descargarlo desde la lista de backups disponibles.";
+                error_log("Backup exitoso: " . $result['filename'] . " - " . $size_formatted);
             } else {
                 $error = '❌ ' . $result['message'];
                 error_log("ERROR en backup: " . $result['message']);
@@ -560,7 +548,7 @@ Resultado del Backup:
                     <p class="text-muted mt-3">
                         <small>
                             ⏱️ El proceso puede tomar varios minutos dependiendo del tamaño del sitio.<br>
-                            📥 El backup se descargará automáticamente al completarse.
+                            📥 Una vez completado, aparecerá en la lista de backups disponibles.
                         </small>
                     </p>
                 </div>
@@ -738,7 +726,7 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
             showModal({
                 title: '💾 Crear Backup Completo',
                 message: '¿Deseas crear un backup completo del sitio?',
-                details: '<strong>⏱️ Nota:</strong> Este proceso puede tomar varios minutos dependiendo del tamaño del sitio.<br><br><strong>📥</strong> El backup se descargará automáticamente al completarse.',
+                details: '<strong>⏱️ Nota:</strong> Este proceso puede tomar varios minutos dependiendo del tamaño del sitio.<br><br><strong>📥</strong> Una vez completado, aparecerá en la lista de backups disponibles para descarga.',
                 icon: '💾',
                 iconClass: 'info',
                 confirmText: 'Crear Backup',
