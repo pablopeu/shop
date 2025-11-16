@@ -365,12 +365,25 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <span>⚙️ Configuración</span>
                 <span class="menu-arrow" id="arrow-configuracion">▶</span>
             </div>
-            <ul class="submenu <?php echo in_array($current_page, ['config-sistema.php', 'config-sitio.php', 'config-moneda.php', 'config-hero.php', 'config-carrusel.php', 'config-productos-heading.php', 'config-dashboard.php', 'config-mantenimiento.php', 'config-themes.php', 'config-footer.php', 'config-analytics.php']) ? 'open' : ''; ?>"
+            <ul class="submenu <?php echo in_array($current_page, ['config-sistema.php', 'config-sitio.php', 'config-moneda.php', 'config-mantenimiento.php', 'config-backup.php', 'config-hero.php', 'config-carrusel.php', 'config-productos-heading.php', 'config-dashboard.php', 'config-themes.php', 'config-footer.php', 'config-analytics.php']) ? 'open' : ''; ?>"
                 id="submenu-configuracion">
-                <li><a href="<?php echo url('/admin/config-sistema.php'); ?>" <?php echo $current_page === 'config-sistema.php' ? 'class="active"' : ''; ?>>🔐 Configuración del Sistema</a></li>
-                <li><a href="<?php echo url('/admin/config-sitio.php'); ?>" <?php echo $current_page === 'config-sitio.php' ? 'class="active"' : ''; ?>>📄 Información del Sitio</a></li>
-                <li><a href="<?php echo url('/admin/config-moneda.php'); ?>" <?php echo $current_page === 'config-moneda.php' ? 'class="active"' : ''; ?>>💱 Moneda y Cambio</a></li>
-                <li><a href="<?php echo url('/admin/config-mantenimiento.php'); ?>" <?php echo $current_page === 'config-mantenimiento.php' ? 'class="active"' : ''; ?>>🚧 Mantenimiento</a></li>
+
+                <!-- Configuración del Sistema (Subsección) -->
+                <li>
+                    <div class="menu-item" onclick="toggleSubmenu('config-sistema')">
+                        <span>⚙️ Configuración del Sistema</span>
+                        <span class="menu-arrow" id="arrow-config-sistema">▶</span>
+                    </div>
+                    <ul class="submenu <?php echo in_array($current_page, ['config-sistema.php', 'config-sitio.php', 'config-moneda.php', 'config-mantenimiento.php', 'config-backup.php']) ? 'open' : ''; ?>"
+                        id="submenu-config-sistema">
+                        <li><a href="<?php echo url('/admin/config-sistema.php'); ?>" <?php echo $current_page === 'config-sistema.php' ? 'class="active"' : ''; ?>>🔐 Credenciales del Sistema</a></li>
+                        <li><a href="<?php echo url('/admin/config-sitio.php'); ?>" <?php echo $current_page === 'config-sitio.php' ? 'class="active"' : ''; ?>>📄 Información del Sitio</a></li>
+                        <li><a href="<?php echo url('/admin/config-moneda.php'); ?>" <?php echo $current_page === 'config-moneda.php' ? 'class="active"' : ''; ?>>💱 Moneda y Cambio</a></li>
+                        <li><a href="<?php echo url('/admin/config-mantenimiento.php'); ?>" <?php echo $current_page === 'config-mantenimiento.php' ? 'class="active"' : ''; ?>>🚧 Mantenimiento</a></li>
+                        <li><a href="<?php echo url('/admin/config-backup.php'); ?>" <?php echo $current_page === 'config-backup.php' ? 'class="active"' : ''; ?>>💾 Backup</a></li>
+                    </ul>
+                </li>
+
                 <li><a href="<?php echo url('/admin/config-analytics.php'); ?>" <?php echo $current_page === 'config-analytics.php' ? 'class="active"' : ''; ?>>📊 Tracking & Analytics</a></li>
 
                 <!-- Ajustes Visuales (Submenu anidado) -->
