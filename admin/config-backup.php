@@ -189,43 +189,47 @@ function createBackup($project_root, $backups_dir) {
     ];
 }
 
-// Handle form submissions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    error_log("=== BACKUP POST REQUEST RECEIVED ===");
-    error_log("POST data: " . print_r($_POST, true));
+// Handle AJAX backup request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax']) && $_POST['ajax'] === '1') {
+    header('Content-Type: application/json');
 
     // Verify CSRF token
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-        $error = '❌ Token de seguridad inválido';
-        error_log("ERROR: CSRF token inválido");
-    } else {
-        error_log("CSRF token válido");
+        echo json_encode([
+            'success' => false,
+            'message' => 'Token de seguridad inválido'
+        ]);
+        exit;
+    }
 
-        // Create backup
-        if (isset($_POST['create_backup'])) {
-            error_log("=== INICIANDO CREACIÓN DE BACKUP ===");
-            error_log("Project root: " . $project_root);
-            error_log("Backups dir: " . $backups_dir);
-            error_log("Backups dir exists: " . (is_dir($backups_dir) ? 'YES' : 'NO'));
-            error_log("Backups dir writable: " . (is_writable($backups_dir) ? 'YES' : 'NO'));
+    // Create backup
+    if (isset($_POST['create_backup'])) {
+        $result = createBackup($project_root, $backups_dir);
 
-            $result = createBackup($project_root, $backups_dir);
-
-            error_log("=== RESULTADO DE BACKUP ===");
-            error_log("Success: " . ($result['success'] ? 'YES' : 'NO'));
-            error_log("Result: " . print_r($result, true));
-
-            if ($result['success']) {
-                $size_formatted = formatBytes($result['size']);
-                $message = "✅ Backup creado exitosamente: <strong>{$result['filename']}</strong> ({$size_formatted})<br>📥 Puedes descargarlo desde la lista de backups disponibles.";
-                error_log("Backup exitoso: " . $result['filename'] . " - " . $size_formatted);
-            } else {
-                $error = '❌ ' . $result['message'];
-                error_log("ERROR en backup: " . $result['message']);
-            }
+        if ($result['success']) {
+            $size_formatted = formatBytes($result['size']);
+            echo json_encode([
+                'success' => true,
+                'message' => "Backup creado exitosamente",
+                'filename' => $result['filename'],
+                'size' => $size_formatted
+            ]);
         } else {
-            error_log("POST recibido pero create_backup no está seteado");
+            echo json_encode([
+                'success' => false,
+                'message' => $result['message']
+            ]);
         }
+        exit;
+    }
+}
+
+// Handle regular form submissions (delete backup)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
+    // Verify CSRF token
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $error = '❌ Token de seguridad inválido';
+    } else {
 
         // Delete backup
         if (isset($_POST['delete_backup'])) {
@@ -354,73 +358,6 @@ if (!isset($_SESSION['csrf_token'])) {
         .mt-3 { margin-top: 15px; }
         .mt-4 { margin-top: 20px; }
 
-        /* Progress Overlay */
-        .progress-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-        }
-        .progress-overlay.active {
-            display: flex;
-        }
-        .progress-container {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            text-align: center;
-            max-width: 500px;
-        }
-        .progress-spinner {
-            width: 60px;
-            height: 60px;
-            border: 6px solid #f3f3f3;
-            border-top: 6px solid #007bff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .progress-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        .progress-message {
-            font-size: 16px;
-            color: #6c757d;
-            line-height: 1.6;
-        }
-        .progress-bar-container {
-            width: 100%;
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 20px 0;
-        }
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #007bff, #0056b3);
-            border-radius: 4px;
-            animation: progress-animation 2s ease-in-out infinite;
-        }
-        @keyframes progress-animation {
-            0% { width: 30%; }
-            50% { width: 70%; }
-            100% { width: 30%; }
-        }
-
         /* Responsive */
         @media (max-width: 1024px) {
             .main-content { margin-left: 0; }
@@ -451,34 +388,6 @@ if (!isset($_SESSION['csrf_token'])) {
 
             <?php if ($message): ?>
                 <div class="alert alert-success"><?php echo $message; ?></div>
-            <?php endif; ?>
-
-            <!-- Debug Panel -->
-            <?php if ($_SERVER['REQUEST_METHOD'] === 'POST'): ?>
-                <div class="card" style="background: #fff3cd; border-left: 4px solid #ffc107;">
-                    <div class="card-header">
-                        <h2>🔍 Debug Info (Request POST detectado)</h2>
-                    </div>
-                    <div class="card-body">
-                        <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto;">
-POST Data: <?php echo htmlspecialchars(print_r($_POST, true)); ?>
-
-CSRF Token válido: <?php echo (isset($_POST['csrf_token']) && $_POST['csrf_token'] === $_SESSION['csrf_token']) ? 'SÍ' : 'NO'; ?>
-
-create_backup seteado: <?php echo isset($_POST['create_backup']) ? 'SÍ' : 'NO'; ?>
-
-Project Root: <?php echo htmlspecialchars($project_root); ?>
-Backups Dir: <?php echo htmlspecialchars($backups_dir); ?>
-Backups Dir Exists: <?php echo is_dir($backups_dir) ? 'SÍ' : 'NO'; ?>
-Backups Dir Writable: <?php echo is_writable($backups_dir) ? 'SÍ' : 'NO'; ?>
-
-<?php if (isset($result)): ?>
-Resultado del Backup:
-<?php echo htmlspecialchars(print_r($result, true)); ?>
-<?php endif; ?>
-                        </pre>
-                    </div>
-                </div>
             <?php endif; ?>
 
             <!-- System Information -->
@@ -686,42 +595,65 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
 
     </div>
 
-    <!-- Progress Overlay -->
-    <div class="progress-overlay" id="progressOverlay">
-        <div class="progress-container">
-            <div class="progress-spinner"></div>
-            <div class="progress-title">💾 Creando Backup</div>
-            <div class="progress-message">
-                Generando backup completo del sitio...<br>
-                <strong>Por favor, no cierres esta ventana.</strong>
-            </div>
-            <div class="progress-bar-container">
-                <div class="progress-bar"></div>
-            </div>
-            <p style="color: #6c757d; font-size: 14px; margin-top: 15px;">
-                ⏱️ Este proceso puede tomar varios minutos
-            </p>
-        </div>
-    </div>
-
     <?php include __DIR__ . '/includes/modal.php'; ?>
 
+    <style>
+        /* Progress bar dentro del modal */
+        #modalProgressContainer {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e9ecef;
+        }
+        #modalProgressContainer.active {
+            display: block;
+        }
+        .modal-progress-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        .modal-progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .modal-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            border-radius: 4px;
+            animation: progress-animation 2s ease-in-out infinite;
+        }
+        .modal-success-message {
+            color: #28a745;
+            font-weight: 600;
+            margin: 15px 0;
+        }
+        .modal-error-message {
+            color: #dc3545;
+            font-weight: 600;
+            margin: 15px 0;
+        }
+    </style>
+
     <script>
-        // Mostrar overlay de progreso
-        function showProgressOverlay() {
-            document.getElementById('progressOverlay').classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        // Ocultar overlay de progreso
-        function hideProgressOverlay() {
-            document.getElementById('progressOverlay').classList.remove('active');
-            document.body.style.overflow = '';
-        }
-
-        // Confirmar creación de backup usando modal
+        // Confirmar creación de backup usando modal con progress integrado
         function confirmBackup(event) {
             event.preventDefault();
+
+            const modal = document.getElementById('confirmModal');
+            const modalActions = modal.querySelector('.modal-actions');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalDetails = document.getElementById('modalDetails');
+            const confirmBtn = document.getElementById('modalConfirmBtn');
+            const cancelBtn = document.getElementById('modalCancelBtn');
 
             showModal({
                 title: '💾 Crear Backup Completo',
@@ -733,13 +665,101 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
                 cancelText: 'Cancelar',
                 confirmType: 'primary',
                 onConfirm: function() {
-                    // Mostrar overlay de progreso
-                    showProgressOverlay();
+                    // Deshabilitar botones
+                    confirmBtn.disabled = true;
+                    cancelBtn.disabled = true;
+                    confirmBtn.style.opacity = '0.5';
+                    cancelBtn.style.opacity = '0.5';
+                    confirmBtn.style.cursor = 'not-allowed';
+                    cancelBtn.style.cursor = 'not-allowed';
 
-                    // Enviar formulario
-                    setTimeout(function() {
-                        document.getElementById('backupForm').submit();
-                    }, 100);
+                    // Agregar container de progreso si no existe
+                    let progressContainer = document.getElementById('modalProgressContainer');
+                    if (!progressContainer) {
+                        progressContainer = document.createElement('div');
+                        progressContainer.id = 'modalProgressContainer';
+                        progressContainer.innerHTML = `
+                            <div class="modal-progress-spinner"></div>
+                            <p style="color: #6c757d; text-align: center; margin: 10px 0;">
+                                <strong>Creando backup...</strong><br>
+                                Por favor espera, este proceso puede tomar varios minutos.
+                            </p>
+                            <div class="modal-progress-bar-container">
+                                <div class="modal-progress-bar"></div>
+                            </div>
+                            <div id="modalResult"></div>
+                        `;
+                        modalActions.parentNode.insertBefore(progressContainer, modalActions.nextSibling);
+                    }
+
+                    progressContainer.classList.add('active');
+
+                    // Enviar backup via AJAX
+                    const formData = new FormData();
+                    formData.append('csrf_token', '<?php echo $_SESSION['csrf_token']; ?>');
+                    formData.append('create_backup', '1');
+                    formData.append('ajax', '1');
+
+                    fetch(window.location.href, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const resultDiv = document.getElementById('modalResult');
+                        const spinner = progressContainer.querySelector('.modal-progress-spinner');
+                        const progressText = progressContainer.querySelector('p');
+                        const progressBar = progressContainer.querySelector('.modal-progress-bar-container');
+
+                        // Ocultar spinner y progress bar
+                        spinner.style.display = 'none';
+                        progressBar.style.display = 'none';
+
+                        if (data.success) {
+                            progressText.innerHTML = `
+                                <strong style="color: #28a745;">✅ ¡Backup completado!</strong><br>
+                                <span style="color: #6c757d;">Archivo: <strong>${data.filename}</strong> (${data.size})</span>
+                            `;
+
+                            // Agregar botón de cerrar
+                            resultDiv.innerHTML = `
+                                <button class="modal-btn modal-btn-confirm" onclick="location.reload()" style="margin-top: 15px;">
+                                    Cerrar y Actualizar
+                                </button>
+                            `;
+                        } else {
+                            progressText.innerHTML = `
+                                <strong style="color: #dc3545;">❌ Error al crear backup</strong><br>
+                                <span style="color: #6c757d;">${data.message}</span>
+                            `;
+
+                            // Agregar botón de cerrar
+                            resultDiv.innerHTML = `
+                                <button class="modal-btn modal-btn-cancel" onclick="closeModal()" style="margin-top: 15px;">
+                                    Cerrar
+                                </button>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        const resultDiv = document.getElementById('modalResult');
+                        const spinner = progressContainer.querySelector('.modal-progress-spinner');
+                        const progressText = progressContainer.querySelector('p');
+                        const progressBar = progressContainer.querySelector('.modal-progress-bar-container');
+
+                        spinner.style.display = 'none';
+                        progressBar.style.display = 'none';
+                        progressText.innerHTML = `
+                            <strong style="color: #dc3545;">❌ Error de conexión</strong><br>
+                            <span style="color: #6c757d;">${error.message}</span>
+                        `;
+
+                        resultDiv.innerHTML = `
+                            <button class="modal-btn modal-btn-cancel" onclick="closeModal()" style="margin-top: 15px;">
+                                Cerrar
+                            </button>
+                        `;
+                    });
                 }
             });
 
