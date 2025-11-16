@@ -99,13 +99,23 @@ function safe_shell_arg($arg) {
  * Create complete site backup
  */
 function createBackup($project_root, $backups_dir) {
+    error_log(">>> createBackup() INICIADA");
+    error_log(">>> project_root: " . $project_root);
+    error_log(">>> backups_dir: " . $backups_dir);
+
     $timestamp = date('Ymd_His');
     $backup_filename = "backup_{$timestamp}.tar.gz";
     $backup_filepath = $backups_dir . '/' . $backup_filename;
 
+    error_log(">>> backup_filename: " . $backup_filename);
+    error_log(">>> backup_filepath: " . $backup_filepath);
+
     // Check available space (require at least 500MB)
     $available_mb = getAvailableSpace($backups_dir);
+    error_log(">>> Espacio disponible: " . $available_mb . " MB");
+
     if ($available_mb < 500) {
+        error_log(">>> ERROR: Espacio insuficiente");
         return [
             'success' => false,
             'message' => "Espacio insuficiente en disco. Disponible: {$available_mb}MB. Mínimo requerido: 500MB"
@@ -179,29 +189,52 @@ function createBackup($project_root, $backups_dir) {
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    error_log("=== BACKUP POST REQUEST RECEIVED ===");
+    error_log("POST data: " . print_r($_POST, true));
+
     // Verify CSRF token
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         $error = '❌ Token de seguridad inválido';
+        error_log("ERROR: CSRF token inválido");
     } else {
+        error_log("CSRF token válido");
+
         // Create backup
         if (isset($_POST['create_backup'])) {
+            error_log("=== INICIANDO CREACIÓN DE BACKUP ===");
+            error_log("Project root: " . $project_root);
+            error_log("Backups dir: " . $backups_dir);
+            error_log("Backups dir exists: " . (is_dir($backups_dir) ? 'YES' : 'NO'));
+            error_log("Backups dir writable: " . (is_writable($backups_dir) ? 'YES' : 'NO'));
+
             $result = createBackup($project_root, $backups_dir);
+
+            error_log("=== RESULTADO DE BACKUP ===");
+            error_log("Success: " . ($result['success'] ? 'YES' : 'NO'));
+            error_log("Result: " . print_r($result, true));
 
             if ($result['success']) {
                 $size_formatted = formatBytes($result['size']);
                 $message = "✅ Backup creado exitosamente: {$result['filename']} ({$size_formatted})";
+                error_log("Backup exitoso: " . $result['filename']);
 
                 // Auto-download the backup
                 if (file_exists($result['filepath'])) {
+                    error_log("Iniciando descarga del backup");
                     header('Content-Type: application/x-gzip');
                     header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
                     header('Content-Length: ' . filesize($result['filepath']));
                     readfile($result['filepath']);
                     exit;
+                } else {
+                    error_log("ERROR: El archivo de backup no existe para descarga: " . $result['filepath']);
                 }
             } else {
                 $error = '❌ ' . $result['message'];
+                error_log("ERROR en backup: " . $result['message']);
             }
+        } else {
+            error_log("POST recibido pero create_backup no está seteado");
         }
 
         // Delete backup
@@ -428,6 +461,34 @@ if (!isset($_SESSION['csrf_token'])) {
 
             <?php if ($message): ?>
                 <div class="alert alert-success"><?php echo $message; ?></div>
+            <?php endif; ?>
+
+            <!-- Debug Panel -->
+            <?php if ($_SERVER['REQUEST_METHOD'] === 'POST'): ?>
+                <div class="card" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+                    <div class="card-header">
+                        <h2>🔍 Debug Info (Request POST detectado)</h2>
+                    </div>
+                    <div class="card-body">
+                        <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto;">
+POST Data: <?php echo htmlspecialchars(print_r($_POST, true)); ?>
+
+CSRF Token válido: <?php echo (isset($_POST['csrf_token']) && $_POST['csrf_token'] === $_SESSION['csrf_token']) ? 'SÍ' : 'NO'; ?>
+
+create_backup seteado: <?php echo isset($_POST['create_backup']) ? 'SÍ' : 'NO'; ?>
+
+Project Root: <?php echo htmlspecialchars($project_root); ?>
+Backups Dir: <?php echo htmlspecialchars($backups_dir); ?>
+Backups Dir Exists: <?php echo is_dir($backups_dir) ? 'SÍ' : 'NO'; ?>
+Backups Dir Writable: <?php echo is_writable($backups_dir) ? 'SÍ' : 'NO'; ?>
+
+<?php if (isset($result)): ?>
+Resultado del Backup:
+<?php echo htmlspecialchars(print_r($result, true)); ?>
+<?php endif; ?>
+                        </pre>
+                    </div>
+                </div>
             <?php endif; ?>
 
             <!-- System Information -->
