@@ -235,7 +235,94 @@ if (!isset($_SESSION['csrf_token'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $page_title; ?> - <?php echo htmlspecialchars($site_config['site_name']); ?></title>
-    <link rel="stylesheet" href="<?php echo url('/css/admin-styles.css'); ?>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+
+        /* Layout */
+        .dashboard-container { display: flex; }
+        .main-content { margin-left: 260px; padding: 20px; max-width: 1200px; flex: 1; }
+
+        /* Header */
+        .content-header { margin-bottom: 20px; }
+        .content-header h1 { font-size: 28px; color: #2c3e50; margin-bottom: 5px; }
+        .content-header p { color: #6c757d; font-size: 14px; }
+
+        /* Alerts */
+        .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
+        .alert-success { background: #d4edda; border-left: 4px solid #28a745; color: #155724; }
+        .alert-error { background: #f8d7da; border-left: 4px solid #dc3545; color: #721c24; }
+        .alert-warning { background: #fff3cd; border-left: 4px solid #ffc107; color: #856404; }
+
+        /* Cards */
+        .card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .card-header { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0; }
+        .card-header h2 { font-size: 18px; color: #2c3e50; }
+        .card-body { }
+        .card-warning { border-left: 4px solid #ff9800; }
+
+        /* Buttons */
+        .btn { display: inline-block; padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.3s; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+        .btn-lg { padding: 14px 28px; font-size: 16px; }
+
+        /* Table */
+        .table-responsive { overflow-x: auto; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table thead { background: #f8f9fa; }
+        .table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        .table th { font-weight: 600; color: #495057; font-size: 14px; }
+        .table td { color: #6c757d; font-size: 14px; }
+        .table tbody tr:hover { background: #f8f9fa; }
+        .table code { background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+
+        /* Info Grid */
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        .info-item { padding: 10px; background: #f8f9fa; border-radius: 4px; }
+        .info-item strong { display: block; margin-bottom: 5px; color: #495057; font-size: 13px; }
+        .info-item code { background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+
+        /* Backup Info */
+        .backup-info h4 { color: #495057; margin-bottom: 10px; font-size: 1.1em; }
+        .backup-info ul { margin-left: 20px; color: #6c757d; }
+        .backup-info ul li { margin-bottom: 5px; }
+
+        /* Restoration Steps */
+        .restoration-steps { counter-reset: step-counter; list-style: none; padding-left: 0; }
+        .restoration-steps li { counter-increment: step-counter; margin-bottom: 20px; padding-left: 40px; position: relative; }
+        .restoration-steps li::before { content: counter(step-counter); position: absolute; left: 0; top: 0; background: #007bff; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .restoration-steps li.critical-step::before { background: #dc3545; }
+        .restoration-steps li strong { display: block; margin-bottom: 5px; color: #212529; }
+        .restoration-steps li p { margin: 5px 0; color: #6c757d; font-size: 0.95em; }
+
+        /* Pre/Code */
+        pre { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; overflow-x: auto; }
+        pre code { font-family: 'Courier New', monospace; font-size: 0.9em; color: #212529; }
+
+        /* Utilities */
+        .text-danger { color: #dc3545 !important; }
+        .text-success { color: #28a745 !important; }
+        .text-muted { color: #6c757d !important; }
+        .mb-3 { margin-bottom: 15px; }
+        .mb-4 { margin-bottom: 20px; }
+        .mt-3 { margin-top: 15px; }
+        .mt-4 { margin-top: 20px; }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-content { margin-left: 0; }
+        }
+        @media (max-width: 768px) {
+            .main-content { padding: 15px; }
+            .info-grid { grid-template-columns: 1fr; }
+            .table { font-size: 13px; }
+            .btn { width: 100%; margin-bottom: 5px; }
+        }
+    </style>
     <?php include __DIR__ . '/includes/admin-common-styles.php'; ?>
 </head>
 <body>
@@ -468,122 +555,5 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
             return confirm('¿Deseas crear un backup completo del sitio?\n\nEsto puede tomar varios minutos.\nEl backup se descargará automáticamente al completarse.');
         }
     </script>
-
-    <style>
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-        }
-
-        .info-item {
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 4px;
-        }
-
-        .info-item strong {
-            display: block;
-            margin-bottom: 5px;
-            color: #495057;
-        }
-
-        .info-item code {
-            background: #e9ecef;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.9em;
-        }
-
-        .backup-info h4 {
-            color: #495057;
-            margin-bottom: 10px;
-            font-size: 1.1em;
-        }
-
-        .backup-info ul {
-            margin-left: 20px;
-            color: #6c757d;
-        }
-
-        .backup-info ul li {
-            margin-bottom: 5px;
-        }
-
-        .card-warning {
-            border-left: 4px solid #ff9800;
-        }
-
-        .restoration-steps {
-            counter-reset: step-counter;
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .restoration-steps li {
-            counter-increment: step-counter;
-            margin-bottom: 20px;
-            padding-left: 40px;
-            position: relative;
-        }
-
-        .restoration-steps li::before {
-            content: counter(step-counter);
-            position: absolute;
-            left: 0;
-            top: 0;
-            background: #007bff;
-            color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        .restoration-steps li.critical-step::before {
-            background: #dc3545;
-        }
-
-        .restoration-steps li strong {
-            display: block;
-            margin-bottom: 5px;
-            color: #212529;
-        }
-
-        .restoration-steps li p {
-            margin: 5px 0;
-            color: #6c757d;
-            font-size: 0.95em;
-        }
-
-        .text-danger {
-            color: #dc3545 !important;
-        }
-
-        .text-success {
-            color: #28a745 !important;
-        }
-
-        .text-muted {
-            color: #6c757d !important;
-        }
-
-        pre {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            padding: 15px;
-            overflow-x: auto;
-        }
-
-        pre code {
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            color: #212529;
-        }
-    </style>
 </body>
 </html>
