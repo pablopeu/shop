@@ -409,14 +409,14 @@ fi
 
 # Crear directorios necesarios
 mkdir -p data/products
-mkdir -p data/backups
 mkdir -p data/rate_limits
 mkdir -p data/passwords
 mkdir -p images/products
 mkdir -p images/hero
 mkdir -p images/carousel
 mkdir -p images/themes
-mkdir -p assets/logos
+mkdir -p images/logos
+mkdir -p images/footer
 
 echo ""
 echo -e "${GREEN}Inicialización completada!${NC}"

@@ -15,7 +15,7 @@ $error = '';
 
 // Handle logo upload
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['logo_upload']) && $_FILES['logo_upload']['error'] === UPLOAD_ERR_OK) {
-    $upload_dir = __DIR__ . '/../uploads/footer/';
+    $upload_dir = __DIR__ . '/../images/footer/';
     if (!is_dir($upload_dir)) {
         mkdir($upload_dir, 0755, true);
     }
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['logo_upload']) && $_
         $upload_path = $upload_dir . $new_filename;
 
         if (move_uploaded_file($file_tmp, $upload_path)) {
-            $_POST['logo_path'] = '/uploads/footer/' . $new_filename;
+            $_POST['logo_path'] = '/images/footer/' . $new_filename;
             $message = 'Logo subido exitosamente';
         } else {
             $error = 'Error al subir el logo';

@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
 
         // Handle logo upload
         if (isset($_FILES['logo_file']) && $_FILES['logo_file']['error'] === UPLOAD_ERR_OK) {
-            $upload_dir = __DIR__ . '/../assets/logos/';
+            $upload_dir = __DIR__ . '/../images/logos/';
 
             // Create directory if it doesn't exist
             if (!is_dir($upload_dir)) {
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
                         unlink(__DIR__ . '/..' . $config['logo']['path']);
                     }
 
-                    $config['logo']['path'] = '/assets/logos/' . $new_filename;
+                    $config['logo']['path'] = '/images/logos/' . $new_filename;
                     $config['logo']['enabled'] = true;
                     $logo_uploaded = true;
                     $message = 'Logo subido exitosamente';

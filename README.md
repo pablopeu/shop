@@ -132,13 +132,13 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
 │   ├── webhook_log.json    # Logs de webhooks (auto-generado)
 │   ├── rate_limits/        # Rate limiting data
 │   └── passwords/          # Usuarios (protegido con .htaccess)
-├── images/                  # Imágenes
+├── images/                  # Imágenes (todas las imágenes del sitio)
 │   ├── products/           # Fotos de productos
 │   ├── hero/               # Imágenes hero
 │   ├── carousel/           # Imágenes del carrusel
-│   └── themes/             # Previews de themes
-├── assets/                  # Assets del sitio
-│   └── logos/              # Logos del sitio
+│   ├── themes/             # Previews de themes
+│   ├── logos/              # Logo del sitio (config-sitio.php)
+│   └── footer/             # Logo del footer (config-footer.php)
 ├── themes/                  # Themes del sitio
 │   ├── README.md           # Documentación del sistema de themes
 │   ├── _base/              # Estilos base compartidos
@@ -262,13 +262,14 @@ Plataforma completa de e-commerce con backoffice administrativo, diseño respons
    chmod 644 data/*.json
    chmod 700 data/passwords/
    chmod 755 images/
-   chmod 755 assets/
+   chmod 755 images/logos/
+   chmod 755 images/footer/
    ```
 
 5. **Subir vía FTP (si es producción)**
    - Subir todos los archivos al servidor
    - Asegurar que `data/passwords/.htaccess` esté presente
-   - Verificar permisos de escritura en `/data/`, `/config/`, `/images/`, `/assets/`
+   - Verificar permisos de escritura en `/data/`, `/config/`, `/images/`
 
 6. **Configurar el servidor web**
    - Asegurar que el archivo `.htaccess` esté habilitado (para Apache)
@@ -570,7 +571,7 @@ Copyright © 2025. Todos los derechos reservados.
 - **Cambiar contraseña de admin al primer login**
 - **Empezar con Mercadopago en modo sandbox** para pruebas
 - **Hacer backups regulares** (usar herramientas del hosting: cPanel, FTP, etc.)
-- **Verificar permisos de escritura en `/data/`, `/config/`, `/images/`, `/assets/`**
+- **Verificar permisos de escritura en `/data/`, `/config/`, `/images/`**
 - **Probar emails en ambiente de desarrollo primero**
 - **Configurar y probar el webhook de Mercadopago antes de producción**
 - **Revisar logs del webhook regularmente**: `data/webhook_log.json`
@@ -581,7 +582,7 @@ Copyright © 2025. Todos los derechos reservados.
 
 - [ ] Ejecutado `./init-config.sh` en el servidor
 - [ ] Contraseña de admin cambiada desde el panel
-- [ ] Permisos de archivos correctos (`/data/`, `/config/`, `/images/`, `/assets/` con escritura)
+- [ ] Permisos de archivos correctos (`/data/`, `/config/`, `/images/` con escritura)
 - [ ] `.htaccess` en `/data/passwords/`
 - [ ] **Configuración del Sitio** (Admin → Configuración del Sitio)
   - [ ] Nombre, descripción, contacto
