@@ -153,6 +153,12 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                                 <?php endif; ?>
                             </div>
 
+                            <?php if (!empty($product['pickup_only'])): ?>
+                                <div class="pickup-only-badge">
+                                    🏪 Solo retiro en persona
+                                </div>
+                            <?php endif; ?>
+
                             <div class="product-buttons">
                                 <button class="btn btn-secondary" onclick="window.location.href='<?php echo url('/producto.php?slug=' . urlencode($product['slug'])); ?>'" <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>
                                     Ver detalle

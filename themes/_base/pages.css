@@ -215,6 +215,18 @@
     color: #721c24;
 }
 
+.pickup-only-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    margin-bottom: var(--spacing-md);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    background: #d1ecf1;
+    color: #0c5460;
+    border-left: 3px solid #0c5460;
+}
+
 .product-buttons {
     display: flex;
     gap: var(--spacing-sm);

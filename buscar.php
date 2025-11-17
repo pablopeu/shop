@@ -230,6 +230,12 @@ $absolute_max = !empty($prices) ? max($prices) : 10000;
                                             Stock: <?php echo $product['stock']; ?>
                                         <?php endif; ?>
                                     </div>
+
+                                    <?php if (!empty($product['pickup_only'])): ?>
+                                        <div class="pickup-only-badge">
+                                            🏪 Solo retiro en persona
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>
