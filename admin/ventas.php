@@ -657,10 +657,19 @@ $status_labels = [
                  closeOrderModal, confirmCloseOrderModal, cancelCloseOrderModal,
                  showCancelModal, closeCancelModal } from './assets/js/ventas-modal.js';
 
-        // Make functions globally available for inline event handlers
+        // Expose utility functions immediately (don't need data)
         window.showToast = showToast;
         window.copyPaymentLink = copyPaymentLink;
         window.formatPrice = formatPrice;
+
+        // Initialize modal module and expose functions when page loads
+        const ordersData = <?php echo json_encode($orders); ?>;
+        const token = '<?php echo $csrf_token; ?>';
+
+        // Initialize immediately (before DOMContentLoaded)
+        initModal(ordersData, token);
+
+        // Expose modal functions globally
         window.viewOrder = viewOrder;
         window.switchTab = switchTab;
         window.sendCustomMessage = sendCustomMessage;
@@ -670,13 +679,6 @@ $status_labels = [
         window.cancelCloseOrderModal = cancelCloseOrderModal;
         window.showCancelModal = showCancelModal;
         window.closeCancelModal = closeCancelModal;
-
-        // Initialize modal module when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            const ordersData = <?php echo json_encode($orders); ?>;
-            const token = '<?php echo $csrf_token; ?>';
-            initModal(ordersData, token);
-        });
     </script>
 
     <script>
