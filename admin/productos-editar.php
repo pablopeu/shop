@@ -42,9 +42,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_image' && isset($_GET[
     if ($product && isset($product['images'][$index])) {
         $image_path = $product['images'][$index];
 
-        // Delete physical file
-        if (strpos($image_path, '/images/') === 0) {
-            delete_uploaded_image($image_path);
+        // Delete physical file - always try to delete
+        $file_deleted = false;
+        if (!empty($image_path)) {
+            // Try to delete the physical file
+            $file_deleted = delete_uploaded_image($image_path);
+
+            // If it failed and path starts with /, try without it
+            if (!$file_deleted && strpos($image_path, '/') === 0) {
+                $file_deleted = delete_uploaded_image(substr($image_path, 1));
+            }
         }
 
         // Remove from array
@@ -55,7 +62,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_image' && isset($_GET[
 
         // Save
         if (update_product($product_id, $product)) {
-            header('Location: ' . url('/admin/productos-editar.php?id=' . $product_id . '&msg=image_deleted'));
+            $msg = $file_deleted ? 'image_deleted' : 'image_removed_only';
+            header('Location: ' . url('/admin/productos-editar.php?id=' . $product_id . '&msg=' . $msg));
             exit;
         }
     }
@@ -156,7 +164,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
 // Check for messages in URL
 if (isset($_GET['msg'])) {
     if ($_GET['msg'] === 'image_deleted') {
-        $message = 'Imagen eliminada exitosamente';
+        $message = 'Imagen eliminada exitosamente del servidor y del producto';
+    } elseif ($_GET['msg'] === 'image_removed_only') {
+        $message = 'Imagen removida del producto (advertencia: el archivo físico no pudo ser eliminado)';
     }
 }
 
@@ -785,33 +795,57 @@ $user = get_logged_user();
             input.addEventListener('change', checkForChanges);
         });
 
-        // Detect file selection and show preview
+        // Array to store accumulated files
+        let pendingFiles = [];
+
+        // Detect file selection and accumulate files
         if (fileInput) {
-            fileInput.addEventListener('change', function() {
+            fileInput.addEventListener('change', function(e) {
                 if (this.files.length > 0) {
+                    // Add new files to pending array
+                    Array.from(this.files).forEach(file => {
+                        pendingFiles.push(file);
+                    });
+
                     markChanged();
-                    showNewImagesPreview(this.files);
-                } else {
-                    hideNewImagesPreview();
+                    updatePendingFilesPreview();
                 }
             });
         }
 
-        // Show preview of new images to be uploaded
-        function showNewImagesPreview(files) {
+        // Remove file from pending array
+        function removePendingFile(index) {
+            pendingFiles.splice(index, 1);
+            updatePendingFilesPreview();
+
+            if (pendingFiles.length === 0) {
+                hideNewImagesPreview();
+            }
+        }
+
+        // Update preview of pending files
+        function updatePendingFilesPreview() {
             const newImagesPreview = document.getElementById('newImagesPreview');
             const newImageGallery = document.getElementById('new-image-gallery');
 
             if (!newImagesPreview || !newImageGallery) return;
 
+            if (pendingFiles.length === 0) {
+                newImagesPreview.style.display = 'none';
+                return;
+            }
+
             newImageGallery.innerHTML = '';
 
             // Sort files alphabetically
-            const sortedFiles = Array.from(files).sort((a, b) => {
+            const sortedFiles = [...pendingFiles].sort((a, b) => {
                 return a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'});
             });
 
-            sortedFiles.forEach((file, index) => {
+            sortedFiles.forEach((file, displayIndex) => {
+                // Get original index in pendingFiles array
+                const originalIndex = pendingFiles.indexOf(file);
+
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const div = document.createElement('div');
@@ -819,6 +853,7 @@ $user = get_logged_user();
                     div.innerHTML = `
                         <img src="${e.target.result}" alt="${file.name}">
                         <span class="image-badge">NUEVA</span>
+                        <button type="button" class="btn-delete-image" onclick="removePendingFile(${originalIndex})" title="Eliminar">✕</button>
                     `;
                     newImageGallery.appendChild(div);
                 };
@@ -845,7 +880,7 @@ $user = get_logged_user();
                 }
             });
 
-            if (hasChanges || (fileInput && fileInput.files.length > 0)) {
+            if (hasChanges || pendingFiles.length > 0) {
                 markChanged();
             } else {
                 saveBtn.classList.remove('changed');
@@ -884,6 +919,78 @@ $user = get_logged_user();
                 document.getElementById('images_order').value = JSON.stringify(order);
             }
 
+            // If we have pending files, we need to submit via FormData
+            if (pendingFiles.length > 0) {
+                e.preventDefault();
+
+                const formData = new FormData();
+
+                // Add all form fields
+                const formElements = form.elements;
+                for (let i = 0; i < formElements.length; i++) {
+                    const element = formElements[i];
+
+                    // Skip file input (we'll handle it separately)
+                    if (element.type === 'file') continue;
+
+                    // Skip buttons
+                    if (element.type === 'submit' || element.type === 'button') continue;
+
+                    // Handle checkboxes
+                    if (element.type === 'checkbox') {
+                        if (element.checked) {
+                            formData.append(element.name, element.value || 'on');
+                        }
+                    }
+                    // Handle other inputs
+                    else if (element.name) {
+                        formData.append(element.name, element.value);
+                    }
+                }
+
+                // Add pending files
+                pendingFiles.forEach((file, index) => {
+                    formData.append('product_images[]', file);
+                });
+
+                // Submit via fetch
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        return response.text();
+                    }
+                })
+                .then(html => {
+                    if (html) {
+                        document.open();
+                        document.write(html);
+                        document.close();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showModal({
+                        title: 'Error',
+                        message: 'Hubo un error al guardar el producto.',
+                        details: error.message,
+                        icon: '❌',
+                        iconClass: 'error',
+                        confirmText: 'Entendido',
+                        confirmType: 'primary',
+                        cancelText: null,
+                        onConfirm: function() {}
+                    });
+                });
+
+                hasUnsavedChanges = false;
+                return false;
+            }
+
             // Remove beforeunload listener when saving
             hasUnsavedChanges = false;
         });
@@ -905,7 +1012,7 @@ $user = get_logged_user();
             showModal({
                 title: 'Eliminar Imagen',
                 message: '¿Estás seguro de que deseas eliminar esta imagen?',
-                details: 'Esta acción no se puede deshacer.',
+                details: 'Esta acción eliminará permanentemente el archivo del servidor y no se puede deshacer.',
                 icon: '🗑️',
                 confirmText: 'Eliminar',
                 cancelText: 'Cancelar',
