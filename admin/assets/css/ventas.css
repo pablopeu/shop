@@ -128,9 +128,9 @@
         /* Compact Actions Bar - Nuevo layout compacto */
         .compact-actions-bar {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             align-items: center;
-            gap: 15px;
+            gap: 30px;
             flex-wrap: wrap;
             margin-bottom: 15px;
         }
