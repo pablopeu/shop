@@ -24,96 +24,24 @@ $site_config = read_json(__DIR__ . '/../config/site.json');
 // Page title for header
 $page_title = 'Gestión de Ventas';
 
-// Include actions module and handle POST/GET actions
+// Include modules
 require_once __DIR__ . '/includes/ventas/actions.php';
+require_once __DIR__ . '/includes/ventas/filters.php';
+require_once __DIR__ . '/includes/ventas/stats.php';
+
+// Handle POST/GET actions
 $action_result = handle_order_actions();
 $message = $action_result['message'];
 $error = $action_result['error'];
 
-// Filter orders
-$filter_status = $_GET['filter'] ?? 'all';
-$search_query = $_GET['search'] ?? '';
-$date_from = $_GET['date_from'] ?? '';
-$date_to = $_GET['date_to'] ?? '';
+// Get all orders and apply filters
 $all_orders = get_all_orders();
+$filters = get_filter_params();
+$orders = apply_order_filters($all_orders, $filters);
 
-// Apply status filter
-if ($filter_status === 'all') {
-    $orders = $all_orders;
-} else {
-    $orders = array_filter($all_orders, function($order) use ($filter_status) {
-        return $order['status'] === $filter_status;
-    });
-}
-
-// Apply search filter (order number or customer name/email)
-if (!empty($search_query)) {
-    $orders = array_filter($orders, function($order) use ($search_query) {
-        $search_lower = mb_strtolower($search_query);
-        return stripos($order['order_number'], $search_query) !== false ||
-               stripos(mb_strtolower($order['customer_name'] ?? ''), $search_lower) !== false ||
-               stripos(mb_strtolower($order['customer_email'] ?? ''), $search_lower) !== false;
-    });
-}
-
-// Apply date filter
-if (!empty($date_from)) {
-    $orders = array_filter($orders, function($order) use ($date_from) {
-        return strtotime($order['date']) >= strtotime($date_from . ' 00:00:00');
-    });
-}
-
-if (!empty($date_to)) {
-    $orders = array_filter($orders, function($order) use ($date_to) {
-        return strtotime($order['date']) <= strtotime($date_to . ' 23:59:59');
-    });
-}
-
-// Sort by date (newest first)
-usort($orders, function($a, $b) {
-    return strtotime($b['date']) - strtotime($a['date']);
-});
-
-// Calculate stats for non-archived orders
-$non_archived_orders = array_filter($all_orders, fn($o) => !($o['archived'] ?? false));
-
-// 1. Total Orders: count + total amount in pesos (all non-archived orders, any status)
-$total_orders = count($non_archived_orders);
-$total_orders_amount = array_reduce($non_archived_orders, function($sum, $order) {
-    return $sum + floatval($order['total']);
-}, 0);
-
-// 2. Pending Orders: count + total amount in pesos
-$pending_orders_data = array_filter($non_archived_orders, fn($o) => $o['status'] === 'pending' || $o['status'] === 'pendiente');
-$pending_orders = count($pending_orders_data);
-$pending_amount = array_reduce($pending_orders_data, function($sum, $order) {
-    return $sum + floatval($order['total']);
-}, 0);
-
-// 3. Cobradas (Confirmed): count + gross amount (without discounting fees)
-$cobradas_orders = array_filter($non_archived_orders, fn($o) => $o['status'] === 'cobrada');
-$confirmed_orders = count($cobradas_orders);
-$cobradas_amount_gross = array_reduce($cobradas_orders, function($sum, $order) {
-    return $sum + floatval($order['total']);
-}, 0);
-
-// 4. Total Fees: sum of all MP fees from non-archived collected orders
-$total_fees = array_reduce($cobradas_orders, function($sum, $order) {
-    if (isset($order['mercadopago_data']['total_fees'])) {
-        return $sum + floatval($order['mercadopago_data']['total_fees']);
-    }
-    return $sum;
-}, 0);
-
-// 5. Net Revenue: collected amount - fees
-$net_revenue = array_reduce($cobradas_orders, function($sum, $order) {
-    if (isset($order['mercadopago_data']['net_received_amount'])) {
-        return $sum + floatval($order['mercadopago_data']['net_received_amount']);
-    } else {
-        // For presencial payments or orders without MP data, use full total
-        return $sum + floatval($order['total']);
-    }
-}, 0);
+// Calculate statistics
+$stats = calculate_order_stats($all_orders);
+extract($stats); // Extract stats variables for backward compatibility
 
 // Generate CSRF token
 $csrf_token = generate_csrf_token();
