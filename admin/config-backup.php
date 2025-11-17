@@ -644,78 +644,72 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
     </style>
 
     <script>
-        // Variable para prevenir que el modal se cierre automáticamente
-        let preventModalClose = false;
-
         // Confirmar creación de backup usando modal con progress integrado
         function confirmBackup(event) {
             event.preventDefault();
 
-            showModal({
-                title: '💾 Crear Backup Completo',
-                message: '¿Deseas crear un backup completo del sitio?',
-                details: '<strong>⏱️ Nota:</strong> Este proceso puede tomar varios minutos dependiendo del tamaño del sitio.<br><br><strong>📥</strong> Una vez completado, aparecerá en la lista de backups disponibles para descarga.',
-                icon: '💾',
-                iconClass: 'info',
-                confirmText: 'Crear Backup',
-                cancelText: 'Cancelar',
-                confirmType: 'primary',
-                onConfirm: function() {
-                    // Importante: establecer flag para prevenir cierre
-                    preventModalClose = true;
-
-                    // Ejecutar la creación del backup
-                    executeBackup();
-
-                    // Prevenir el cierre del modal
-                    return false;
-                }
-            });
-
-            // Override del listener del botón confirmar para prevenir cierre
-            setTimeout(function() {
-                const confirmBtn = document.getElementById('modalConfirmBtn');
-                const newConfirmBtn = confirmBtn.cloneNode(true);
-                confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-
-                newConfirmBtn.addEventListener('click', function(e) {
-                    if (modalCallback && !preventModalClose) {
-                        modalCallback();
-                        closeModal();
-                    } else if (modalCallback && preventModalClose) {
-                        modalCallback();
-                        // NO cerrar el modal
-                    }
-                });
-            }, 50);
-
-            return false;
-        }
-
-        function executeBackup() {
             const modal = document.getElementById('confirmModal');
-            const modalActions = modal.querySelector('.modal-actions');
+            const modalIcon = document.getElementById('modalIcon');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalDetails = document.getElementById('modalDetails');
             const confirmBtn = document.getElementById('modalConfirmBtn');
             const cancelBtn = document.getElementById('modalCancelBtn');
+            const modalActions = modal.querySelector('.modal-actions');
 
-            // Deshabilitar botones
-            confirmBtn.disabled = true;
-            cancelBtn.disabled = true;
-            confirmBtn.style.opacity = '0.5';
-            cancelBtn.style.opacity = '0.5';
-            confirmBtn.style.cursor = 'not-allowed';
-            cancelBtn.style.cursor = 'not-allowed';
+            // Configurar modal inicial
+            modalIcon.textContent = '💾';
+            modalIcon.className = 'modal-icon info';
+            modalTitle.textContent = 'Crear Backup Completo';
+            modalMessage.textContent = '¿Deseas crear un backup completo del sitio?';
+            modalDetails.innerHTML = '<strong>📥</strong> Una vez completado, aparecerá en la lista de backups disponibles para descarga.';
+            modalDetails.style.display = 'block';
 
-            // Agregar container de progreso si no existe
-            let progressContainer = document.getElementById('modalProgressContainer');
-            if (!progressContainer) {
-                progressContainer = document.createElement('div');
+            confirmBtn.textContent = 'Crear Backup';
+            confirmBtn.className = 'modal-btn modal-btn-confirm';
+            cancelBtn.textContent = 'Cancelar';
+
+            // Limpiar progress container anterior si existe
+            const oldProgress = document.getElementById('modalProgressContainer');
+            if (oldProgress) {
+                oldProgress.remove();
+            }
+
+            // Mostrar modal
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Remover listeners anteriores y agregar nuevo
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+            // Listener para cancelar
+            newCancelBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+
+            // Listener para confirmar - NO cierra el modal
+            newConfirmBtn.addEventListener('click', function() {
+                // Deshabilitar botones
+                newConfirmBtn.disabled = true;
+                newCancelBtn.disabled = true;
+                newConfirmBtn.style.opacity = '0.5';
+                newCancelBtn.style.opacity = '0.5';
+                newConfirmBtn.style.cursor = 'not-allowed';
+                newCancelBtn.style.cursor = 'not-allowed';
+
+                // Crear y agregar progress container
+                const progressContainer = document.createElement('div');
                 progressContainer.id = 'modalProgressContainer';
+                progressContainer.className = 'active';
                 progressContainer.innerHTML = `
                     <div class="modal-progress-spinner"></div>
                     <p style="color: #6c757d; text-align: center; margin: 10px 0;">
                         <strong>Creando backup...</strong><br>
-                        Por favor espera, este proceso puede tomar varios minutos.
+                        Por favor espera.
                     </p>
                     <div class="modal-progress-bar-container">
                         <div class="modal-progress-bar"></div>
@@ -723,76 +717,76 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
                     <div id="modalResult"></div>
                 `;
                 modalActions.parentNode.insertBefore(progressContainer, modalActions.nextSibling);
-            }
 
-            progressContainer.classList.add('active');
+                // Enviar backup via AJAX
+                const formData = new FormData();
+                formData.append('csrf_token', '<?php echo $_SESSION['csrf_token']; ?>');
+                formData.append('create_backup', '1');
+                formData.append('ajax', '1');
 
-            // Enviar backup via AJAX
-            const formData = new FormData();
-            formData.append('csrf_token', '<?php echo $_SESSION['csrf_token']; ?>');
-            formData.append('create_backup', '1');
-            formData.append('ajax', '1');
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const resultDiv = document.getElementById('modalResult');
+                    const spinner = progressContainer.querySelector('.modal-progress-spinner');
+                    const progressText = progressContainer.querySelector('p');
+                    const progressBar = progressContainer.querySelector('.modal-progress-bar-container');
 
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                const resultDiv = document.getElementById('modalResult');
-                const spinner = progressContainer.querySelector('.modal-progress-spinner');
-                const progressText = progressContainer.querySelector('p');
-                const progressBar = progressContainer.querySelector('.modal-progress-bar-container');
+                    // Ocultar spinner y progress bar
+                    spinner.style.display = 'none';
+                    progressBar.style.display = 'none';
 
-                // Ocultar spinner y progress bar
-                spinner.style.display = 'none';
-                progressBar.style.display = 'none';
+                    if (data.success) {
+                        progressText.innerHTML = `
+                            <strong style="color: #28a745;">✅ ¡Backup completado!</strong><br>
+                            <span style="color: #6c757d;">Archivo: <strong>${data.filename}</strong> (${data.size})</span>
+                        `;
 
-                if (data.success) {
+                        // Agregar botón de cerrar
+                        resultDiv.innerHTML = `
+                            <button class="modal-btn modal-btn-confirm" onclick="location.reload()" style="margin-top: 15px;">
+                                Cerrar y Actualizar
+                            </button>
+                        `;
+                    } else {
+                        progressText.innerHTML = `
+                            <strong style="color: #dc3545;">❌ Error al crear backup</strong><br>
+                            <span style="color: #6c757d;">${data.message}</span>
+                        `;
+
+                        // Agregar botón de cerrar
+                        resultDiv.innerHTML = `
+                            <button class="modal-btn modal-btn-cancel" onclick="closeModal(); document.getElementById('modalProgressContainer').remove();" style="margin-top: 15px;">
+                                Cerrar
+                            </button>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    const resultDiv = document.getElementById('modalResult');
+                    const spinner = progressContainer.querySelector('.modal-progress-spinner');
+                    const progressText = progressContainer.querySelector('p');
+                    const progressBar = progressContainer.querySelector('.modal-progress-bar-container');
+
+                    spinner.style.display = 'none';
+                    progressBar.style.display = 'none';
                     progressText.innerHTML = `
-                        <strong style="color: #28a745;">✅ ¡Backup completado!</strong><br>
-                        <span style="color: #6c757d;">Archivo: <strong>${data.filename}</strong> (${data.size})</span>
+                        <strong style="color: #dc3545;">❌ Error de conexión</strong><br>
+                        <span style="color: #6c757d;">${error.message}</span>
                     `;
 
-                    // Agregar botón de cerrar
                     resultDiv.innerHTML = `
-                        <button class="modal-btn modal-btn-confirm" onclick="location.reload()" style="margin-top: 15px;">
-                            Cerrar y Actualizar
-                        </button>
-                    `;
-                } else {
-                    progressText.innerHTML = `
-                        <strong style="color: #dc3545;">❌ Error al crear backup</strong><br>
-                        <span style="color: #6c757d;">${data.message}</span>
-                    `;
-
-                    // Agregar botón de cerrar
-                    resultDiv.innerHTML = `
-                        <button class="modal-btn modal-btn-cancel" onclick="closeModal(); preventModalClose = false; if(document.getElementById('modalProgressContainer')) document.getElementById('modalProgressContainer').remove();" style="margin-top: 15px;">
+                        <button class="modal-btn modal-btn-cancel" onclick="closeModal(); document.getElementById('modalProgressContainer').remove();" style="margin-top: 15px;">
                             Cerrar
                         </button>
                     `;
-                }
-            })
-            .catch(error => {
-                const resultDiv = document.getElementById('modalResult');
-                const spinner = progressContainer.querySelector('.modal-progress-spinner');
-                const progressText = progressContainer.querySelector('p');
-                const progressBar = progressContainer.querySelector('.modal-progress-bar-container');
-
-                spinner.style.display = 'none';
-                progressBar.style.display = 'none';
-                progressText.innerHTML = `
-                    <strong style="color: #dc3545;">❌ Error de conexión</strong><br>
-                    <span style="color: #6c757d;">${error.message}</span>
-                `;
-
-                resultDiv.innerHTML = `
-                    <button class="modal-btn modal-btn-cancel" onclick="closeModal(); preventModalClose = false; if(document.getElementById('modalProgressContainer')) document.getElementById('modalProgressContainer').remove();" style="margin-top: 15px;">
-                        Cerrar
-                    </button>
-                `;
+                });
             });
+
+            return false;
         }
 
         // Confirmar eliminación de backup
