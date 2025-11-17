@@ -1412,6 +1412,13 @@ $status_labels = [
                     </div>
                     ` : ''}
 
+                    ${order.notes && order.notes.trim() ? `
+                    <div class="form-group" style="background: #fff9e6; padding: 15px; border-radius: 6px; border-left: 4px solid #ffc107;">
+                        <label><strong>💬 Mensaje del Cliente:</strong></label>
+                        <p style="margin-top: 10px; white-space: pre-wrap;">${order.notes}</p>
+                    </div>
+                    ` : ''}
+
                     <div class="form-group">
                         <label><strong>Productos:</strong></label>
                         <div class="order-items">

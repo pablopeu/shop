@@ -121,6 +121,18 @@ $site_url = $site_config['site_url'] ?? 'https://tienda.com';
                                 <?php endif; ?>
                             </table>
 
+                            <!-- Customer Notes -->
+                            <?php if (isset($order['notes']) && !empty(trim($order['notes']))): ?>
+                            <div style="margin-bottom: 25px; background-color: #fff9e6; border-left: 4px solid #ffc107; border-radius: 6px; padding: 15px;">
+                                <h3 style="margin: 0 0 10px 0; color: #333333; font-size: 14px; font-weight: 600;">
+                                    💬 Mensaje del Cliente:
+                                </h3>
+                                <p style="margin: 0; color: #555555; font-size: 13px; line-height: 1.6; white-space: pre-wrap;">
+                                    <?= nl2br(htmlspecialchars($order['notes'])) ?>
+                                </p>
+                            </div>
+                            <?php endif; ?>
+
                             <!-- Products -->
                             <h2 style="margin: 0 0 15px 0; color: #333333; font-size: 16px; font-weight: 600; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px;">
                                 📦 Productos
