@@ -41,12 +41,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_image' && isset($_GET[
 
     if ($product && isset($product['images'][$index])) {
         $image_path = $product['images'][$index];
+        $debug_info = [];
 
         // Delete physical file - try multiple approaches
         $file_deleted = false;
         if (!empty($image_path)) {
             // Build absolute path to file
             $base_dir = __DIR__ . '/..';
+            $debug_info[] = "Base dir: $base_dir";
+            $debug_info[] = "Image path from DB: $image_path";
 
             // Try different path formats
             $paths_to_try = [
@@ -57,23 +60,31 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_image' && isset($_GET[
 
             foreach ($paths_to_try as $path) {
                 $full_path = $base_dir . $path;
+                $debug_info[] = "Trying: $full_path - Exists: " . (file_exists($full_path) ? 'YES' : 'NO');
 
                 // Check if file exists and delete it
                 if (file_exists($full_path) && is_file($full_path)) {
                     $file_deleted = unlink($full_path);
                     if ($file_deleted) {
+                        $debug_info[] = "SUCCESS: Deleted $full_path";
                         error_log("Successfully deleted file: $full_path");
                         break;
+                    } else {
+                        $debug_info[] = "FAILED: Could not delete $full_path - " . error_get_last()['message'];
+                        error_log("Failed to delete file: $full_path");
                     }
-                } else {
-                    error_log("File not found at: $full_path");
                 }
             }
 
             // Also try using the delete_uploaded_image function
             if (!$file_deleted) {
+                $debug_info[] = "Trying delete_uploaded_image function...";
                 $file_deleted = delete_uploaded_image($image_path);
+                $debug_info[] = "delete_uploaded_image result: " . ($file_deleted ? 'SUCCESS' : 'FAILED');
             }
+
+            // Log all debug info
+            error_log("Image deletion debug: " . implode(" | ", $debug_info));
         }
 
         // Remove from array
@@ -85,6 +96,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_image' && isset($_GET[
         // Save
         if (update_product($product_id, $product)) {
             $msg = $file_deleted ? 'image_deleted' : 'image_removed_only';
+            // Add debug info to session for display
+            $_SESSION['delete_debug'] = implode("\n", $debug_info);
             header('Location: ' . url('/admin/productos-editar.php?id=' . $product_id . '&msg=' . $msg));
             exit;
         }
@@ -190,6 +203,13 @@ if (isset($_GET['msg'])) {
     } elseif ($_GET['msg'] === 'image_removed_only') {
         $message = 'Imagen removida del producto (advertencia: el archivo físico no pudo ser eliminado)';
     }
+}
+
+// Show debug info if available
+$debug_info = '';
+if (isset($_SESSION['delete_debug'])) {
+    $debug_info = $_SESSION['delete_debug'];
+    unset($_SESSION['delete_debug']);
 }
 
 // Generate CSRF token
@@ -549,6 +569,13 @@ $user = get_logged_user();
 
             <?php if ($error): ?>
                 <div class="message error"><?php echo htmlspecialchars($error); ?></div>
+            <?php endif; ?>
+
+            <?php if ($debug_info): ?>
+                <div class="message" style="background: #fff3cd; border-left: 4px solid #856404; color: #856404; font-family: monospace; white-space: pre-wrap; font-size: 11px;">
+                    <strong>DEBUG INFO (Eliminación de imagen):</strong><br>
+                    <?php echo htmlspecialchars($debug_info); ?>
+                </div>
             <?php endif; ?>
 
             <!-- Product Preview -->
