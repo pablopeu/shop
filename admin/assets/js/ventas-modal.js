@@ -603,12 +603,6 @@ export function saveAllChanges() {
     form.submit();
 }
 
-
-// Track unsaved changes in modal
-let modalHasUnsavedChanges = false;
-let modalOriginalValues = {};
-let modalUserHasInteracted = false; // Only set to true after user touches an input
-
 function setupModalChangeDetection() {
     const modalContent = document.getElementById('modalOrderContent');
     const forms = modalContent.querySelectorAll('form');
