@@ -1,11 +1,32 @@
 <?php
 /**
  * Admin - Sales/Orders Management
+ *
+ * Panel principal de gestión de ventas y órdenes.
+ * Este archivo es el controlador principal que:
+ * - Maneja acciones de actualización/cancelación de órdenes
+ * - Aplica filtros y búsqueda
+ * - Calcula estadísticas del dashboard
+ * - Renderiza las vistas del panel
+ *
+ * Módulos utilizados:
+ * - actions.php: Procesamiento de acciones POST/GET
+ * - filters.php: Filtrado y búsqueda de órdenes
+ * - stats.php: Cálculo de métricas y estadísticas
+ * - views.php: Componentes de vista HTML
+ *
+ * @package Admin
+ * @subpackage Ventas
  */
+
+// ============================================================================
+// CONFIGURACIÓN E INICIALIZACIÓN
+// ============================================================================
 
 // Define admin access constant for included modules
 define('ADMIN_ACCESS', true);
 
+// Core dependencies
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/orders.php';
 require_once __DIR__ . '/../includes/auth.php';
@@ -18,39 +39,46 @@ session_start();
 // Check admin authentication
 require_admin();
 
-// Get configurations
+// Get site configurations
 $site_config = read_json(__DIR__ . '/../config/site.json');
 
 // Page title for header
 $page_title = 'Gestión de Ventas';
 
-// Include modules
-require_once __DIR__ . '/includes/ventas/actions.php';
-require_once __DIR__ . '/includes/ventas/filters.php';
-require_once __DIR__ . '/includes/ventas/stats.php';
-require_once __DIR__ . '/includes/ventas/views.php';
+// ============================================================================
+// INCLUIR MÓDULOS DE VENTAS
+// ============================================================================
 
-// Handle POST/GET actions
+require_once __DIR__ . '/includes/ventas/actions.php';  // Manejo de acciones
+require_once __DIR__ . '/includes/ventas/filters.php';  // Filtrado de órdenes
+require_once __DIR__ . '/includes/ventas/stats.php';    // Estadísticas
+require_once __DIR__ . '/includes/ventas/views.php';    // Componentes de vista
+
+// ============================================================================
+// PROCESAMIENTO DE DATOS
+// ============================================================================
+
+// 1. Handle POST/GET actions (update, cancel, bulk actions)
 $action_result = handle_order_actions();
 $message = $action_result['message'];
 $error = $action_result['error'];
 
-// Get all orders and apply filters
+// 2. Get all orders and apply filters
 $all_orders = get_all_orders();
 $filters = get_filter_params();
 $orders = apply_order_filters($all_orders, $filters);
 
-// Calculate statistics
+// 3. Calculate dashboard statistics
 $stats = calculate_order_stats($all_orders);
 extract($stats); // Extract stats variables for backward compatibility
 
-// Generate CSRF token
+// 4. Generate CSRF token for forms
 $csrf_token = generate_csrf_token();
 
-// Get logged user
+// 5. Get logged user info
 $user = get_logged_user();
 
-// Status labels
+// 6. Status labels for UI display
 $status_labels = [
     'pending' => ['label' => 'Pendiente', 'color' => '#FFA726'],
     'cobrada' => ['label' => 'Cobrada', 'color' => '#4CAF50'],
@@ -60,6 +88,9 @@ $status_labels = [
     'rechazada' => ['label' => 'Rechazada', 'color' => '#f44336']
 ];
 
+// ============================================================================
+// VISTA HTML
+// ============================================================================
 ?>
 <!DOCTYPE html>
 <html lang="es">
