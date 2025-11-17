@@ -656,6 +656,8 @@ $status_labels = [
         import { initModal, viewOrder, switchTab, sendCustomMessage, saveAllChanges,
                  closeOrderModal, confirmCloseOrderModal, cancelCloseOrderModal,
                  showCancelModal, closeCancelModal } from './assets/js/ventas-modal.js';
+        import { toggleAllCheckboxes, updateSelectedCount, confirmBulkAction,
+                 showBulkActionModal, closeConfirmModal, executeBulkAction } from './assets/js/ventas-bulk-actions.js';
 
         // Expose utility functions immediately (don't need data)
         window.showToast = showToast;
@@ -679,184 +681,17 @@ $status_labels = [
         window.cancelCloseOrderModal = cancelCloseOrderModal;
         window.showCancelModal = showCancelModal;
         window.closeCancelModal = closeCancelModal;
-    </script>
 
-    <script>
-        const orders = <?php echo json_encode($orders); ?>;
-        const csrfToken = '<?php echo $csrf_token; ?>';
+        // Expose bulk actions functions globally
+        window.toggleAllCheckboxes = toggleAllCheckboxes;
+        window.updateSelectedCount = updateSelectedCount;
+        window.confirmBulkAction = confirmBulkAction;
+        window.showBulkActionModal = showBulkActionModal;
+        window.closeConfirmModal = closeConfirmModal;
+        window.executeBulkAction = executeBulkAction;
 
-        // Checkbox management
-        function toggleAllCheckboxes(source) {
-            const checkboxes = document.querySelectorAll('.order-checkbox');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = source.checked;
-            });
-            updateSelectedCount();
-        }
-
-        function updateSelectedCount() {
-            const checkboxes = document.querySelectorAll('.order-checkbox:checked');
-            const count = checkboxes.length;
-            const countElement = document.getElementById('selectedCount');
-
-            if (count > 0) {
-                countElement.textContent = `${count} orden(es) seleccionada(s)`;
-                countElement.style.fontWeight = 'bold';
-                countElement.style.color = '#4CAF50';
-            } else {
-                countElement.textContent = '';
-            }
-
-            // Update "select all" checkbox state
-            const allCheckboxes = document.querySelectorAll('.order-checkbox');
-            const selectAllCheckbox = document.getElementById('selectAll');
-            selectAllCheckbox.checked = allCheckboxes.length > 0 && count === allCheckboxes.length;
-        }
-
-        function confirmBulkAction() {
-            const action = document.getElementById('bulkAction').value;
-            const checkboxes = document.querySelectorAll('.order-checkbox:checked');
-
-            if (!action) {
-                showNotification('Por favor selecciona una acción', 'warning');
-                return false;
-            }
-
-            if (checkboxes.length === 0) {
-                showNotification('Por favor selecciona al menos una orden', 'warning');
-                return false;
-            }
-
-            // Show confirmation modal
-            showBulkActionModal(action, checkboxes.length);
-            return false; // Prevent form submission, will be handled by modal
-        }
-
-        function showBulkActionModal(action, count) {
-            const modal = document.getElementById('confirmBulkModal');
-            const icon = document.getElementById('confirmIcon');
-            const title = document.getElementById('confirmTitle');
-            const description = document.getElementById('confirmDescription');
-            const details = document.getElementById('confirmDetails');
-            const confirmBtn = document.getElementById('confirmButton');
-
-            const actionConfig = {
-                'pending': {
-                    icon: '⏳',
-                    iconClass: 'warning',
-                    title: 'Marcar como Pendiente',
-                    description: 'Las siguientes órdenes cambiarán su estado a "Pendiente":',
-                    effects: ['El estado de las órdenes será actualizado', 'No se realizarán cambios en el stock'],
-                    btnClass: 'modal-btn-confirm',
-                    btnText: 'Marcar como Pendiente'
-                },
-                'cobrada': {
-                    icon: '💰',
-                    iconClass: 'warning',
-                    title: 'Marcar como Cobrada',
-                    description: 'Las siguientes órdenes cambiarán su estado a "Cobrada":',
-                    effects: ['El estado de las órdenes será actualizado', 'Se reducirá el stock si aún no se ha hecho', 'Se considerarán cobradas para reportes'],
-                    btnClass: 'modal-btn-confirm',
-                    btnText: 'Marcar como Cobradas'
-                },
-                'shipped': {
-                    icon: '🚚',
-                    iconClass: 'warning',
-                    title: 'Marcar como Enviada',
-                    description: 'Las siguientes órdenes cambiarán su estado a "Enviada":',
-                    effects: ['El estado de las órdenes será actualizado', 'Se marcarán como en tránsito'],
-                    btnClass: 'modal-btn-confirm',
-                    btnText: 'Marcar como Enviadas'
-                },
-                'delivered': {
-                    icon: '📦',
-                    iconClass: 'warning',
-                    title: 'Marcar como Entregada',
-                    description: 'Las siguientes órdenes cambiarán su estado a "Entregada":',
-                    effects: ['El estado de las órdenes será actualizado', 'Se marcarán como completadas'],
-                    btnClass: 'modal-btn-confirm',
-                    btnText: 'Marcar como Entregadas'
-                },
-                'cancel': {
-                    icon: '❌',
-                    iconClass: 'danger',
-                    title: 'Cancelar Órdenes',
-                    description: 'Esta acción cancelará las órdenes seleccionadas:',
-                    effects: ['Las órdenes serán marcadas como "Canceladas"', '⚠️ El stock de los productos será RESTAURADO', 'Esta acción no se puede deshacer fácilmente'],
-                    btnClass: 'modal-btn-danger',
-                    btnText: 'Cancelar Órdenes'
-                },
-                'archive': {
-                    icon: '📁',
-                    iconClass: 'warning',
-                    title: 'Archivar Órdenes',
-                    description: 'Las órdenes seleccionadas serán movidas al archivo:',
-                    effects: ['Las órdenes NO aparecerán en el listado principal', 'Podrán ser restauradas desde el Archivo de Ventas', 'No se realizarán cambios en el stock'],
-                    btnClass: 'modal-btn-confirm',
-                    btnText: 'Archivar Órdenes'
-                }
-            };
-
-            const config = actionConfig[action];
-
-            // Set icon
-            icon.textContent = config.icon;
-            icon.className = 'confirm-modal-icon ' + config.iconClass;
-
-            // Set title and description
-            title.textContent = config.title;
-            description.textContent = config.description;
-
-            // Set details
-            details.innerHTML = `
-                <strong>${count} orden(es) seleccionada(s)</strong>
-                <p style="margin: 10px 0; font-size: 13px; color: #666;">Esta acción afectará a:</p>
-                <ul>
-                    ${config.effects.map(effect => `<li>${effect}</li>`).join('')}
-                </ul>
-            `;
-
-            // Configure button
-            confirmBtn.className = 'modal-btn ' + config.btnClass;
-            confirmBtn.textContent = config.btnText;
-
-            // Show modal
-            modal.classList.add('active');
-        }
-
-        function closeConfirmModal() {
-            document.getElementById('confirmBulkModal').classList.remove('active');
-        }
-
-        function executeBulkAction() {
-            // Close modal
-            closeConfirmModal();
-
-            // Submit form
-            document.getElementById('bulkForm').submit();
-        }
-
-        function showNotification(message, type = 'info') {
-            // Simple notification - could be enhanced with a toast library
-            const notification = document.createElement('div');
-            notification.className = 'message ' + (type === 'warning' ? 'error' : 'success');
-            notification.textContent = message;
-            notification.style.position = 'fixed';
-            notification.style.top = '20px';
-            notification.style.right = '20px';
-            notification.style.zIndex = '10000';
-            notification.style.minWidth = '300px';
-            notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
-
-        // Close modal when clicking outside
-        document.getElementById('confirmBulkModal').addEventListener('click', function(e) {
+        // Setup event listeners
+        document.getElementById('confirmBulkModal')?.addEventListener('click', function(e) {
             if (e.target === this) {
                 closeConfirmModal();
             }
