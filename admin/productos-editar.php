@@ -51,11 +51,18 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_image' && isset($_GET[
             $debug_info[] = "Base dir: $base_dir";
             $debug_info[] = "Image path from DB: $image_path";
 
+            // Remove BASE_PATH from image path if present
+            $clean_path = $image_path;
+            if (defined('BASE_PATH') && !empty(BASE_PATH)) {
+                $clean_path = str_replace(BASE_PATH, '', $image_path);
+                $debug_info[] = "Removed BASE_PATH (" . BASE_PATH . "), clean path: $clean_path";
+            }
+
             // Try different path formats
             $paths_to_try = [
-                $image_path,                           // As is: /images/products/xxx/file.jpg
-                ltrim($image_path, '/'),              // Without leading slash: images/products/xxx/file.jpg
-                '/' . ltrim($image_path, '/'),        // Ensure leading slash: /images/products/xxx/file.jpg
+                $clean_path,                           // Clean path: /images/products/xxx/file.jpg
+                ltrim($clean_path, '/'),              // Without leading slash: images/products/xxx/file.jpg
+                '/' . ltrim($clean_path, '/'),        // Ensure leading slash: /images/products/xxx/file.jpg
             ];
 
             foreach ($paths_to_try as $path) {
@@ -76,10 +83,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_image' && isset($_GET[
                 }
             }
 
-            // Also try using the delete_uploaded_image function
+            // Also try using the delete_uploaded_image function with clean path
             if (!$file_deleted) {
-                $debug_info[] = "Trying delete_uploaded_image function...";
-                $file_deleted = delete_uploaded_image($image_path);
+                $debug_info[] = "Trying delete_uploaded_image function with clean path...";
+                $file_deleted = delete_uploaded_image($clean_path);
                 $debug_info[] = "delete_uploaded_image result: " . ($file_deleted ? 'SUCCESS' : 'FAILED');
             }
 
