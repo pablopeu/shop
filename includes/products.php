@@ -293,6 +293,10 @@ function update_product($product_id, $data) {
         $product['active'] = (bool)$data['active'];
     }
 
+    if (isset($data['pickup_only'])) {
+        $product['pickup_only'] = (bool)$data['pickup_only'];
+    }
+
     // Update images and thumbnail
     if (isset($data['images'])) {
         $product['images'] = $data['images'];
