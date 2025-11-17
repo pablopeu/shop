@@ -103,8 +103,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
     if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
         $error = 'Token de seguridad inválido';
     } else {
-        // Get current product images
+        // Get current product images and clean BASE_PATH if present
         $current_images = $product['images'] ?? [$product['thumbnail']];
+
+        // Remove BASE_PATH from existing images to ensure portability
+        if (defined('BASE_PATH') && !empty(BASE_PATH)) {
+            $current_images = array_map(function($img) {
+                if (is_string($img)) {
+                    return str_replace(BASE_PATH, '', $img);
+                } elseif (is_array($img) && isset($img['url'])) {
+                    $img['url'] = str_replace(BASE_PATH, '', $img['url']);
+                    return $img;
+                }
+                return $img;
+            }, $current_images);
+        }
 
         // Handle image reordering
         if (isset($_POST['images_order']) && !empty($_POST['images_order'])) {
