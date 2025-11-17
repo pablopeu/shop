@@ -337,18 +337,6 @@ if (!isset($_SESSION['csrf_token'])) {
         .backup-info ul { margin-left: 20px; color: #6c757d; }
         .backup-info ul li { margin-bottom: 5px; }
 
-        /* Restoration Steps */
-        .restoration-steps { counter-reset: step-counter; list-style: none; padding-left: 0; }
-        .restoration-steps li { counter-increment: step-counter; margin-bottom: 20px; padding-left: 40px; position: relative; }
-        .restoration-steps li::before { content: counter(step-counter); position: absolute; left: 0; top: 0; background: #007bff; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .restoration-steps li.critical-step::before { background: #dc3545; }
-        .restoration-steps li strong { display: block; margin-bottom: 5px; color: #212529; }
-        .restoration-steps li p { margin: 5px 0; color: #6c757d; font-size: 0.95em; }
-
-        /* Pre/Code */
-        pre { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; overflow-x: auto; }
-        pre code { font-family: 'Courier New', monospace; font-size: 0.9em; color: #212529; }
-
         /* Utilities */
         .text-danger { color: #dc3545 !important; }
         .text-success { color: #28a745 !important; }
@@ -453,13 +441,6 @@ if (!isset($_SESSION['csrf_token'])) {
                             💾 Crear Backup Ahora
                         </button>
                     </form>
-
-                    <p class="text-muted mt-3">
-                        <small>
-                            ⏱️ El proceso puede tomar varios minutos dependiendo del tamaño del sitio.<br>
-                            📥 Una vez completado, aparecerá en la lista de backups disponibles.
-                        </small>
-                    </p>
                 </div>
             </div>
 
@@ -517,82 +498,6 @@ if (!isset($_SESSION['csrf_token'])) {
                 </div>
             </div>
 
-            <!-- Restoration Warning -->
-            <div class="card card-warning">
-                <div class="card-header">
-                    <h2>⚠️ Cómo Restaurar un Backup</h2>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-warning mb-3">
-                        <strong>⚠️ IMPORTANTE:</strong> La restauración de backups debe hacerse <strong>MANUALMENTE vía FTP/SSH</strong> por razones de seguridad.
-                    </div>
-
-                    <h4>📋 Pasos para Restaurar:</h4>
-                    <ol class="restoration-steps">
-                        <li>
-                            <strong>📥 Descarga el backup deseado</strong>
-                            <p>Usa el botón "Descargar" en la tabla de arriba para obtener el archivo .tar.gz</p>
-                        </li>
-
-                        <li>
-                            <strong>💻 Extrae el archivo en tu computadora</strong>
-                            <p>Usa un programa como WinRAR, 7-Zip o el comando: <code>tar -xzpf backup_YYYYMMDD_HHMMSS.tar.gz</code></p>
-                        </li>
-
-                        <li>
-                            <strong>🔐 Conéctate al servidor vía FTP/SFTP</strong>
-                            <p>Usa FileZilla, WinSCP o tu cliente FTP preferido</p>
-                        </li>
-
-                        <li class="critical-step">
-                            <strong>⛔ CRÍTICO: Crea un backup manual del estado ACTUAL</strong>
-                            <p class="text-danger">Antes de hacer cualquier cambio, descarga una copia de los archivos actuales del servidor</p>
-                        </li>
-
-                        <li>
-                            <strong>📂 Reemplaza las carpetas necesarias con cuidado</strong>
-                            <p>Sube solo los archivos/carpetas que necesites restaurar. <strong>NO borres todo el sitio de golpe.</strong></p>
-                        </li>
-
-                        <li>
-                            <strong>✅ Verifica permisos de archivos</strong>
-                            <p>Especialmente las carpetas <code>/data</code> y <code>/config</code> deben tener permisos correctos (generalmente 755 para carpetas, 644 para archivos)</p>
-                        </li>
-
-                        <li>
-                            <strong>🧪 Prueba que el sitio funcione correctamente</strong>
-                            <p>Verifica que todas las funcionalidades estén operativas antes de considerarlo completo</p>
-                        </li>
-                    </ol>
-
-                    <div class="alert alert-danger mt-4">
-                        <h4>⛔ PRECAUCIONES EXTREMAS EN PRODUCCIÓN:</h4>
-                        <ul>
-                            <li><strong>NO elimines archivos sin respaldarlos primero</strong></li>
-                            <li><strong>Restaura durante horarios de bajo tráfico</strong> (madrugada)</li>
-                            <li><strong>Ten acceso directo al servidor</strong> por si algo falla</li>
-                            <li><strong>Considera hacer pruebas en un entorno de staging</strong> primero</li>
-                            <li><strong>Avisa a los usuarios</strong> si vas a poner el sitio en mantenimiento</li>
-                        </ul>
-                    </div>
-
-                    <div class="mt-3">
-                        <h4>📝 Comando de Restauración (vía SSH):</h4>
-                        <p>Si tienes acceso SSH, puedes restaurar con:</p>
-                        <pre><code># 1. Subir el backup al servidor
-# 2. Crear backup del estado actual
-tar -czpf backup_before_restore_$(date +%Y%m%d_%H%M%S).tar.gz --exclude='data/backups' -C <?php echo htmlspecialchars($project_root); ?> .
-
-# 3. Extraer el backup (¡CUIDADO! Esto sobrescribirá archivos)
-tar -xzpf backup_YYYYMMDD_HHMMSS.tar.gz -C <?php echo htmlspecialchars($project_root); ?>
-
-# 4. Verificar permisos
-chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/data
-chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
-                    </div>
-                </div>
-            </div>
-
     </div>
 
     <?php include __DIR__ . '/includes/modal.php'; ?>
@@ -607,15 +512,6 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
         }
         #modalProgressContainer.active {
             display: block;
-        }
-        .modal-progress-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #007bff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
         }
         .modal-progress-bar-container {
             width: 100%;
@@ -722,7 +618,6 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
                 progressContainer.id = 'modalProgressContainer';
                 progressContainer.className = 'active';
                 progressContainer.innerHTML = `
-                    <div class="modal-progress-spinner"></div>
                     <p style="color: #6c757d; text-align: center; margin: 10px 0;">
                         <strong>Creando backup...</strong><br>
                         Por favor espera.
@@ -770,12 +665,8 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
                         progressBar.style.width = '100%';
 
                         const resultDiv = document.getElementById('modalResult');
-                        const spinner = progressContainer.querySelector('.modal-progress-spinner');
                         const progressText = progressContainer.querySelector('p');
                         const progressBarContainer = progressContainer.querySelector('.modal-progress-bar-container');
-
-                        // Ocultar spinner pero mantener progress bar visible
-                        spinner.style.display = 'none';
 
                         if (data.success) {
                             // Cambiar color del progress bar a verde
@@ -826,10 +717,8 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
                         progressBar.style.background = 'linear-gradient(90deg, #dc3545, #c82333)';
 
                         const resultDiv = document.getElementById('modalResult');
-                        const spinner = progressContainer.querySelector('.modal-progress-spinner');
                         const progressText = progressContainer.querySelector('p');
 
-                        spinner.style.display = 'none';
                         progressText.innerHTML = `
                             <strong style="color: #dc3545;">❌ Error de conexión</strong>
                         `;
@@ -852,7 +741,14 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
         // Confirmar eliminación de backup
         function confirmDelete(event, filename) {
             event.preventDefault();
-            const form = event.target;
+
+            // Guardar referencia al formulario ANTES de cualquier manipulación del DOM
+            const formToSubmit = event.target.closest('form');
+
+            if (!formToSubmit) {
+                console.error('No se encontró el formulario');
+                return false;
+            }
 
             const modal = document.getElementById('confirmModal');
             const modalIcon = document.getElementById('modalIcon');
@@ -892,12 +788,12 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
 
             // Listener para confirmar y enviar formulario
             newConfirmBtn.addEventListener('click', function() {
-                // Cerrar modal primero
+                // Cerrar modal
                 modal.classList.remove('active');
                 document.body.style.overflow = '';
 
-                // Enviar formulario
-                form.submit();
+                // Enviar formulario usando la referencia guardada
+                formToSubmit.submit();
             });
 
             return false;
