@@ -619,17 +619,33 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
         }
         .modal-progress-bar-container {
             width: 100%;
-            height: 8px;
+            height: 12px;
             background: #e9ecef;
-            border-radius: 4px;
+            border-radius: 6px;
             overflow: hidden;
             margin: 15px 0;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
         }
         .modal-progress-bar {
             height: 100%;
             background: linear-gradient(90deg, #007bff, #0056b3);
-            border-radius: 4px;
-            animation: progress-animation 2s ease-in-out infinite;
+            border-radius: 6px;
+            transition: width 0.3s ease, background 0.5s ease;
+            position: relative;
+        }
+        .modal-progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
         .modal-success-message {
             color: #28a745;
@@ -712,11 +728,25 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
                         Por favor espera.
                     </p>
                     <div class="modal-progress-bar-container">
-                        <div class="modal-progress-bar"></div>
+                        <div class="modal-progress-bar" id="modalProgressBar" style="width: 0%;"></div>
                     </div>
                     <div id="modalResult"></div>
                 `;
                 modalActions.parentNode.insertBefore(progressContainer, modalActions.nextSibling);
+
+                // Tiempo mínimo del progress bar (6 segundos)
+                const MIN_DURATION = 6000;
+                const startTime = Date.now();
+
+                // Animar progress bar
+                const progressBar = document.getElementById('modalProgressBar');
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 1;
+                    if (progress <= 95) {
+                        progressBar.style.width = progress + '%';
+                    }
+                }, MIN_DURATION / 95); // Distribuir el progreso en el tiempo mínimo
 
                 // Enviar backup via AJAX
                 const formData = new FormData();
@@ -730,59 +760,89 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
                 })
                 .then(response => response.json())
                 .then(data => {
-                    const resultDiv = document.getElementById('modalResult');
-                    const spinner = progressContainer.querySelector('.modal-progress-spinner');
-                    const progressText = progressContainer.querySelector('p');
-                    const progressBar = progressContainer.querySelector('.modal-progress-bar-container');
+                    // Calcular tiempo restante para alcanzar los 6 segundos mínimos
+                    const elapsedTime = Date.now() - startTime;
+                    const remainingTime = Math.max(0, MIN_DURATION - elapsedTime);
 
-                    // Ocultar spinner y progress bar
-                    spinner.style.display = 'none';
-                    progressBar.style.display = 'none';
+                    // Esperar el tiempo restante antes de mostrar resultado
+                    setTimeout(() => {
+                        clearInterval(progressInterval);
+                        progressBar.style.width = '100%';
 
-                    if (data.success) {
+                        const resultDiv = document.getElementById('modalResult');
+                        const spinner = progressContainer.querySelector('.modal-progress-spinner');
+                        const progressText = progressContainer.querySelector('p');
+                        const progressBarContainer = progressContainer.querySelector('.modal-progress-bar-container');
+
+                        // Ocultar spinner pero mantener progress bar visible
+                        spinner.style.display = 'none';
+
+                        if (data.success) {
+                            // Cambiar color del progress bar a verde
+                            progressBar.style.background = 'linear-gradient(90deg, #28a745, #20c997)';
+
+                            progressText.innerHTML = `
+                                <strong style="color: #28a745;">✅ Backup completado</strong>
+                            `;
+
+                            // Agregar información del archivo debajo del progress bar
+                            resultDiv.innerHTML = `
+                                <div style="color: #6c757d; margin-top: 15px; text-align: center;">
+                                    <strong>Archivo:</strong> ${data.filename}<br>
+                                    <strong>Tamaño:</strong> ${data.size}
+                                </div>
+                                <button class="modal-btn modal-btn-confirm" onclick="location.reload()" style="margin-top: 20px;">
+                                    Cerrar y Actualizar
+                                </button>
+                            `;
+                        } else {
+                            // Cambiar color del progress bar a rojo
+                            progressBar.style.background = 'linear-gradient(90deg, #dc3545, #c82333)';
+
+                            progressText.innerHTML = `
+                                <strong style="color: #dc3545;">❌ Error al crear backup</strong>
+                            `;
+
+                            // Agregar botón de cerrar
+                            resultDiv.innerHTML = `
+                                <div style="color: #6c757d; margin-top: 15px; text-align: center;">
+                                    ${data.message}
+                                </div>
+                                <button class="modal-btn modal-btn-cancel" onclick="closeModal(); document.getElementById('modalProgressContainer').remove();" style="margin-top: 20px;">
+                                    Cerrar
+                                </button>
+                            `;
+                        }
+                    }, remainingTime);
+                })
+                .catch(error => {
+                    // Calcular tiempo restante para alcanzar los 6 segundos mínimos
+                    const elapsedTime = Date.now() - startTime;
+                    const remainingTime = Math.max(0, MIN_DURATION - elapsedTime);
+
+                    setTimeout(() => {
+                        clearInterval(progressInterval);
+                        progressBar.style.width = '100%';
+                        progressBar.style.background = 'linear-gradient(90deg, #dc3545, #c82333)';
+
+                        const resultDiv = document.getElementById('modalResult');
+                        const spinner = progressContainer.querySelector('.modal-progress-spinner');
+                        const progressText = progressContainer.querySelector('p');
+
+                        spinner.style.display = 'none';
                         progressText.innerHTML = `
-                            <strong style="color: #28a745;">✅ ¡Backup completado!</strong><br>
-                            <span style="color: #6c757d;">Archivo: <strong>${data.filename}</strong> (${data.size})</span>
+                            <strong style="color: #dc3545;">❌ Error de conexión</strong>
                         `;
 
-                        // Agregar botón de cerrar
                         resultDiv.innerHTML = `
-                            <button class="modal-btn modal-btn-confirm" onclick="location.reload()" style="margin-top: 15px;">
-                                Cerrar y Actualizar
-                            </button>
-                        `;
-                    } else {
-                        progressText.innerHTML = `
-                            <strong style="color: #dc3545;">❌ Error al crear backup</strong><br>
-                            <span style="color: #6c757d;">${data.message}</span>
-                        `;
-
-                        // Agregar botón de cerrar
-                        resultDiv.innerHTML = `
-                            <button class="modal-btn modal-btn-cancel" onclick="closeModal(); document.getElementById('modalProgressContainer').remove();" style="margin-top: 15px;">
+                            <div style="color: #6c757d; margin-top: 15px; text-align: center;">
+                                ${error.message}
+                            </div>
+                            <button class="modal-btn modal-btn-cancel" onclick="closeModal(); document.getElementById('modalProgressContainer').remove();" style="margin-top: 20px;">
                                 Cerrar
                             </button>
                         `;
-                    }
-                })
-                .catch(error => {
-                    const resultDiv = document.getElementById('modalResult');
-                    const spinner = progressContainer.querySelector('.modal-progress-spinner');
-                    const progressText = progressContainer.querySelector('p');
-                    const progressBar = progressContainer.querySelector('.modal-progress-bar-container');
-
-                    spinner.style.display = 'none';
-                    progressBar.style.display = 'none';
-                    progressText.innerHTML = `
-                        <strong style="color: #dc3545;">❌ Error de conexión</strong><br>
-                        <span style="color: #6c757d;">${error.message}</span>
-                    `;
-
-                    resultDiv.innerHTML = `
-                        <button class="modal-btn modal-btn-cancel" onclick="closeModal(); document.getElementById('modalProgressContainer').remove();" style="margin-top: 15px;">
-                            Cerrar
-                        </button>
-                    `;
+                    }, remainingTime);
                 });
             });
 
@@ -794,18 +854,50 @@ chmod -R 755 <?php echo htmlspecialchars($project_root); ?>/config</code></pre>
             event.preventDefault();
             const form = event.target;
 
-            showModal({
-                title: '🗑️ Eliminar Backup',
-                message: '¿Estás seguro de eliminar este backup?',
-                details: '<strong>Archivo:</strong> ' + filename + '<br><br><strong>⚠️ Esta acción no se puede deshacer.</strong>',
-                icon: '🗑️',
-                iconClass: 'danger',
-                confirmText: 'Eliminar',
-                cancelText: 'Cancelar',
-                confirmType: 'danger',
-                onConfirm: function() {
-                    form.submit();
-                }
+            const modal = document.getElementById('confirmModal');
+            const modalIcon = document.getElementById('modalIcon');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalDetails = document.getElementById('modalDetails');
+            const confirmBtn = document.getElementById('modalConfirmBtn');
+            const cancelBtn = document.getElementById('modalCancelBtn');
+
+            // Configurar modal
+            modalIcon.textContent = '🗑️';
+            modalIcon.className = 'modal-icon danger';
+            modalTitle.textContent = 'Eliminar Backup';
+            modalMessage.textContent = '¿Estás seguro de eliminar este backup?';
+            modalDetails.innerHTML = '<strong>Archivo:</strong> ' + filename + '<br><br><strong>⚠️ Esta acción no se puede deshacer.</strong>';
+            modalDetails.style.display = 'block';
+
+            confirmBtn.textContent = 'Eliminar';
+            confirmBtn.className = 'modal-btn modal-btn-danger';
+            cancelBtn.textContent = 'Cancelar';
+
+            // Mostrar modal
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Remover listeners anteriores y agregar nuevos
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+            // Listener para cancelar
+            newCancelBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+
+            // Listener para confirmar y enviar formulario
+            newConfirmBtn.addEventListener('click', function() {
+                // Cerrar modal primero
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+
+                // Enviar formulario
+                form.submit();
             });
 
             return false;
