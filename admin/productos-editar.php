@@ -42,23 +42,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_image' && isset($_GET[
     if ($product && isset($product['images'][$index])) {
         $image_path = $product['images'][$index];
 
-        // Delete physical file - try to delete regardless of path format
-        $deleted = false;
-        if (!empty($image_path)) {
-            // Normalize path (remove leading slash if present)
-            $normalized_path = ltrim($image_path, '/');
-
-            // Try different path variations to ensure deletion
-            if (strpos($image_path, '/images/') === 0 || strpos($image_path, 'images/') === 0) {
-                $deleted = delete_uploaded_image($image_path);
-
-                // If deletion failed, try alternative path format
-                if (!$deleted && strpos($image_path, '/images/') === 0) {
-                    $deleted = delete_uploaded_image(substr($image_path, 1)); // Remove leading slash
-                } elseif (!$deleted && strpos($image_path, 'images/') === 0) {
-                    $deleted = delete_uploaded_image('/' . $image_path); // Add leading slash
-                }
-            }
+        // Delete physical file
+        if (strpos($image_path, '/images/') === 0) {
+            delete_uploaded_image($image_path);
         }
 
         // Remove from array
@@ -69,8 +55,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_image' && isset($_GET[
 
         // Save
         if (update_product($product_id, $product)) {
-            $msg = $deleted ? 'image_deleted' : 'image_removed';
-            header('Location: ' . url('/admin/productos-editar.php?id=' . $product_id . '&msg=' . $msg));
+            header('Location: ' . url('/admin/productos-editar.php?id=' . $product_id . '&msg=image_deleted'));
             exit;
         }
     }
@@ -171,9 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
 // Check for messages in URL
 if (isset($_GET['msg'])) {
     if ($_GET['msg'] === 'image_deleted') {
-        $message = 'Imagen eliminada exitosamente del servidor y del producto';
-    } elseif ($_GET['msg'] === 'image_removed') {
-        $message = 'Imagen removida del producto (el archivo físico no pudo ser eliminado o no se encontró)';
+        $message = 'Imagen eliminada exitosamente';
     }
 }
 
@@ -737,9 +720,6 @@ $user = get_logged_user();
         let saveSuccess = <?php echo $message ? 'true' : 'false'; ?>;
         let hasUnsavedChanges = false;
 
-        // Array to accumulate selected files
-        let accumulatedFiles = [];
-
         // Store original values
         inputs.forEach(input => {
             if (input.type === 'checkbox') {
@@ -805,56 +785,20 @@ $user = get_logged_user();
             input.addEventListener('change', checkForChanges);
         });
 
-        // Detect file selection and accumulate files
+        // Detect file selection and show preview
         if (fileInput) {
             fileInput.addEventListener('change', function() {
                 if (this.files.length > 0) {
-                    // Add new files to accumulated array
-                    for (let i = 0; i < this.files.length; i++) {
-                        accumulatedFiles.push(this.files[i]);
-                    }
-
                     markChanged();
-                    updateNewImagesPreview();
-
-                    // Update the file input with all accumulated files
-                    updateFileInput();
+                    showNewImagesPreview(this.files);
+                } else {
+                    hideNewImagesPreview();
                 }
             });
         }
 
-        // Remove a file from accumulated files
-        function removeAccumulatedFile(index) {
-            accumulatedFiles.splice(index, 1);
-            updateNewImagesPreview();
-            updateFileInput();
-
-            if (accumulatedFiles.length === 0) {
-                hideNewImagesPreview();
-            }
-        }
-
-        // Update file input with accumulated files
-        function updateFileInput() {
-            if (accumulatedFiles.length === 0) {
-                fileInput.value = '';
-                return;
-            }
-
-            // Create a new DataTransfer object
-            const dataTransfer = new DataTransfer();
-
-            // Add all accumulated files
-            accumulatedFiles.forEach(file => {
-                dataTransfer.items.add(file);
-            });
-
-            // Update the file input
-            fileInput.files = dataTransfer.files;
-        }
-
-        // Update preview of new images to be uploaded
-        function updateNewImagesPreview() {
+        // Show preview of new images to be uploaded
+        function showNewImagesPreview(files) {
             const newImagesPreview = document.getElementById('newImagesPreview');
             const newImageGallery = document.getElementById('new-image-gallery');
 
@@ -862,21 +806,12 @@ $user = get_logged_user();
 
             newImageGallery.innerHTML = '';
 
-            if (accumulatedFiles.length === 0) {
-                newImagesPreview.style.display = 'none';
-                return;
-            }
-
             // Sort files alphabetically
-            const sortedFiles = [...accumulatedFiles].sort((a, b) => {
+            const sortedFiles = Array.from(files).sort((a, b) => {
                 return a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'});
             });
 
-            // Get the sorted indices
-            const sortedIndices = sortedFiles.map(file => accumulatedFiles.indexOf(file));
-
-            sortedIndices.forEach((originalIndex, displayIndex) => {
-                const file = accumulatedFiles[originalIndex];
+            sortedFiles.forEach((file, index) => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const div = document.createElement('div');
@@ -884,9 +819,6 @@ $user = get_logged_user();
                     div.innerHTML = `
                         <img src="${e.target.result}" alt="${file.name}">
                         <span class="image-badge">NUEVA</span>
-                        <a href="javascript:void(0)"
-                           class="btn-delete-image"
-                           onclick="removeAccumulatedFile(${originalIndex})">✕</a>
                     `;
                     newImageGallery.appendChild(div);
                 };
@@ -913,7 +845,7 @@ $user = get_logged_user();
                 }
             });
 
-            if (hasChanges || accumulatedFiles.length > 0) {
+            if (hasChanges || (fileInput && fileInput.files.length > 0)) {
                 markChanged();
             } else {
                 saveBtn.classList.remove('changed');
@@ -973,7 +905,7 @@ $user = get_logged_user();
             showModal({
                 title: 'Eliminar Imagen',
                 message: '¿Estás seguro de que deseas eliminar esta imagen?',
-                details: 'Esta acción no se puede deshacer. El archivo será eliminado permanentemente del servidor.',
+                details: 'Esta acción no se puede deshacer.',
                 icon: '🗑️',
                 confirmText: 'Eliminar',
                 cancelText: 'Cancelar',
