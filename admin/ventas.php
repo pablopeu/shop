@@ -123,68 +123,47 @@ $status_labels = [
                 </div>
             </div>
 
-            <!-- Filters -->
+            <!-- Advanced Filters -->
             <div class="card">
-                <div class="filters">
-                    <a href="?filter=all" class="filter-btn <?php echo $filter_status === 'all' ? 'active' : ''; ?>">
-                        Todas
-                    </a>
-                    <a href="?filter=pending" class="filter-btn <?php echo $filter_status === 'pending' ? 'active' : ''; ?>">
-                        Pendientes
-                    </a>
-                    <a href="?filter=cobrada" class="filter-btn <?php echo $filter_status === 'cobrada' ? 'active' : ''; ?>">
-                        Cobradas
-                    </a>
-                    <a href="?filter=shipped" class="filter-btn <?php echo $filter_status === 'shipped' ? 'active' : ''; ?>">
-                        Enviadas
-                    </a>
-                    <a href="?filter=delivered" class="filter-btn <?php echo $filter_status === 'delivered' ? 'active' : ''; ?>">
-                        Entregadas
-                    </a>
-                    <a href="?filter=cancelled" class="filter-btn <?php echo $filter_status === 'cancelled' ? 'active' : ''; ?>">
-                        Canceladas
-                    </a>
-                </div>
+                <div class="card-header">Filtros Avanzados</div>
+                <form method="GET" action="" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; align-items: end;">
+                    <input type="hidden" name="filter" value="<?php echo htmlspecialchars($filters['status']); ?>">
 
-                <!-- Advanced Filters -->
-                <div class="card">
-                    <div class="card-header">Filtros Avanzados</div>
-                    <form method="GET" action="" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; align-items: end;">
-                        <input type="hidden" name="filter" value="<?php echo htmlspecialchars($filter_status); ?>">
+                    <div class="form-group" style="margin: 0;">
+                        <label for="search" style="font-size: 13px; margin-bottom: 5px; display: block;">Buscar (Nro pedido, cliente, email)</label>
+                        <input type="text" id="search" name="search" placeholder="Ej: 1001 o Juan Perez"
+                               value="<?php echo htmlspecialchars($filters['search']); ?>"
+                               style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
+                    </div>
 
-                        <div class="form-group" style="margin: 0;">
-                            <label for="search" style="font-size: 13px; margin-bottom: 5px; display: block;">Buscar (Nro pedido, cliente, email)</label>
-                            <input type="text" id="search" name="search" placeholder="Ej: 1001 o Juan Perez"
-                                   value="<?php echo htmlspecialchars($search_query); ?>"
-                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
-                        </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label for="date_from" style="font-size: 13px; margin-bottom: 5px; display: block;">Desde</label>
+                        <input type="date" id="date_from" name="date_from"
+                               value="<?php echo htmlspecialchars($filters['date_from']); ?>"
+                               style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
+                    </div>
 
-                        <div class="form-group" style="margin: 0;">
-                            <label for="date_from" style="font-size: 13px; margin-bottom: 5px; display: block;">Desde</label>
-                            <input type="date" id="date_from" name="date_from"
-                                   value="<?php echo htmlspecialchars($date_from); ?>"
-                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
-                        </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label for="date_to" style="font-size: 13px; margin-bottom: 5px; display: block;">Hasta</label>
+                        <input type="date" id="date_to" name="date_to"
+                               value="<?php echo htmlspecialchars($filters['date_to']); ?>"
+                               style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
+                    </div>
 
-                        <div class="form-group" style="margin: 0;">
-                            <label for="date_to" style="font-size: 13px; margin-bottom: 5px; display: block;">Hasta</label>
-                            <input type="date" id="date_to" name="date_to"
-                                   value="<?php echo htmlspecialchars($date_to); ?>"
-                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
-                        </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="submit" class="btn btn-primary btn-sm">Aplicar Filtros</button>
+                        <a href="?" class="btn btn-secondary btn-sm">Limpiar</a>
+                    </div>
+                </form>
+            </div>
 
-                        <div style="display: flex; gap: 8px;">
-                            <button type="submit" class="btn btn-primary btn-sm">Aplicar Filtros</button>
-                            <a href="?" class="btn btn-secondary btn-sm">Limpiar</a>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Bulk Actions -->
-                <form method="POST" id="bulkForm">
-                    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-                    <div class="bulk-actions-bar" style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
-                        <select name="bulk_action" id="bulkAction" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Bulk Actions and Status Filters - Compact Layout -->
+            <div class="card">
+                <div class="compact-actions-bar">
+                    <!-- Bulk Actions Form -->
+                    <form method="POST" id="bulkForm" class="bulk-actions-section">
+                        <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                        <select name="bulk_action" id="bulkAction">
                             <option value="">Seleccionar acción...</option>
                             <option value="pending">Marcar como Pendiente</option>
                             <option value="cobrada">Marcar como Cobrada</option>
@@ -195,8 +174,19 @@ $status_labels = [
                         </select>
                         <button type="submit" class="btn btn-primary btn-sm" onclick="return confirmBulkAction()">Aplicar a Seleccionadas</button>
                         <a href="archivo-ventas.php" class="btn btn-secondary btn-sm">Ver Archivo</a>
-                        <span id="selectedCount" style="color: #666; font-size: 13px;"></span>
+                        <span id="selectedCount"></span>
+                    </form>
+
+                    <!-- Status Filters -->
+                    <div class="status-filters-section">
+                        <a href="?filter=all" class="filter-btn <?php echo $filters['status'] === 'all' ? 'active' : ''; ?>">Todas</a>
+                        <a href="?filter=pending" class="filter-btn <?php echo $filters['status'] === 'pending' ? 'active' : ''; ?>">Pendientes</a>
+                        <a href="?filter=cobrada" class="filter-btn <?php echo $filters['status'] === 'cobrada' ? 'active' : ''; ?>">Cobradas</a>
+                        <a href="?filter=shipped" class="filter-btn <?php echo $filters['status'] === 'shipped' ? 'active' : ''; ?>">Enviadas</a>
+                        <a href="?filter=delivered" class="filter-btn <?php echo $filters['status'] === 'delivered' ? 'active' : ''; ?>">Entregadas</a>
+                        <a href="?filter=cancelled" class="filter-btn <?php echo $filters['status'] === 'cancelled' ? 'active' : ''; ?>">Canceladas</a>
                     </div>
+                </div>
 
                 <!-- Orders Table -->
                 <div class="table-container">

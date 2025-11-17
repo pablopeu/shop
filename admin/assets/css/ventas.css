@@ -125,6 +125,44 @@
             font-size: 12px;
         }
 
+        /* Compact Actions Bar - Nuevo layout compacto */
+        .compact-actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .bulk-actions-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .bulk-actions-section select {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 180px;
+        }
+
+        .bulk-actions-section #selectedCount {
+            color: #4CAF50;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-filters-section {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
         /* Filters */
         .filters {
             display: flex;
@@ -142,6 +180,7 @@
             text-decoration: none;
             font-size: 14px;
             transition: all 0.3s;
+            white-space: nowrap;
         }
 
         .filter-btn:hover,
@@ -474,6 +513,31 @@
         @media (max-width: 768px) {
             .main-content {
                 padding: 10px;
+            }
+
+            .compact-actions-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .bulk-actions-section {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .bulk-actions-section select,
+            .bulk-actions-section .btn {
+                width: 100%;
+            }
+
+            .status-filters-section {
+                justify-content: center;
+            }
+
+            .filter-btn {
+                flex: 1;
+                text-align: center;
+                min-width: 80px;
             }
 
             .orders-table {
