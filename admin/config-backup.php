@@ -32,6 +32,17 @@ if (!file_exists($backups_dir)) {
 $message = '';
 $error = '';
 
+// Check for session messages (from redirects)
+if (isset($_SESSION['success_msg'])) {
+    $message = $_SESSION['success_msg'];
+    unset($_SESSION['success_msg']);
+}
+
+if (isset($_SESSION['error_msg'])) {
+    $error = $_SESSION['error_msg'];
+    unset($_SESSION['error_msg']);
+}
+
 /**
  * Get list of existing backups
  */
@@ -228,25 +239,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax']) && $_POST['aj
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
     // Verify CSRF token
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-        $error = '❌ Token de seguridad inválido';
-    } else {
+        $_SESSION['error_msg'] = '❌ Token de seguridad inválido';
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
 
-        // Delete backup
-        if (isset($_POST['delete_backup'])) {
-            $filename = sanitize_input($_POST['backup_filename'] ?? '');
-            $filepath = $backups_dir . '/' . $filename;
+    // Delete backup
+    if (isset($_POST['delete_backup'])) {
+        $filename = sanitize_input($_POST['backup_filename'] ?? '');
+        $filepath = $backups_dir . '/' . $filename;
 
-            // Security: verify filename is valid backup format
-            if (preg_match('/^backup_\d{8}_\d{6}\.tar\.gz$/', $filename) && file_exists($filepath)) {
-                if (unlink($filepath)) {
-                    $message = "✅ Backup eliminado: {$filename}";
-                } else {
-                    $error = "❌ Error al eliminar el backup";
-                }
+        // Security: verify filename is valid backup format
+        if (preg_match('/^backup_\d{8}_\d{6}\.tar\.gz$/', $filename) && file_exists($filepath)) {
+            if (unlink($filepath)) {
+                $_SESSION['success_msg'] = "✅ Backup eliminado: {$filename}";
             } else {
-                $error = "❌ Backup no válido o no existe";
+                $_SESSION['error_msg'] = "❌ Error al eliminar el backup";
             }
+        } else {
+            $_SESSION['error_msg'] = "❌ Backup no válido o no existe";
         }
+
+        // Redirect to prevent form resubmission
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
     }
 }
 
@@ -683,7 +699,7 @@ if (!isset($_SESSION['csrf_token'])) {
                                     <strong>Archivo:</strong> ${data.filename}<br>
                                     <strong>Tamaño:</strong> ${data.size}
                                 </div>
-                                <button class="modal-btn modal-btn-confirm" onclick="location.reload()" style="margin-top: 20px;">
+                                <button class="modal-btn modal-btn-confirm" onclick="window.location.href = window.location.pathname" style="margin-top: 20px;">
                                     Cerrar y Actualizar
                                 </button>
                             `;
