@@ -194,6 +194,8 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
                                 }
                             </div>
 
+                            ${product.pickup_only ? '<div class="pickup-only-badge">🏪 Solo retiro en persona</div>' : ''}
+
                             <div class="product-actions">
                                 <button class="btn btn-primary"
                                         onclick="addToCart('${product.id}')"
