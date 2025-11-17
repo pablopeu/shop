@@ -40,7 +40,7 @@ function setupModalEventListeners() {
     });
 }
 
-function viewOrder(orderId) {
+export function viewOrder(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
@@ -460,14 +460,14 @@ function viewOrder(orderId) {
     setupModalChangeDetection();
 }
 
-function switchTab(tabId) {
+export function switchTab(tabId) {
     document.querySelectorAll('.modal-tab').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.modal-tab-content').forEach(content => content.classList.remove('active'));
     event.target.classList.add('active');
     document.getElementById(tabId).classList.add('active');
 }
 
-function sendCustomMessage(event, orderId) {
+export function sendCustomMessage(event, orderId) {
     event.preventDefault();
 
     const form = event.target;
@@ -555,7 +555,7 @@ function sendCustomMessage(event, orderId) {
     });
 }
 
-function saveAllChanges() {
+export function saveAllChanges() {
     const btnSave = document.getElementById('btnSaveChanges');
 
     // Get current tab to know which form to submit
@@ -683,7 +683,7 @@ function checkModalChanges(inputs, globalSaveButton) {
     }
 }
 
-function closeOrderModal() {
+export function closeOrderModal() {
     // Only show warning if user actually interacted with the form AND there are changes
     if (modalUserHasInteracted && modalHasUnsavedChanges) {
         // Show custom unsaved changes modal
@@ -696,7 +696,7 @@ function closeOrderModal() {
     }
 }
 
-function confirmCloseOrderModal() {
+export function confirmCloseOrderModal() {
     // User confirmed to leave without saving
     modalHasUnsavedChanges = false;
     modalUserHasInteracted = false;
@@ -704,7 +704,7 @@ function confirmCloseOrderModal() {
     document.getElementById('orderModal').classList.remove('active');
 }
 
-function cancelCloseOrderModal() {
+export function cancelCloseOrderModal() {
     // User wants to stay and save
     document.getElementById('unsavedChangesModal').classList.remove('active');
 
@@ -734,16 +734,12 @@ function cancelCloseOrderModal() {
     }
 }
 
-function showCancelModal(orderId, orderNumber) {
+export function showCancelModal(orderId, orderNumber) {
     document.getElementById('cancelOrderNumber').textContent = orderNumber;
     document.getElementById('confirmCancelBtn').href = '?action=cancel&id=' + encodeURIComponent(orderId);
     document.getElementById('cancelModal').classList.add('active');
 }
 
-function closeCancelModal() {
+export function closeCancelModal() {
     document.getElementById('cancelModal').classList.remove('active');
 }
-
-
-// Export public functions
-export { viewOrder, switchTab, sendCustomMessage, saveAllChanges, closeOrderModal, confirmCloseOrderModal, cancelCloseOrderModal, showCancelModal, closeCancelModal };
