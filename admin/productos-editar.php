@@ -42,15 +42,37 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_image' && isset($_GET[
     if ($product && isset($product['images'][$index])) {
         $image_path = $product['images'][$index];
 
-        // Delete physical file - always try to delete
+        // Delete physical file - try multiple approaches
         $file_deleted = false;
         if (!empty($image_path)) {
-            // Try to delete the physical file
-            $file_deleted = delete_uploaded_image($image_path);
+            // Build absolute path to file
+            $base_dir = __DIR__ . '/..';
 
-            // If it failed and path starts with /, try without it
-            if (!$file_deleted && strpos($image_path, '/') === 0) {
-                $file_deleted = delete_uploaded_image(substr($image_path, 1));
+            // Try different path formats
+            $paths_to_try = [
+                $image_path,                           // As is: /images/products/xxx/file.jpg
+                ltrim($image_path, '/'),              // Without leading slash: images/products/xxx/file.jpg
+                '/' . ltrim($image_path, '/'),        // Ensure leading slash: /images/products/xxx/file.jpg
+            ];
+
+            foreach ($paths_to_try as $path) {
+                $full_path = $base_dir . $path;
+
+                // Check if file exists and delete it
+                if (file_exists($full_path) && is_file($full_path)) {
+                    $file_deleted = unlink($full_path);
+                    if ($file_deleted) {
+                        error_log("Successfully deleted file: $full_path");
+                        break;
+                    }
+                } else {
+                    error_log("File not found at: $full_path");
+                }
+            }
+
+            // Also try using the delete_uploaded_image function
+            if (!$file_deleted) {
+                $file_deleted = delete_uploaded_image($image_path);
             }
         }
 
@@ -801,20 +823,28 @@ $user = get_logged_user();
         // Detect file selection and accumulate files
         if (fileInput) {
             fileInput.addEventListener('change', function(e) {
+                console.log('File input changed, files:', this.files.length);
+
                 if (this.files.length > 0) {
                     // Add new files to pending array
                     Array.from(this.files).forEach(file => {
+                        console.log('Adding file:', file.name);
                         pendingFiles.push(file);
                     });
 
+                    console.log('Total pending files:', pendingFiles.length);
                     markChanged();
                     updatePendingFilesPreview();
+
+                    // Clear the input so the same file can be selected again
+                    this.value = '';
                 }
             });
         }
 
         // Remove file from pending array
         function removePendingFile(index) {
+            console.log('Removing file at index:', index);
             pendingFiles.splice(index, 1);
             updatePendingFilesPreview();
 
@@ -828,7 +858,14 @@ $user = get_logged_user();
             const newImagesPreview = document.getElementById('newImagesPreview');
             const newImageGallery = document.getElementById('new-image-gallery');
 
-            if (!newImagesPreview || !newImageGallery) return;
+            console.log('Updating preview, pending files:', pendingFiles.length);
+            console.log('Preview element:', newImagesPreview);
+            console.log('Gallery element:', newImageGallery);
+
+            if (!newImagesPreview || !newImageGallery) {
+                console.error('Preview elements not found!');
+                return;
+            }
 
             if (pendingFiles.length === 0) {
                 newImagesPreview.style.display = 'none';
@@ -837,30 +874,31 @@ $user = get_logged_user();
 
             newImageGallery.innerHTML = '';
 
-            // Sort files alphabetically
-            const sortedFiles = [...pendingFiles].sort((a, b) => {
-                return a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'});
-            });
-
-            sortedFiles.forEach((file, displayIndex) => {
-                // Get original index in pendingFiles array
-                const originalIndex = pendingFiles.indexOf(file);
-
+            // Process files in order (don't sort to keep user's selection order)
+            pendingFiles.forEach((file, index) => {
                 const reader = new FileReader();
+
+                reader.onerror = function(error) {
+                    console.error('Error reading file:', file.name, error);
+                };
+
                 reader.onload = function(e) {
+                    console.log('File loaded:', file.name);
                     const div = document.createElement('div');
                     div.className = 'image-item';
                     div.innerHTML = `
-                        <img src="${e.target.result}" alt="${file.name}">
+                        <img src="${e.target.result}" alt="${file.name}" style="width: 100%; height: 120px; object-fit: cover;">
                         <span class="image-badge">NUEVA</span>
-                        <button type="button" class="btn-delete-image" onclick="removePendingFile(${originalIndex})" title="Eliminar">✕</button>
+                        <button type="button" class="btn-delete-image" onclick="removePendingFile(${index})" title="Eliminar">✕</button>
                     `;
                     newImageGallery.appendChild(div);
                 };
+
                 reader.readAsDataURL(file);
             });
 
             newImagesPreview.style.display = 'block';
+            console.log('Preview shown');
         }
 
         // Hide preview of new images
