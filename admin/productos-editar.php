@@ -740,13 +740,17 @@ $user = get_logged_user();
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
+        console.log('=== PRODUCT EDIT SCRIPT LOADING ===');
+
         const form = document.getElementById('productForm');
         const saveBtn = document.getElementById('saveBtn');
         const gallery = document.getElementById('image-gallery');
         const fileInput = document.getElementById('product_images');
         const inputs = form.querySelectorAll('input:not([type="file"]):not([type="hidden"]), textarea, select');
-        const backBtn = document.getElementById('backBtn');
-        const unsavedWarning = document.getElementById('unsavedWarning');
+
+        console.log('Form:', form);
+        console.log('File input:', fileInput);
+        console.log('Gallery:', gallery);
 
         let originalValues = {};
         let saveSuccess = <?php echo $message ? 'true' : 'false'; ?>;
@@ -802,13 +806,7 @@ $user = get_logged_user();
 
         // Update UI based on unsaved changes
         function updateUIForChanges() {
-            if (hasUnsavedChanges) {
-                backBtn.style.display = 'none';
-                unsavedWarning.style.display = 'inline';
-            } else {
-                backBtn.style.display = 'inline-block';
-                unsavedWarning.style.display = 'none';
-            }
+            // UI updates can be added here if needed
         }
 
         // Detect changes in inputs
@@ -957,76 +955,18 @@ $user = get_logged_user();
                 document.getElementById('images_order').value = JSON.stringify(order);
             }
 
-            // If we have pending files, we need to submit via FormData
-            if (pendingFiles.length > 0) {
-                e.preventDefault();
-
-                const formData = new FormData();
-
-                // Add all form fields
-                const formElements = form.elements;
-                for (let i = 0; i < formElements.length; i++) {
-                    const element = formElements[i];
-
-                    // Skip file input (we'll handle it separately)
-                    if (element.type === 'file') continue;
-
-                    // Skip buttons
-                    if (element.type === 'submit' || element.type === 'button') continue;
-
-                    // Handle checkboxes
-                    if (element.type === 'checkbox') {
-                        if (element.checked) {
-                            formData.append(element.name, element.value || 'on');
-                        }
-                    }
-                    // Handle other inputs
-                    else if (element.name) {
-                        formData.append(element.name, element.value);
-                    }
-                }
-
-                // Add pending files
-                pendingFiles.forEach((file, index) => {
-                    formData.append('product_images[]', file);
-                });
-
-                // Submit via fetch
-                fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    if (response.redirected) {
-                        window.location.href = response.url;
-                    } else {
-                        return response.text();
-                    }
-                })
-                .then(html => {
-                    if (html) {
-                        document.open();
-                        document.write(html);
-                        document.close();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showModal({
-                        title: 'Error',
-                        message: 'Hubo un error al guardar el producto.',
-                        details: error.message,
-                        icon: '❌',
-                        iconClass: 'error',
-                        confirmText: 'Entendido',
-                        confirmType: 'primary',
-                        cancelText: null,
-                        onConfirm: function() {}
+            // Update file input with pending files before submit
+            if (pendingFiles.length > 0 && fileInput) {
+                try {
+                    const dataTransfer = new DataTransfer();
+                    pendingFiles.forEach(file => {
+                        dataTransfer.items.add(file);
                     });
-                });
-
-                hasUnsavedChanges = false;
-                return false;
+                    fileInput.files = dataTransfer.files;
+                    console.log('Updated file input with', fileInput.files.length, 'files');
+                } catch (error) {
+                    console.error('Error updating file input:', error);
+                }
             }
 
             // Remove beforeunload listener when saving
