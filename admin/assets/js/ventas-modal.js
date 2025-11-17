@@ -524,7 +524,7 @@ export function sendCustomMessage(event, orderId) {
                     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
                     channel: data.channel,
                     message: message,
-                    sent_by: '<?php echo $_SESSION['username'] ?? 'admin'; ?>'
+                    sent_by: 'admin'
                 };
 
                 // Initialize messages array if it doesn't exist
