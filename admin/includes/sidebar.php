@@ -270,6 +270,29 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </ul>
         </li>
 
+        <!-- Envíos -->
+        <li>
+            <div class="menu-item" onclick="toggleSubmenu('envios')">
+                <span>📦 Envíos</span>
+                <span class="menu-arrow" id="arrow-envios">▶</span>
+            </div>
+            <ul class="submenu <?php echo in_array($current_page, ['envios-pendientes.php', 'envios-archivo.php']) ? 'open' : ''; ?>"
+                id="submenu-envios">
+                <li>
+                    <a href="<?php echo url('/admin/envios-pendientes.php'); ?>"
+                       class="<?php echo $current_page === 'envios-pendientes.php' ? 'active' : ''; ?>">
+                        📋 Pendientes
+                    </a>
+                </li>
+                <li>
+                    <a href="<?php echo url('/admin/envios-archivo.php'); ?>"
+                       class="<?php echo $current_page === 'envios-archivo.php' ? 'active' : ''; ?>">
+                        📦 Archivo
+                    </a>
+                </li>
+            </ul>
+        </li>
+
         <!-- Promociones y Cupones -->
         <li>
             <div class="menu-item" onclick="toggleSubmenu('promociones-cupones')">
@@ -359,13 +382,21 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </ul>
         </li>
 
+        <!-- Tracking & Analytics -->
+        <li>
+            <a href="<?php echo url('/admin/config-analytics.php'); ?>"
+               class="<?php echo $current_page === 'config-analytics.php' ? 'active' : ''; ?>">
+                📊 Tracking & Analytics
+            </a>
+        </li>
+
         <!-- Configuración -->
         <li>
             <div class="menu-item" onclick="toggleSubmenu('configuracion')">
                 <span>⚙️ Configuración</span>
                 <span class="menu-arrow" id="arrow-configuracion">▶</span>
             </div>
-            <ul class="submenu <?php echo in_array($current_page, ['config-sistema.php', 'config-sitio.php', 'config-moneda.php', 'config-mantenimiento.php', 'config-backup.php', 'config-hero.php', 'config-carrusel.php', 'config-productos-heading.php', 'config-dashboard.php', 'config-themes.php', 'config-footer.php', 'config-analytics.php']) ? 'open' : ''; ?>"
+            <ul class="submenu <?php echo in_array($current_page, ['config-sistema.php', 'config-sitio.php', 'config-moneda.php', 'config-mantenimiento.php', 'config-backup.php', 'config-hero.php', 'config-carrusel.php', 'config-productos-heading.php', 'config-dashboard.php', 'config-themes.php', 'config-footer.php']) ? 'open' : ''; ?>"
                 id="submenu-configuracion">
 
                 <!-- Configuración del Sistema (Subsección) -->
@@ -383,8 +414,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <li><a href="<?php echo url('/admin/config-backup.php'); ?>" <?php echo $current_page === 'config-backup.php' ? 'class="active"' : ''; ?>>💾 Backup</a></li>
                     </ul>
                 </li>
-
-                <li><a href="<?php echo url('/admin/config-analytics.php'); ?>" <?php echo $current_page === 'config-analytics.php' ? 'class="active"' : ''; ?>>📊 Tracking & Analytics</a></li>
 
                 <!-- Ajustes Visuales (Submenu anidado) -->
                 <li>
