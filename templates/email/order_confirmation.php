@@ -109,6 +109,16 @@ $site_url = $site_config['site_url'] ?? 'https://tienda.com';
                             </p>
                             <?php endif; ?>
 
+                            <!-- Customer Notes -->
+                            <?php if (isset($order['notes']) && !empty(trim($order['notes']))): ?>
+                            <h2 style="margin: 0 0 15px 0; color: #333333; font-size: 18px; font-weight: 600;">
+                                💬 Tu Mensaje
+                            </h2>
+                            <p style="margin: 0 0 30px 0; color: #555555; font-size: 14px; line-height: 1.6; background-color: #f8f9fa; padding: 15px; border-radius: 6px;">
+                                <?= nl2br(htmlspecialchars($order['notes'])) ?>
+                            </p>
+                            <?php endif; ?>
+
                             <!-- Next Steps -->
                             <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 30px; border-radius: 4px;">
                                 <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">

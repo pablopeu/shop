@@ -205,6 +205,12 @@ function send_telegram_new_order($order) {
         $message .= "• {$item['name']} x{$item['quantity']}\n";
     }
 
+    // Customer notes
+    if (!empty($order['notes'])) {
+        $message .= "\n💬 <b>Mensaje del Cliente:</b>\n";
+        $message .= "<i>" . htmlspecialchars($order['notes']) . "</i>\n";
+    }
+
     return send_telegram_message($message);
 }
 
@@ -466,6 +472,12 @@ function send_telegram_order_confirmation($order) {
         $message .= "📍 Envío a: {$order['shipping_address']['city']}, {$order['shipping_address']['state']}\n";
     } else {
         $message .= "🏪 Retiro en persona\n";
+    }
+
+    // Customer notes
+    if (!empty($order['notes'])) {
+        $message .= "\n💬 <b>Tu mensaje:</b>\n";
+        $message .= "<i>" . htmlspecialchars($order['notes']) . "</i>\n";
     }
 
     $message .= "\nTe mantendremos informado sobre el estado de tu pedido. ✨";

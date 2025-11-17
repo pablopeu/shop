@@ -1412,6 +1412,13 @@ $status_labels = [
                     </div>
                     ` : ''}
 
+                    ${order.notes && order.notes.trim() ? `
+                    <div class="form-group" style="background: #fff9e6; padding: 15px; border-radius: 6px; border-left: 4px solid #ffc107;">
+                        <label><strong>💬 Mensaje del Cliente:</strong></label>
+                        <p style="margin-top: 10px; white-space: pre-wrap;">${order.notes}</p>
+                    </div>
+                    ` : ''}
+
                     <div class="form-group">
                         <label><strong>Productos:</strong></label>
                         <div class="order-items">
@@ -1752,6 +1759,17 @@ $status_labels = [
                     <div class="form-group">
                         <label><strong>📋 Historial de Comunicación:</strong></label>
                         <div class="message-history">
+                            ${order.notes && order.notes.trim() ? `
+                                <div class="message-item" style="background-color: #fff9e6; border-left: 4px solid #ffc107;">
+                                    <div class="message-header">
+                                        <div class="message-meta">
+                                            <span class="message-channel" style="background-color: #ffc107; color: #000;">💬 Mensaje Inicial</span>
+                                            <span>${new Date(order.date || order.created_at).toLocaleString('es-AR')}</span>
+                                        </div>
+                                    </div>
+                                    <div class="message-body" style="white-space: pre-wrap;"><strong>Cliente escribió en el checkout:</strong><br>${order.notes}</div>
+                                </div>
+                            ` : ''}
                             ${order.messages && order.messages.length > 0 ?
                                 order.messages.map(msg => `
                                     <div class="message-item">
@@ -1764,7 +1782,7 @@ $status_labels = [
                                         <div class="message-body">${msg.message}</div>
                                     </div>
                                 `).join('') :
-                                '<div class="no-messages">No hay mensajes enviados aún</div>'
+                                (order.notes && order.notes.trim() ? '' : '<div class="no-messages">No hay mensajes enviados aún</div>')
                             }
                         </div>
                     </div>

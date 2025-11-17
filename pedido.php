@@ -650,6 +650,17 @@ $status_config = [
                     <span class="detail-label">Teléfono:</span>
                     <span class="detail-value"><?php echo htmlspecialchars($order['customer_phone']); ?></span>
                 </div>
+
+                <?php if (isset($order['notes']) && !empty(trim($order['notes']))): ?>
+                <div class="detail-row" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; display: block;">
+                    <div style="margin-bottom: 8px;">
+                        <span class="detail-label" style="display: block; font-weight: 600;">💬 Tu mensaje:</span>
+                    </div>
+                    <div style="background-color: #fff9e6; padding: 12px; border-radius: 6px; border-left: 4px solid #ffc107; white-space: pre-wrap; color: #333; line-height: 1.6;">
+                        <?php echo nl2br(htmlspecialchars($order['notes'])); ?>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
 
             <!-- Items -->
