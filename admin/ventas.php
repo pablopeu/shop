@@ -650,6 +650,16 @@ $status_labels = [
         </div>
     </div>
 
+    <script type="module">
+        // Import utility functions
+        import { showToast, copyPaymentLink, formatPrice } from './assets/js/ventas-utils.js';
+
+        // Make functions globally available for inline event handlers
+        window.showToast = showToast;
+        window.copyPaymentLink = copyPaymentLink;
+        window.formatPrice = formatPrice;
+    </script>
+
     <script>
         const orders = <?php echo json_encode($orders); ?>;
         const csrfToken = '<?php echo $csrf_token; ?>';
@@ -1217,28 +1227,6 @@ $status_labels = [
             form.submit();
         }
 
-        function showToast(message) {
-            // Simple toast notification
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #333;
-                color: white;
-                padding: 15px 20px;
-                border-radius: 6px;
-                z-index: 10000;
-                animation: slideIn 0.3s ease-out;
-            `;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.animation = 'slideOut 0.3s ease-out';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
 
         // Track unsaved changes in modal
         let modalHasUnsavedChanges = false;
@@ -1380,37 +1368,6 @@ $status_labels = [
             document.getElementById('cancelModal').classList.remove('active');
         }
 
-        function copyPaymentLink(link) {
-            navigator.clipboard.writeText(link).then(() => {
-                showModal({
-                    title: 'Link Copiado',
-                    message: 'El link de pago se ha copiado al portapapeles exitosamente.',
-                    icon: '✅',
-                    iconClass: 'success',
-                    confirmText: 'Entendido',
-                    confirmType: 'primary',
-                    cancelText: null,
-                    onConfirm: function() {}
-                });
-            }).catch(() => {
-                showModal({
-                    title: 'Copiar Link de Pago',
-                    message: 'No se pudo copiar automáticamente. Por favor, copia manualmente el siguiente link:',
-                    details: link,
-                    icon: '📋',
-                    iconClass: 'info',
-                    confirmText: 'Cerrar',
-                    confirmType: 'primary',
-                    cancelText: null,
-                    onConfirm: function() {}
-                });
-            });
-        }
-
-        function formatPrice(price, currency) {
-            const symbols = { 'ARS': '$', 'USD': 'U$D' };
-            return (symbols[currency] || currency) + ' ' + price.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
-        }
 
         // Close modal when clicking outside
         document.getElementById('orderModal').addEventListener('click', function(e) {
