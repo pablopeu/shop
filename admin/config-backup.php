@@ -738,17 +738,34 @@ if (!isset($_SESSION['csrf_token'])) {
             return false;
         }
 
+        // Variable global para guardar el formulario a enviar
+        let pendingFormSubmit = null;
+
         // Confirmar eliminación de backup
         function confirmDelete(event, filename) {
             event.preventDefault();
+            event.stopPropagation();
 
-            // Guardar referencia al formulario ANTES de cualquier manipulación del DOM
-            const formToSubmit = event.target.closest('form');
+            // Guardar referencia al formulario de forma más robusta
+            const form = event.target;
+            let formToSubmit = null;
+
+            if (form.tagName === 'FORM') {
+                formToSubmit = form;
+            } else if (form.tagName === 'BUTTON') {
+                formToSubmit = form.form;
+            } else {
+                formToSubmit = form.closest('form');
+            }
 
             if (!formToSubmit) {
-                console.error('No se encontró el formulario');
+                console.error('No se encontró el formulario para eliminar');
+                alert('Error: No se puede enviar el formulario');
                 return false;
             }
+
+            // Guardar en variable global
+            pendingFormSubmit = formToSubmit;
 
             const modal = document.getElementById('confirmModal');
             const modalIcon = document.getElementById('modalIcon');
@@ -770,31 +787,36 @@ if (!isset($_SESSION['csrf_token'])) {
             confirmBtn.className = 'modal-btn modal-btn-danger';
             cancelBtn.textContent = 'Cancelar';
 
-            // Mostrar modal
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-
-            // Remover listeners anteriores y agregar nuevos
+            // Limpiar event listeners previos
             const newConfirmBtn = confirmBtn.cloneNode(true);
             const newCancelBtn = cancelBtn.cloneNode(true);
             confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
             cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
 
-            // Listener para cancelar
-            newCancelBtn.addEventListener('click', function() {
+            // Evento cancelar
+            newCancelBtn.onclick = function() {
                 modal.classList.remove('active');
                 document.body.style.overflow = '';
-            });
+                pendingFormSubmit = null;
+            };
 
-            // Listener para confirmar y enviar formulario
-            newConfirmBtn.addEventListener('click', function() {
-                // Cerrar modal
+            // Evento confirmar
+            newConfirmBtn.onclick = function() {
                 modal.classList.remove('active');
                 document.body.style.overflow = '';
 
-                // Enviar formulario usando la referencia guardada
-                formToSubmit.submit();
-            });
+                if (pendingFormSubmit) {
+                    console.log('Enviando formulario de eliminación...');
+                    pendingFormSubmit.submit();
+                    pendingFormSubmit = null;
+                } else {
+                    console.error('No hay formulario pendiente para enviar');
+                }
+            };
+
+            // Mostrar modal
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
 
             return false;
         }
