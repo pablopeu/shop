@@ -354,6 +354,12 @@ write_json($visits_file, $visits_data);
                         <?php endif; ?>
                     </div>
 
+                    <?php if (!empty($product['pickup_only'])): ?>
+                        <div class="pickup-only-badge" style="margin-top: 10px;">
+                            🏪 Solo retiro en persona
+                        </div>
+                    <?php endif; ?>
+
                     <!-- Description -->
                     <div class="description">
                         <p><?php echo nl2br(htmlspecialchars($product['description'])); ?></p>
@@ -508,9 +514,13 @@ write_json($visits_file, $visits_data);
         const rawImages = <?php echo json_encode($product['images'] ?? []); ?>;
         const productImages = rawImages.map(img => {
             if (typeof img === 'string') {
-                return { url: basePath + img, alt: '<?php echo htmlspecialchars($product['name']); ?>' };
+                // Si la URL ya es absoluta (empieza con / o http), no agregar basePath
+                const url = (img.startsWith('/') || img.startsWith('http')) ? img : basePath + img;
+                return { url: url, alt: '<?php echo htmlspecialchars($product['name']); ?>' };
             }
-            return { ...img, url: basePath + img.url };
+            // Si la URL ya es absoluta, no agregar basePath
+            const url = (img.url.startsWith('/') || img.url.startsWith('http')) ? img.url : basePath + img.url;
+            return { ...img, url: url };
         });
         let currentImageIndex = 0;
 
