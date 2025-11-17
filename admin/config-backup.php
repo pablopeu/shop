@@ -478,13 +478,14 @@ if (!isset($_SESSION['csrf_token'])) {
                                                     📥 Descargar
                                                 </a>
 
-                                                <form method="POST" style="display: inline;"
-                                                      onsubmit="return confirmDelete(event, '<?php echo htmlspecialchars($backup['filename'], ENT_QUOTES); ?>');">
+                                                <form method="POST" style="display: inline;" id="deleteForm_<?php echo htmlspecialchars($backup['filename']); ?>">
                                                     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                                                     <input type="hidden" name="backup_filename" value="<?php echo htmlspecialchars($backup['filename']); ?>">
-                                                    <button type="submit" name="delete_backup"
+                                                    <input type="hidden" name="delete_backup" value="1">
+                                                    <button type="button"
                                                             class="btn btn-sm btn-danger"
-                                                            title="Eliminar backup">
+                                                            title="Eliminar backup"
+                                                            onclick="confirmDelete('<?php echo htmlspecialchars($backup['filename'], ENT_QUOTES); ?>');">
                                                         🗑️ Eliminar
                                                     </button>
                                                 </form>
@@ -738,34 +739,21 @@ if (!isset($_SESSION['csrf_token'])) {
             return false;
         }
 
-        // Variable global para guardar el formulario a enviar
-        let pendingFormSubmit = null;
-
         // Confirmar eliminación de backup
-        function confirmDelete(event, filename) {
-            event.preventDefault();
-            event.stopPropagation();
+        function confirmDelete(filename) {
+            console.log('confirmDelete llamada para:', filename);
 
-            // Guardar referencia al formulario de forma más robusta
-            const form = event.target;
-            let formToSubmit = null;
-
-            if (form.tagName === 'FORM') {
-                formToSubmit = form;
-            } else if (form.tagName === 'BUTTON') {
-                formToSubmit = form.form;
-            } else {
-                formToSubmit = form.closest('form');
-            }
+            // Encontrar el formulario por ID
+            const formId = 'deleteForm_' + filename;
+            const formToSubmit = document.getElementById(formId);
 
             if (!formToSubmit) {
-                console.error('No se encontró el formulario para eliminar');
-                alert('Error: No se puede enviar el formulario');
+                console.error('No se encontró el formulario con ID:', formId);
+                alert('Error: No se puede encontrar el formulario de eliminación');
                 return false;
             }
 
-            // Guardar en variable global
-            pendingFormSubmit = formToSubmit;
+            console.log('Formulario encontrado:', formToSubmit);
 
             const modal = document.getElementById('confirmModal');
             const modalIcon = document.getElementById('modalIcon');
@@ -787,7 +775,7 @@ if (!isset($_SESSION['csrf_token'])) {
             confirmBtn.className = 'modal-btn modal-btn-danger';
             cancelBtn.textContent = 'Cancelar';
 
-            // Limpiar event listeners previos
+            // Limpiar event listeners previos clonando los botones
             const newConfirmBtn = confirmBtn.cloneNode(true);
             const newCancelBtn = cancelBtn.cloneNode(true);
             confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
@@ -795,30 +783,27 @@ if (!isset($_SESSION['csrf_token'])) {
 
             // Evento cancelar
             newCancelBtn.onclick = function() {
+                console.log('Cancelando eliminación');
                 modal.classList.remove('active');
                 document.body.style.overflow = '';
-                pendingFormSubmit = null;
             };
 
             // Evento confirmar
             newConfirmBtn.onclick = function() {
+                console.log('Confirmando eliminación - enviando formulario');
                 modal.classList.remove('active');
                 document.body.style.overflow = '';
 
-                if (pendingFormSubmit) {
-                    console.log('Enviando formulario de eliminación...');
-                    pendingFormSubmit.submit();
-                    pendingFormSubmit = null;
-                } else {
-                    console.error('No hay formulario pendiente para enviar');
-                }
+                // Enviar el formulario
+                console.log('Ejecutando submit()...');
+                formToSubmit.submit();
             };
 
             // Mostrar modal
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
 
-            return false;
+            console.log('Modal mostrado');
         }
     </script>
 </body>
