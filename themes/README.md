@@ -10,17 +10,23 @@ Este directorio contiene el sistema de themes para el sitio e-commerce.
 │   ├── reset.css            # Reset/normalize CSS
 │   ├── layout.css           # Sistema de layout (grid, flex)
 │   ├── components.css       # Componentes reutilizables
-│   └── utilities.css        # Clases de utilidad
+│   ├── utilities.css        # Clases de utilidad
+│   └── pages.css            # Estilos específicos de páginas
 │
-├── minimal/                  # Theme minimal
+├── classic/                  # Theme activo
 │   ├── theme.json           # Configuración del theme
 │   ├── variables.css        # Variables CSS (~60 variables)
-│   ├── theme.css            # Estilos específicos
-│   └── preview.jpg          # Imagen de preview (pendiente)
+│   └── theme.css            # Estilos específicos
 │
-├── elegant/                  # Theme elegant
-├── fresh/                    # Theme fresh
-├── bold/                     # Theme bold
+├── archivo/                  # Themes archivados (no mantenidos)
+│   ├── minimal/
+│   ├── elegant/
+│   ├── fresh/
+│   ├── bold/
+│   ├── dark/
+│   ├── luxury/
+│   └── vibrant/
+│
 └── README.md                # Este archivo
 ```
 
@@ -35,7 +41,7 @@ require_once __DIR__ . '/includes/theme-loader.php';
 
 // Leer configuración de theme activo
 $theme_config = read_json(__DIR__ . '/config/theme.json');
-$active_theme = $theme_config['active_theme'] ?? 'minimal';
+$active_theme = $theme_config['active_theme'] ?? 'classic';
 ?>
 
 <!DOCTYPE html>
@@ -67,27 +73,27 @@ Los archivos CSS se cargan en este orden:
 6. `/themes/{active}/theme.css` - Estilos del theme
 7. Componentes específicos (carousel, mobile-menu, etc.)
 
-## 🎨 Themes Disponibles
+## 🎨 Theme Activo
 
-### Minimal
-- **Descripción:** Diseño limpio y minimalista
-- **Colores:** Azul/Púrpura (#667eea)
-- **Uso:** E-commerce general, productos premium
+### Classic
+- **Estado:** ✅ Activo y mantenido
+- **Descripción:** Theme principal del sitio
+- **Ubicación:** `/themes/classic/`
+- **Archivos:** theme.json, variables.css, theme.css
 
-### Elegant
-- **Descripción:** Diseño sofisticado y elegante
-- **Colores:** Negro/Dorado (#000, #d4af37)
-- **Uso:** Joyería, moda de lujo
+## 📦 Themes Archivados
 
-### Fresh
-- **Descripción:** Diseño vibrante y energético
-- **Colores:** Verde/Naranja (#4caf50, #ff9800)
-- **Uso:** Productos orgánicos, lifestyle
+Los siguientes themes están disponibles en `/themes/archivo/` pero **no se mantienen activamente**:
 
-### Bold
-- **Descripción:** Diseño atrevido e impactante
-- **Colores:** Rojo/Negro (#e74c3c, #000)
-- **Uso:** Tecnología, gaming, deportes
+- **minimal** - Diseño limpio y minimalista (Azul/Púrpura)
+- **elegant** - Diseño sofisticado y elegante (Negro/Dorado)
+- **fresh** - Diseño vibrante y energético (Verde/Naranja)
+- **bold** - Diseño atrevido e impactante (Rojo/Negro)
+- **dark** - Tema oscuro
+- **luxury** - Tema de lujo
+- **vibrant** - Tema vibrante
+
+> **Nota:** Para usar un theme archivado, deberás moverlo de `/themes/archivo/` a `/themes/` y actualizarlo manualmente, ya que no reciben actualizaciones automáticas de CSS.
 
 ## 📝 Variables CSS
 
@@ -132,9 +138,9 @@ Cada theme define ~60 variables CSS en `variables.css`:
 
 3. **Copiar plantilla:**
    ```bash
-   cp themes/minimal/theme.json themes/mi-theme/
-   cp themes/minimal/variables.css themes/mi-theme/
-   cp themes/minimal/theme.css themes/mi-theme/
+   cp themes/classic/theme.json themes/mi-theme/
+   cp themes/classic/variables.css themes/mi-theme/
+   cp themes/classic/theme.css themes/mi-theme/
    ```
 
 4. **Personalizar:**
@@ -186,13 +192,13 @@ print_r($themes);
 ```php
 <?php
 require_once 'includes/theme-loader.php';
-$validation = validate_theme('minimal');
+$validation = validate_theme('classic');
 print_r($validation);
 ?>
 ```
 
 ---
 
-**Versión:** 1.0.0
-**Fecha:** 2025-11-05
-**Estado:** ✅ Estructura base completada
+**Versión:** 1.1.0
+**Fecha:** 2025-11-17
+**Estado:** ✅ Simplificado - Solo theme Classic activo, demás archivados
