@@ -222,8 +222,8 @@
     display: block;
 }
 
-/* Mobile specific styles */
-@media (max-width: 768px) {
+/* Mobile and Tablet specific styles */
+@media (max-width: 1024px) {
     /* Show hamburger button */
     .mobile-menu-toggle {
         display: block;
@@ -241,7 +241,7 @@
     }
 }
 
-@media (min-width: 769px) {
+@media (min-width: 1025px) {
     /* On desktop, hide by default and show on scroll */
     .header-compact {
         display: block;
