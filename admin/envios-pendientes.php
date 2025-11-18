@@ -357,7 +357,7 @@ $user = get_logged_user();
 
         .filters-row {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr auto;
+            grid-template-columns: auto 1fr 1fr 1fr auto;
             gap: 12px;
             align-items: end;
         }
@@ -620,9 +620,12 @@ $user = get_logged_user();
         <!-- Header Actions -->
         <div class="header-actions">
             <div>
-                <a href="<?php echo url('/admin/envios-archivo.php'); ?>" class="btn btn-secondary">
-                    📦 Ver Archivados
-                </a>
+                <button type="button" class="btn btn-primary" onclick="exportSelected('csv')">
+                    📊 Exportar CSV
+                </button>
+                <button type="button" class="btn btn-primary" onclick="exportSelected('json')">
+                    📄 Exportar JSON
+                </button>
             </div>
         </div>
 
@@ -631,10 +634,6 @@ $user = get_logged_user();
             <div class="stat-card">
                 <div class="stat-value"><?php echo $total_orders; ?></div>
                 <div class="stat-label">Total Envíos</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value"><?php echo $cobradas; ?></div>
-                <div class="stat-label">Cobradas</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value"><?php echo $enviadas; ?></div>
@@ -650,6 +649,12 @@ $user = get_logged_user();
         <div class="filters-card">
             <form method="GET" action="">
                 <div class="filters-row">
+                    <div class="filter-group">
+                        <a href="<?php echo url('/admin/envios-archivo.php'); ?>" class="btn btn-secondary" style="height: 38px; display: flex; align-items: center;">
+                            📦 Ver Archivados
+                        </a>
+                    </div>
+
                     <div class="filter-group">
                         <label for="search">Buscar</label>
                         <input type="text" id="search" name="search"
@@ -908,6 +913,11 @@ $user = get_logged_user();
                             ${itemsHtml}
                             <hr style="margin: 15px 0;">
                             <p style="text-align: right;"><strong>Total: ${order.total_formatted || order.total}</strong></p>
+                            <hr style="margin: 15px 0;">
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button onclick="exportSingleOrder('${order.id}', 'csv')" class="btn btn-sm btn-primary">📊 Exportar CSV</button>
+                                <button onclick="exportSingleOrder('${order.id}', 'json')" class="btn btn-sm btn-primary">📄 Exportar JSON</button>
+                            </div>
                         `;
 
                         showModal({
@@ -1061,6 +1071,77 @@ $user = get_logged_user();
                 bulkBar.classList.remove('show');
                 selectAll.checked = false;
             }
+        }
+
+        /**
+         * Exportar envíos seleccionados
+         */
+        function exportSelected(format) {
+            const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+            const orderIds = Array.from(checkboxes).map(cb => cb.value);
+
+            if (orderIds.length === 0) {
+                showModal({
+                    title: 'Sin Envíos Seleccionados',
+                    message: 'Debes seleccionar al menos un envío para exportar.',
+                    icon: '⚠️',
+                    confirmText: 'Entendido',
+                    confirmType: 'primary',
+                    cancelText: null,
+                    onConfirm: function() {}
+                });
+                return;
+            }
+
+            // Create form and submit
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '<?php echo url('/api/export-orders.php'); ?>';
+            form.target = '_blank';
+
+            const formatInput = document.createElement('input');
+            formatInput.type = 'hidden';
+            formatInput.name = 'format';
+            formatInput.value = format;
+            form.appendChild(formatInput);
+
+            orderIds.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'order_ids[]';
+                input.value = id;
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        /**
+         * Exportar un solo envío desde el modal
+         */
+        function exportSingleOrder(orderId, format) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '<?php echo url('/api/export-orders.php'); ?>';
+            form.target = '_blank';
+
+            const formatInput = document.createElement('input');
+            formatInput.type = 'hidden';
+            formatInput.name = 'format';
+            formatInput.value = format;
+            form.appendChild(formatInput);
+
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'order_ids[]';
+            idInput.value = orderId;
+            form.appendChild(idInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
         }
     </script>
 </body>

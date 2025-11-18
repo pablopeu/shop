@@ -272,7 +272,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         <!-- Envíos -->
         <li>
-            <div class="menu-item" onclick="toggleSubmenu('envios')">
+            <div class="menu-item" onclick="toggleSubmenu('envios', '<?php echo url('/admin/envios-pendientes.php'); ?>')">
                 <span>📦 Envíos</span>
                 <span class="menu-arrow" id="arrow-envios">▶</span>
             </div>
@@ -281,7 +281,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <li>
                     <a href="<?php echo url('/admin/envios-pendientes.php'); ?>"
                        class="<?php echo $current_page === 'envios-pendientes.php' ? 'active' : ''; ?>">
-                        📋 Pendientes
+                        📋 Gestión de envíos
                     </a>
                 </li>
                 <li>
