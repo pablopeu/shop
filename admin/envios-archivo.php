@@ -243,6 +243,14 @@ $user = get_logged_user();
             margin-bottom: 12px;
             padding-bottom: 10px;
             border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header-actions {
+            display: flex;
+            gap: 8px;
         }
 
         /* Stats */
@@ -608,17 +616,6 @@ $user = get_logged_user();
             <div class="message error"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
 
-        <!-- Header Actions -->
-        <div class="header-actions">
-            <div>
-                <button type="button" class="btn btn-primary" onclick="exportSelected('csv')">
-                    📊 Exportar CSV
-                </button>
-                <button type="button" class="btn btn-primary" onclick="exportSelected('json')">
-                    📄 Exportar JSON
-                </button>
-            </div>
-        </div>
 
         <!-- Stats -->
         <div class="stats-grid">
@@ -687,10 +684,22 @@ $user = get_logged_user();
             <!-- Orders List -->
             <div class="card">
                 <div class="card-header">
-                    <?php if (empty($orders)): ?>
-                        Todos los Envíos Archivados
-                    <?php else: ?>
-                        Mostrando <?php echo count($orders); ?> de <?php echo $total_archived; ?> envíos archivados
+                    <span>
+                        <?php if (empty($orders)): ?>
+                            Todos los Envíos Archivados
+                        <?php else: ?>
+                            Mostrando <?php echo count($orders); ?> de <?php echo $total_archived; ?> envíos archivados
+                        <?php endif; ?>
+                    </span>
+                    <?php if (!empty($all_archived)): ?>
+                    <div class="card-header-actions">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="exportSelected('csv')">
+                            📊 Exportar CSV
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="exportSelected('json')">
+                            📄 Exportar JSON
+                        </button>
+                    </div>
                     <?php endif; ?>
                 </div>
 
@@ -924,7 +933,8 @@ $user = get_logged_user();
 
                         showModal({
                             title: 'Detalles de Envío Archivado',
-                            message: detailsHtml,
+                            message: 'Información completa del envío archivado',
+                            details: detailsHtml,
                             icon: '📦',
                             iconClass: 'info',
                             confirmText: 'Cerrar',
