@@ -371,12 +371,35 @@ $user = get_logged_user();
             border: 2px solid #e0e0e0;
             border-radius: 6px;
             font-size: 14px;
+            height: 42px;
         }
 
         .filter-group select:focus,
         .filter-group input:focus {
             outline: none;
             border-color: #4CAF50;
+        }
+
+        /* Asegurar altura consistente en filters-row */
+        .filters-row .btn,
+        .filters-row a.btn {
+            height: 42px;
+            min-height: 42px;
+            padding: 8px 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Contenedor para alinear anchos */
+        .content-wrapper {
+            max-width: 100%;
+        }
+
+        .filters-card,
+        .bulk-actions-bar,
+        .card {
+            max-width: 100%;
         }
 
         /* Bulk Actions Bar */
@@ -630,7 +653,7 @@ $user = get_logged_user();
             <form method="GET" action="">
                 <div class="filters-row">
                     <div class="filter-group">
-                        <a href="<?php echo url('/admin/envios-pendientes.php'); ?>" class="btn btn-secondary" style="height: 38px; display: flex; align-items: center;">
+                        <a href="<?php echo url('/admin/envios-pendientes.php'); ?>" class="btn btn-secondary">
                             ⬅️ Volver a Envíos
                         </a>
                     </div>
