@@ -161,7 +161,7 @@ $user = get_logged_user();
         /* Main Content */
         .main-content {
             margin-left: 260px;
-            padding: 15px 20px 15px 20px;
+            padding: 15px 12px 15px 20px;
         }
 
         /* Ajustar para que el contenido llegue hasta el borde */

@@ -34,7 +34,7 @@
     .modal-container {
         background: white;
         border-radius: 8px;
-        padding: 30px;
+        padding: 20px;
         max-width: 500px;
         width: 90%;
         max-height: 80vh;
@@ -44,8 +44,8 @@
 
     /* Modal Icon */
     .modal-icon {
-        font-size: 64px;
-        margin-bottom: 20px;
+        font-size: 48px;
+        margin-bottom: 12px;
         display: block;
     }
 
@@ -67,26 +67,26 @@
 
     /* Modal Title */
     .modal-title {
-        font-size: 24px;
+        font-size: 20px;
         font-weight: 600;
         color: #2c3e50;
-        margin-bottom: 15px;
+        margin-bottom: 10px;
     }
 
     /* Modal Message */
     .modal-message {
-        font-size: 15px;
+        font-size: 14px;
         color: #666;
-        margin-bottom: 20px;
-        line-height: 1.6;
+        margin-bottom: 12px;
+        line-height: 1.5;
     }
 
     /* Modal Details */
     .modal-details {
         background: #f8f9fa;
-        padding: 15px;
+        padding: 12px;
         border-radius: 6px;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
         text-align: left;
         font-size: 14px;
         color: #555;
