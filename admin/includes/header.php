@@ -42,6 +42,16 @@ $username = $_SESSION['username'] ?? 'Admin';
         display: none;
     }
 
+    /* Show hamburger button in tablet and mobile */
+    @media (max-width: 1024px) {
+        .admin-topbar-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+    }
+
     .admin-topbar h1 {
         font-size: 22px;
         color: #2c3e50;
@@ -131,20 +141,28 @@ $username = $_SESSION['username'] ?? 'Admin';
         box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
     }
 
+    /* Tablet layout: show logo and hamburger */
+    @media (max-width: 1024px) and (min-width: 769px) {
+        .admin-logo {
+            display: block;
+            max-height: 40px;
+            height: auto;
+            max-width: 120px;
+            object-fit: contain;
+        }
+
+        .hamburger-btn {
+            flex-shrink: 0;
+        }
+    }
+
+    /* Mobile layout: reorganize completely */
     @media (max-width: 768px) {
         .admin-topbar {
             flex-direction: column;
             align-items: stretch;
             padding: 12px 15px;
             gap: 12px;
-        }
-
-        /* Top row: Logo + Burger */
-        .admin-topbar-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
         }
 
         .admin-logo {
