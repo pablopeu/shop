@@ -141,84 +141,66 @@ $username = $_SESSION['username'] ?? 'Admin';
         box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
     }
 
-    /* Tablet layout: espacioso y profesional */
+    /* Tablet layout: compacto y eficiente */
     @media (max-width: 1024px) and (min-width: 769px) {
         .admin-topbar {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 20px 25px;
-            gap: 18px;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            padding: 18px 25px;
+            gap: 15px;
         }
 
-        /* Fila 1: Logo grande + Hamburger */
+        /* Fila 1 - Parte 1: Logo */
         .admin-topbar-top {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #e9ecef;
+            gap: 15px;
+            order: 1;
+            flex: 0 0 auto;
         }
 
         .admin-logo {
             display: block;
-            max-height: 70px;
+            max-height: 60px;
             height: auto;
-            max-width: 180px;
+            max-width: 150px;
             object-fit: contain;
         }
 
-        .hamburger-btn {
-            flex-shrink: 0;
-            padding: 12px 16px;
-            font-size: 24px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        /* Ocultar hamburger de .admin-topbar-top, lo moveremos a actions */
+        .admin-topbar-top .hamburger-btn {
+            display: none;
         }
 
-        /* Fila 2: Título de página */
-        .admin-topbar-left {
-            order: 2;
-            justify-content: center;
-            padding: 10px 0;
-        }
-
-        .admin-topbar h1 {
-            font-size: 20px;
-            text-align: center;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        /* Fila 3: Usuario y botones */
+        /* Fila 1 - Parte 2: Botones + Hamburger */
         .admin-topbar-actions {
-            order: 3;
-            flex-direction: column;
-            gap: 12px;
-            padding-top: 10px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+            order: 2;
+            flex: 1;
+            justify-content: flex-end;
         }
 
+        /* Ocultar indicador de usuario */
         .admin-topbar-user {
-            width: 100%;
-            justify-content: center;
-            padding: 12px 20px;
-            font-size: 15px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 1px solid #dee2e6;
+            display: none;
         }
 
         .admin-topbar-buttons {
             display: flex;
-            gap: 12px;
-            width: 100%;
+            gap: 10px;
+            flex-shrink: 0;
         }
 
         .admin-topbar .btn {
-            flex: 1;
-            text-align: center;
-            padding: 14px 20px;
-            font-size: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            padding: 10px 16px;
+            font-size: 13px;
+            border-radius: 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .admin-topbar .btn-secondary {
@@ -227,6 +209,32 @@ $username = $_SESSION['username'] ?? 'Admin';
 
         .admin-topbar .btn-logout {
             background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        /* Mover hamburger después de los botones */
+        .hamburger-btn {
+            order: 3;
+            flex-shrink: 0;
+            padding: 10px 14px;
+            font-size: 22px;
+            border-radius: 6px;
+            margin-left: 10px;
+        }
+
+        /* Fila 2: Título de página */
+        .admin-topbar-left {
+            order: 4;
+            width: 100%;
+            justify-content: center;
+            padding: 12px 0 0 0;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .admin-topbar h1 {
+            font-size: 18px;
+            text-align: center;
+            font-weight: 600;
+            color: #2c3e50;
         }
     }
 
