@@ -663,7 +663,7 @@ $user = get_logged_user();
                 <div class="filters-row">
                     <div class="filter-group">
                         <a href="<?php echo url('/admin/envios-archivo.php'); ?>" class="btn btn-secondary">
-                            📦 Ver Archivados
+                            Ver Archivados
                         </a>
                     </div>
 
@@ -693,14 +693,14 @@ $user = get_logged_user();
                         </select>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">🔍 Filtrar</button>
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
 
                     <button type="button" class="btn btn-primary" onclick="exportSelected('csv')">
-                        📊 Exportar CSV
+                        Exportar CSV
                     </button>
 
                     <button type="button" class="btn btn-primary" onclick="exportSelected('json')">
-                        📄 Exportar JSON
+                        Exportar JSON
                     </button>
                 </div>
             </form>

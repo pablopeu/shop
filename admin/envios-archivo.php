@@ -654,7 +654,7 @@ $user = get_logged_user();
                 <div class="filters-row">
                     <div class="filter-group">
                         <a href="<?php echo url('/admin/envios-pendientes.php'); ?>" class="btn btn-secondary">
-                            ⬅️ Volver a Envíos
+                            Volver a Envíos
                         </a>
                     </div>
 
@@ -677,15 +677,15 @@ $user = get_logged_user();
                         </select>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">🔍 Filtrar</button>
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
 
                     <?php if (!empty($all_archived)): ?>
                     <button type="button" class="btn btn-primary" onclick="exportSelected('csv')">
-                        📊 Exportar CSV
+                        Exportar CSV
                     </button>
 
                     <button type="button" class="btn btn-primary" onclick="exportSelected('json')">
-                        📄 Exportar JSON
+                        Exportar JSON
                     </button>
                     <?php endif; ?>
                 </div>
