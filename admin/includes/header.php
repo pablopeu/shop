@@ -148,10 +148,10 @@ $username = $_SESSION['username'] ?? 'Admin';
             flex-wrap: nowrap;
             align-items: center;
             padding: 15px 20px;
-            gap: 12px;
+            gap: 10px;
         }
 
-        /* Elemento 1: Logo grande */
+        /* Elemento 1: Solo Logo */
         .admin-topbar-top {
             display: flex;
             align-items: center;
@@ -159,9 +159,9 @@ $username = $_SESSION['username'] ?? 'Admin';
             flex-shrink: 0;
         }
 
-        /* Ocultar el hamburger que está dentro de admin-topbar-top */
+        /* Mostrar solo el logo, ocultar el hamburger de aquí */
         .admin-topbar-top .hamburger-btn {
-            display: none;
+            display: none !important;
         }
 
         .admin-logo {
@@ -176,14 +176,14 @@ $username = $_SESSION['username'] ?? 'Admin';
         .admin-topbar-left {
             order: 2;
             flex: 1;
-            display: flex;
+            display: flex !important;
             justify-content: flex-start;
             padding: 0;
             margin-left: 10px;
         }
 
         .admin-topbar h1 {
-            font-size: 16px;
+            font-size: 15px;
             text-align: left;
             font-weight: 600;
             color: #2c3e50;
@@ -194,8 +194,8 @@ $username = $_SESSION['username'] ?? 'Admin';
 
         /* Elementos 3-6: Usuario, botones y hamburger */
         .admin-topbar-actions {
-            display: flex;
-            flex-direction: row;
+            display: flex !important;
+            flex-direction: row !important;
             align-items: center;
             gap: 8px;
             order: 3;
@@ -204,13 +204,13 @@ $username = $_SESSION['username'] ?? 'Admin';
 
         /* Elemento 3: Mostrar usuario */
         .admin-topbar-user {
-            display: flex;
+            display: flex !important;
             align-items: center;
             gap: 6px;
-            padding: 6px 12px;
+            padding: 6px 10px;
             background: #f8f9fa;
             border-radius: 5px;
-            font-size: 13px;
+            font-size: 12px;
             color: #2c3e50;
             white-space: nowrap;
             flex-shrink: 0;
@@ -222,14 +222,14 @@ $username = $_SESSION['username'] ?? 'Admin';
 
         /* Elementos 4-5: Botones */
         .admin-topbar-buttons {
-            display: flex;
-            gap: 8px;
+            display: flex !important;
+            gap: 6px;
             flex-shrink: 0;
         }
 
         .admin-topbar .btn {
-            padding: 8px 12px;
-            font-size: 12px;
+            padding: 7px 10px;
+            font-size: 11px;
             border-radius: 5px;
             white-space: nowrap;
             flex-shrink: 0;
@@ -243,15 +243,31 @@ $username = $_SESSION['username'] ?? 'Admin';
             background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
         }
 
-        /* Elemento 6: Hamburger al final */
-        .hamburger-btn {
-            display: block !important;
-            order: 4;
-            flex-shrink: 0;
+        /* Elemento 6: Hamburger - crear uno visible fuera de admin-topbar-top */
+        .admin-topbar-actions::after {
+            content: '☰';
+            display: block;
+            background: #2c3e50;
+            color: white;
             padding: 8px 12px;
-            font-size: 20px;
             border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
             margin-left: 8px;
+            transition: all 0.3s;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        .admin-topbar-actions:hover::after {
+            background: #34495e;
+        }
+    }
+
+    /* JavaScript para hacer el pseudo-elemento clickeable */
+    @media (max-width: 1024px) and (min-width: 769px) {
+        .admin-topbar-actions {
+            position: relative;
         }
     }
 
@@ -315,6 +331,27 @@ $username = $_SESSION['username'] ?? 'Admin';
         }
     }
 </style>
+
+<script>
+// Hacer el pseudo-elemento hamburger clickeable en tablet
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.matchMedia('(min-width: 769px) and (max-width: 1024px)').matches) {
+        const actions = document.querySelector('.admin-topbar-actions');
+        if (actions) {
+            actions.addEventListener('click', function(e) {
+                // Detectar si el click fue en el área del pseudo-elemento (últimos 50px a la derecha)
+                const rect = this.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                if (clickX > rect.width - 50) {
+                    if (typeof toggleSidebar === 'function') {
+                        toggleSidebar();
+                    }
+                }
+            });
+        }
+    }
+});
+</script>
 
 <div class="admin-topbar">
     <!-- Top row: Logo + Burger (mobile only) -->
