@@ -152,7 +152,14 @@ $user = get_logged_user();
         /* Main Content */
         .main-content {
             margin-left: 260px;
-            padding: 15px 20px;
+            padding: 15px 20px 15px 20px;
+        }
+
+        /* Ajustar para que el contenido llegue hasta el borde */
+        .filters-card,
+        .bulk-actions-bar,
+        .card {
+            margin-right: 0;
         }
 
         /* Messages */
@@ -232,9 +239,13 @@ $user = get_logged_user();
         .card {
             background: white;
             border-radius: 8px;
-            padding: 15px;
+            padding: 15px 0 15px 15px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             margin-bottom: 15px;
+        }
+
+        .card-header {
+            padding-right: 15px;
         }
 
         .card-header {
@@ -283,6 +294,16 @@ $user = get_logged_user();
             padding: 10px 12px;
             text-align: left;
             border-bottom: 1px solid #e0e0e0;
+        }
+
+        .orders-table th:first-child,
+        .orders-table td:first-child {
+            padding-left: 15px;
+        }
+
+        .orders-table th:last-child,
+        .orders-table td:last-child {
+            padding-right: 15px;
         }
 
         .orders-table th {
@@ -440,8 +461,8 @@ $user = get_logged_user();
         .table-container {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
-            margin: 0 -15px;
-            padding: 0 15px;
+            margin: 0;
+            padding: 0;
         }
 
         @media (min-width: 1025px) {
