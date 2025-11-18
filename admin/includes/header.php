@@ -42,6 +42,16 @@ $username = $_SESSION['username'] ?? 'Admin';
         display: none;
     }
 
+    /* Show hamburger button in mobile only */
+    @media (max-width: 768px) {
+        .admin-topbar-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+    }
+
     .admin-topbar h1 {
         font-size: 22px;
         color: #2c3e50;
@@ -70,7 +80,7 @@ $username = $_SESSION['username'] ?? 'Admin';
         transform: scale(0.95);
     }
 
-    @media (max-width: 1024px) {
+    @media (max-width: 768px) {
         .hamburger-btn {
             display: block;
         }
@@ -131,20 +141,126 @@ $username = $_SESSION['username'] ?? 'Admin';
         box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
     }
 
+    /* Tablet layout: una sola fila horizontal con todos los elementos */
+    @media (max-width: 1024px) and (min-width: 769px) {
+        /* Contenedor principal en fila */
+        .admin-topbar {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            padding: 15px 20px !important;
+            gap: 10px !important;
+        }
+
+        /* Logo sin width 100% */
+        .admin-topbar-top {
+            display: flex !important;
+            align-items: center !important;
+            order: 1 !important;
+            flex-shrink: 0 !important;
+            width: auto !important;
+        }
+
+        .admin-logo {
+            display: block !important;
+            max-height: 55px !important;
+            height: auto !important;
+            max-width: 140px !important;
+            object-fit: contain !important;
+        }
+
+        /* Ocultar el hamburger dentro de admin-topbar-top */
+        .admin-topbar-top .hamburger-btn {
+            display: none !important;
+        }
+
+        /* Título flexible */
+        .admin-topbar-left {
+            display: flex !important;
+            order: 2 !important;
+            flex: 1 !important;
+            justify-content: flex-start !important;
+            padding: 0 !important;
+            margin-left: 10px !important;
+        }
+
+        .admin-topbar-left h1 {
+            font-size: 15px !important;
+            text-align: left !important;
+            font-weight: 600 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        /* Acciones: usuario + botones */
+        .admin-topbar-actions {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 8px !important;
+            order: 3 !important;
+            flex-shrink: 0 !important;
+            position: relative !important;
+        }
+
+        /* Usuario visible */
+        .admin-topbar-user {
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            padding: 6px 10px !important;
+            background: #f8f9fa !important;
+            border-radius: 5px !important;
+            font-size: 12px !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+        }
+
+        /* Botones visibles */
+        .admin-topbar-buttons {
+            display: flex !important;
+            gap: 6px !important;
+            flex-shrink: 0 !important;
+        }
+
+        .admin-topbar-buttons .btn {
+            padding: 7px 10px !important;
+            font-size: 11px !important;
+            border-radius: 5px !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+        }
+
+        /* Hamburger pseudo-elemento al final */
+        .admin-topbar-actions::after {
+            content: '☰' !important;
+            display: block !important;
+            background: #2c3e50 !important;
+            color: white !important;
+            padding: 8px 12px !important;
+            border-radius: 5px !important;
+            font-size: 18px !important;
+            cursor: pointer !important;
+            margin-left: 8px !important;
+            transition: all 0.3s !important;
+            flex-shrink: 0 !important;
+            user-select: none !important;
+        }
+
+        .admin-topbar-actions:hover::after {
+            background: #34495e !important;
+        }
+    }
+
+    /* Mobile layout: reorganize completely */
     @media (max-width: 768px) {
         .admin-topbar {
             flex-direction: column;
             align-items: stretch;
             padding: 12px 15px;
             gap: 12px;
-        }
-
-        /* Top row: Logo + Burger */
-        .admin-topbar-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
         }
 
         .admin-logo {
@@ -198,6 +314,27 @@ $username = $_SESSION['username'] ?? 'Admin';
         }
     }
 </style>
+
+<script>
+// Hacer el pseudo-elemento hamburger clickeable en tablet
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.matchMedia('(min-width: 769px) and (max-width: 1024px)').matches) {
+        const actions = document.querySelector('.admin-topbar-actions');
+        if (actions) {
+            actions.addEventListener('click', function(e) {
+                // Detectar si el click fue en el área del pseudo-elemento (últimos 50px a la derecha)
+                const rect = this.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                if (clickX > rect.width - 50) {
+                    if (typeof toggleSidebar === 'function') {
+                        toggleSidebar();
+                    }
+                }
+            });
+        }
+    }
+});
+</script>
 
 <div class="admin-topbar">
     <!-- Top row: Logo + Burger (mobile only) -->
