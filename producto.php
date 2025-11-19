@@ -127,6 +127,13 @@ $visits_data['products'][$product['id']]['total_visits']++;
 $visits_data['products'][$product['id']]['last_visit'] = get_timestamp();
 write_json($visits_file, $visits_data);
 
+// Check for theme-specific template
+$theme_template = __DIR__ . "/themes/{$active_theme}/templates/products/detail.php";
+if (file_exists($theme_template)) {
+    require $theme_template;
+    exit;
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
