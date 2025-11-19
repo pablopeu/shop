@@ -442,13 +442,14 @@ $user = get_logged_user();
                             Nombre del Producto <span class="required">*</span>
                         </label>
                         <input type="text" id="name" name="name" required
+                               value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>"
                                placeholder="Ej: Remera Deportiva Premium">
                     </div>
 
                     <div class="form-group full-width">
                         <label for="description">Descripción</label>
                         <textarea id="description" name="description"
-                                  placeholder="Descripción detallada del producto..."></textarea>
+                                  placeholder="Descripción detallada del producto..."><?php echo htmlspecialchars($_POST['description'] ?? ''); ?></textarea>
                     </div>
                 </div>
 
@@ -481,6 +482,7 @@ $user = get_logged_user();
                             Precio en Pesos (ARS)
                         </label>
                         <input type="number" id="price_ars" name="price_ars" step="0.01"
+                               value="<?php echo htmlspecialchars($_POST['price_ars'] ?? ''); ?>"
                                placeholder="0.00">
                         <small style="color: #666;">Al menos un precio debe estar completo</small>
                     </div>
@@ -490,6 +492,7 @@ $user = get_logged_user();
                             Precio en Dólares (USD)
                         </label>
                         <input type="number" id="price_usd" name="price_usd" step="0.01"
+                               value="<?php echo htmlspecialchars($_POST['price_usd'] ?? ''); ?>"
                                placeholder="0.00">
                         <small style="color: #666;">Puede dejarse vacío si solo usas ARS</small>
                     </div>
@@ -504,14 +507,14 @@ $user = get_logged_user();
                             Stock Disponible <span class="required">*</span>
                         </label>
                         <input type="number" id="stock" name="stock" required
-                               value="0" min="0">
+                               value="<?php echo htmlspecialchars($_POST['stock'] ?? '0'); ?>" min="0">
                         <small style="color: #666;">Cantidad de unidades disponibles</small>
                     </div>
 
                     <div class="form-group">
                         <label for="stock_alert">Alerta de Stock Bajo</label>
                         <input type="number" id="stock_alert" name="stock_alert"
-                               value="0" min="0">
+                               value="<?php echo htmlspecialchars($_POST['stock_alert'] ?? '0'); ?>" min="0">
                         <small style="color: #666;">Te avisaremos cuando el stock llegue a este número</small>
                     </div>
                 </div>
@@ -521,7 +524,7 @@ $user = get_logged_user();
 
                 <div class="form-group">
                     <div class="checkbox-group">
-                        <input type="checkbox" id="active" name="active" checked>
+                        <input type="checkbox" id="active" name="active" <?php echo (isset($_POST['save_product']) ? (isset($_POST['active']) ? 'checked' : '') : 'checked'); ?>>
                         <label for="active">
                             Producto Activo (visible en el sitio público)
                         </label>
@@ -530,7 +533,7 @@ $user = get_logged_user();
 
                 <div class="form-group">
                     <div class="checkbox-group">
-                        <input type="checkbox" id="pickup_only" name="pickup_only">
+                        <input type="checkbox" id="pickup_only" name="pickup_only" <?php echo (isset($_POST['pickup_only']) ? 'checked' : ''); ?>>
                         <label for="pickup_only">
                             🏪 Solo Retiro en Persona (sin opción de envío)
                         </label>
@@ -547,6 +550,7 @@ $user = get_logged_user();
                     <div class="form-group full-width">
                         <label for="seo_title">Título SEO</label>
                         <input type="text" id="seo_title" name="seo_title"
+                               value="<?php echo htmlspecialchars($_POST['seo_title'] ?? ''); ?>"
                                maxlength="60"
                                placeholder="Título para motores de búsqueda (máx 60 caracteres)">
                     </div>
@@ -555,12 +559,13 @@ $user = get_logged_user();
                         <label for="seo_description">Descripción SEO</label>
                         <textarea id="seo_description" name="seo_description"
                                   maxlength="160"
-                                  placeholder="Descripción para motores de búsqueda (máx 160 caracteres)"></textarea>
+                                  placeholder="Descripción para motores de búsqueda (máx 160 caracteres)"><?php echo htmlspecialchars($_POST['seo_description'] ?? ''); ?></textarea>
                     </div>
 
                     <div class="form-group full-width">
                         <label for="seo_keywords">Keywords (separadas por comas)</label>
                         <input type="text" id="seo_keywords" name="seo_keywords"
+                               value="<?php echo htmlspecialchars($_POST['seo_keywords'] ?? ''); ?>"
                                placeholder="Ej: remera, deportiva, algodón, premium">
                     </div>
                 </div>
