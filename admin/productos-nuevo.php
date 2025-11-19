@@ -169,28 +169,27 @@ $user = get_logged_user();
             color: var(--text-main);
         }
 
-        /* Form Layout - Grid Areas */
+        /* Form Layout */
         .form-layout {
             display: grid;
-            gap: 1.5rem;
             grid-template-columns: 1fr 350px;
-            grid-template-areas: 
-                "basic publish"
-                "pricing status"
-                "inventory status"
-                "images inventory"
-                "seo inventory";
+            gap: 2rem;
             align-items: start;
         }
 
-        /* Assign Grid Areas */
-        .area-basic { grid-area: basic; }
-        .area-images { grid-area: images; }
-        .area-pricing { grid-area: pricing; }
-        .area-seo { grid-area: seo; }
-        .area-publish { grid-area: publish; }
-        .area-status { grid-area: status; }
-        .area-inventory { grid-area: inventory; }
+        .form-main {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .form-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            position: sticky;
+            top: 2rem;
+        }
 
         /* Cards */
         .card {
@@ -199,7 +198,6 @@ $user = get_logged_user();
             box-shadow: var(--shadow);
             padding: 1.5rem;
             border: 1px solid var(--border);
-            height: 100%; /* Fill grid area height if needed */
         }
 
         .card-header {
@@ -455,37 +453,14 @@ $user = get_logged_user();
             .main-content {
                 margin-left: 0;
             }
-        }
-
-        @media (max-width: 768px) {
             .form-layout {
-                display: flex;
-                flex-direction: column;
+                grid-template-columns: 1fr;
             }
-
-            /* Mobile Ordering */
-            .area-basic { order: 1; }
-            .area-pricing { order: 3; }
-            .area-inventory { order: 5; }
-            .area-status { order: 6; }
-            .area-images { order: 7; }
-            .area-seo { order: 8; }
-            .area-publish { order: 9; }
-
-            /* Description is inside basic, so it follows name */
-            /* ARS/USD inside pricing */
-            
-            /* Adjust header for mobile */
-            .page-header {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 1rem;
-            }
-            
-            .page-header .btn-secondary {
-                width: 100%;
+            .form-sidebar {
+                position: static;
             }
         }
+
     </style>
 </head>
 <body>
@@ -516,154 +491,158 @@ $user = get_logged_user();
             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
 
             <div class="form-layout">
-                
-                <!-- 1. Basic Info (Name, Desc) -->
-                <div class="card area-basic">
-                    <div class="card-header">
-                        <h2 class="card-title">📝 Información Básica</h2>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="name">Nombre del Producto <span class="required">*</span></label>
-                        <input type="text" id="name" name="name" class="form-control" required
-                               value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>"
-                               placeholder="Ej: Remera Deportiva Premium">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="description">Descripción</label>
-                        <textarea id="description" name="description" class="form-control"
-                                  placeholder="Descripción detallada del producto..."><?php echo htmlspecialchars($_POST['description'] ?? ''); ?></textarea>
-                    </div>
-                </div>
-
-                <!-- 2. Images -->
-                <div class="card area-images">
-                    <div class="card-header">
-                        <h2 class="card-title">🖼️ Imágenes del Producto</h2>
-                    </div>
-                    
-                    <div class="form-group">
-                        <div class="upload-area" id="uploadArea">
-                            <span class="upload-icon">☁️</span>
-                            <p style="font-weight: 500; margin-bottom: 0.5rem;">Haz clic o arrastra imágenes aquí</p>
-                            <p class="form-text">Soporta JPG, PNG, GIF, WebP. Máx 5MB.</p>
-                            <input type="file" id="product_images" name="product_images[]" accept="image/*" multiple hidden>
+                <!-- Main Column -->
+                <div class="form-main">
+                    <!-- Basic Info -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">📝 Información Básica</h2>
                         </div>
-                    </div>
-
-                    <div class="image-gallery" id="image-gallery"></div>
-                    <input type="hidden" id="images_order" name="images_order" value="">
-                </div>
-
-                <!-- 3. Pricing -->
-                <div class="card area-pricing">
-                    <div class="card-header">
-                        <h2 class="card-title">💰 Precios</h2>
-                    </div>
-                    <div class="grid-2">
                         <div class="form-group">
-                            <label class="form-label" for="price_ars">Precio ARS</label>
-                            <div style="position: relative;">
-                                <span style="position: absolute; left: 12px; top: 10px; color: #6b7280;">$</span>
-                                <input type="number" id="price_ars" name="price_ars" class="form-control" step="0.01"
-                                       style="padding-left: 30px;"
-                                       value="<?php echo htmlspecialchars($_POST['price_ars'] ?? ''); ?>"
-                                       placeholder="0.00">
-                            </div>
+                            <label class="form-label" for="name">Nombre del Producto <span class="required">*</span></label>
+                            <input type="text" id="name" name="name" class="form-control" required
+                                   value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>"
+                                   placeholder="Ej: Remera Deportiva Premium">
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="price_usd">Precio USD</label>
-                            <div style="position: relative;">
-                                <span style="position: absolute; left: 12px; top: 10px; color: #6b7280;">u$s</span>
-                                <input type="number" id="price_usd" name="price_usd" class="form-control" step="0.01"
-                                       style="padding-left: 45px;"
-                                       value="<?php echo htmlspecialchars($_POST['price_usd'] ?? ''); ?>"
-                                       placeholder="0.00">
-                            </div>
+                            <label class="form-label" for="description">Descripción</label>
+                            <textarea id="description" name="description" class="form-control"
+                                      placeholder="Descripción detallada del producto..."><?php echo htmlspecialchars($_POST['description'] ?? ''); ?></textarea>
                         </div>
                     </div>
-                    <p class="form-text" style="margin-top: 10px;">Debe ingresar al menos un precio.</p>
+
+                    <!-- Images -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🖼️ Imágenes del Producto</h2>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="upload-area" id="uploadArea">
+                                <span class="upload-icon">☁️</span>
+                                <p style="font-weight: 500; margin-bottom: 0.5rem;">Haz clic o arrastra imágenes aquí</p>
+                                <p class="form-text">Soporta JPG, PNG, GIF, WebP. Máx 5MB.</p>
+                                <input type="file" id="product_images" name="product_images[]" accept="image/*" multiple hidden>
+                            </div>
+                        </div>
+
+                        <div class="image-gallery" id="image-gallery"></div>
+                        <input type="hidden" id="images_order" name="images_order" value="">
+                    </div>
+
+                    <!-- Pricing -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">💰 Precios</h2>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="price_ars">Precio ARS</label>
+                                <div style="position: relative;">
+                                    <span style="position: absolute; left: 12px; top: 10px; color: #6b7280;">$</span>
+                                    <input type="number" id="price_ars" name="price_ars" class="form-control" step="0.01"
+                                           style="padding-left: 30px;"
+                                           value="<?php echo htmlspecialchars($_POST['price_ars'] ?? ''); ?>"
+                                           placeholder="0.00">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="price_usd">Precio USD</label>
+                                <div style="position: relative;">
+                                    <span style="position: absolute; left: 12px; top: 10px; color: #6b7280;">u$s</span>
+                                    <input type="number" id="price_usd" name="price_usd" class="form-control" step="0.01"
+                                           style="padding-left: 45px;"
+                                           value="<?php echo htmlspecialchars($_POST['price_usd'] ?? ''); ?>"
+                                           placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                        <p class="form-text" style="margin-top: 10px;">Debe ingresar al menos un precio.</p>
+                    </div>
+
+                    <!-- SEO -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🔍 SEO (Opcional)</h2>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="seo_title">Título SEO</label>
+                            <input type="text" id="seo_title" name="seo_title" class="form-control"
+                                   value="<?php echo htmlspecialchars($_POST['seo_title'] ?? ''); ?>"
+                                   maxlength="60"
+                                   placeholder="Título para buscadores">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="seo_description">Descripción SEO</label>
+                            <textarea id="seo_description" name="seo_description" class="form-control"
+                                      style="min-height: 80px;"
+                                      maxlength="160"
+                                      placeholder="Descripción para buscadores"><?php echo htmlspecialchars($_POST['seo_description'] ?? ''); ?></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="seo_keywords">Keywords</label>
+                            <input type="text" id="seo_keywords" name="seo_keywords" class="form-control"
+                                   value="<?php echo htmlspecialchars($_POST['seo_keywords'] ?? ''); ?>"
+                                   placeholder="Ej: remera, deportiva, moda">
+                        </div>
+                    </div>
                 </div>
 
-                <!-- 4. SEO -->
-                <div class="card area-seo">
-                    <div class="card-header">
-                        <h2 class="card-title">🔍 SEO (Opcional)</h2>
+                <!-- Sidebar Column -->
+                <div class="form-sidebar">
+                    <!-- Publish Action -->
+                    <div class="card" style="border-color: var(--primary);">
+                        <div class="card-header">
+                            <h2 class="card-title">🚀 Publicación</h2>
+                        </div>
+                        <button type="submit" name="save_product" class="btn-base btn-primary" id="saveBtn">
+                            💾 Crear Producto
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="seo_title">Título SEO</label>
-                        <input type="text" id="seo_title" name="seo_title" class="form-control"
-                               value="<?php echo htmlspecialchars($_POST['seo_title'] ?? ''); ?>"
-                               maxlength="60"
-                               placeholder="Título para buscadores">
+
+                    <!-- Status -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">⚙️ Estado</h2>
+                        </div>
+                        
+                        <label class="toggle-switch">
+                            <span class="toggle-label">Producto Activo</span>
+                            <input type="checkbox" class="toggle-input" id="active" name="active" 
+                                   <?php echo (isset($_POST['save_product']) ? (isset($_POST['active']) ? 'checked' : '') : 'checked'); ?>>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        
+                        <hr style="border: 0; border-top: 1px solid var(--border); margin: 1rem 0;">
+                        
+                        <label class="toggle-switch">
+                            <span class="toggle-label">Solo Retiro</span>
+                            <input type="checkbox" class="toggle-input" id="pickup_only" name="pickup_only"
+                                   <?php echo (isset($_POST['pickup_only']) ? 'checked' : ''); ?>>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <p class="form-text">Si activas esto, no se ofrecerá envío.</p>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="seo_description">Descripción SEO</label>
-                        <textarea id="seo_description" name="seo_description" class="form-control"
-                                  style="min-height: 80px;"
-                                  maxlength="160"
-                                  placeholder="Descripción para buscadores"><?php echo htmlspecialchars($_POST['seo_description'] ?? ''); ?></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="seo_keywords">Keywords</label>
-                        <input type="text" id="seo_keywords" name="seo_keywords" class="form-control"
-                               value="<?php echo htmlspecialchars($_POST['seo_keywords'] ?? ''); ?>"
-                               placeholder="Ej: remera, deportiva, moda">
+
+                    <!-- Inventory -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">📦 Inventario</h2>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="stock">Stock Disponible <span class="required">*</span></label>
+                            <input type="number" id="stock" name="stock" class="form-control" required
+                                   value="<?php echo htmlspecialchars($_POST['stock'] ?? '0'); ?>" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="stock_alert">Alerta de Stock Bajo</label>
+                            <input type="number" id="stock_alert" name="stock_alert" class="form-control"
+                                   value="<?php echo htmlspecialchars($_POST['stock_alert'] ?? '0'); ?>" min="0">
+                        </div>
                     </div>
                 </div>
-
-                <!-- 5. Publish Action -->
-                <div class="card area-publish" style="border-color: var(--primary);">
-                    <div class="card-header">
-                        <h2 class="card-title">🚀 Publicación</h2>
-                    </div>
-                    <button type="submit" name="save_product" class="btn-base btn-primary" id="saveBtn">
-                        💾 Crear Producto
-                    </button>
-                </div>
-
-                <!-- 6. Status -->
-                <div class="card area-status">
-                    <div class="card-header">
-                        <h2 class="card-title">⚙️ Estado</h2>
-                    </div>
-                    
-                    <label class="toggle-switch">
-                        <span class="toggle-label">Producto Activo</span>
-                        <input type="checkbox" class="toggle-input" id="active" name="active" 
-                               <?php echo (isset($_POST['save_product']) ? (isset($_POST['active']) ? 'checked' : '') : 'checked'); ?>>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    
-                    <hr style="border: 0; border-top: 1px solid var(--border); margin: 1rem 0;">
-                    
-                    <label class="toggle-switch">
-                        <span class="toggle-label">Solo Retiro</span>
-                        <input type="checkbox" class="toggle-input" id="pickup_only" name="pickup_only"
-                               <?php echo (isset($_POST['pickup_only']) ? 'checked' : ''); ?>>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <p class="form-text">Si activas esto, no se ofrecerá envío.</p>
-                </div>
-
-                <!-- 7. Inventory -->
-                <div class="card area-inventory">
-                    <div class="card-header">
-                        <h2 class="card-title">📦 Inventario</h2>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="stock">Stock Disponible <span class="required">*</span></label>
-                        <input type="number" id="stock" name="stock" class="form-control" required
-                               value="<?php echo htmlspecialchars($_POST['stock'] ?? '0'); ?>" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="stock_alert">Alerta de Stock Bajo</label>
-                        <input type="number" id="stock_alert" name="stock_alert" class="form-control"
-                               value="<?php echo htmlspecialchars($_POST['stock_alert'] ?? '0'); ?>" min="0">
-                    </div>
-                </div>
-
             </div>
         </form>
     </div>
@@ -717,6 +696,9 @@ $user = get_logged_user();
         function handleFiles(files) {
             const newFiles = Array.from(files);
             selectedFiles = [...selectedFiles, ...newFiles];
+            
+            // Sort alphabetically if needed, or just append
+            // selectedFiles = sortFilesByName(selectedFiles); 
             
             renderImageGallery();
             updateDataTransfer();
