@@ -120,6 +120,20 @@ $user = get_logged_user();
     <title>Agregar Producto - Admin</title>
 
     <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-main: #f3f4f6;
+            --bg-card: #ffffff;
+            --text-main: #111827;
+            --text-secondary: #6b7280;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --radius: 0.5rem;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -127,277 +141,311 @@ $user = get_logged_user();
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: #f5f7fa;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.5;
         }
 
-        /* Main Content */
         .main-content {
             margin-left: 260px;
-            padding: 20px;
-            max-width: 1200px;
+            padding: 2rem;
+            max-width: 1600px;
         }
 
-        /* Messages */
-        .message {
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin-bottom: 12px;
+        /* Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
-        .message.success {
-            background: #d4edda;
-            border-left: 4px solid #28a745;
-            color: #155724;
+        .page-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text-main);
         }
 
-        .message.error {
-            background: #f8d7da;
-            border-left: 4px solid #dc3545;
-            color: #721c24;
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-block;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: none;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-
-        .btn-save {
-            padding: 12px 30px;
-            background: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-save.changed {
-            background: #dc3545;
-            animation: pulse 1.5s infinite;
-        }
-
-        .btn-save.saved {
-            background: #28a745;
-        }
-
-        .btn-save:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-        }
-
-        /* Card */
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 15px;
-        }
-
-        /* Form */
-        .form-grid {
+        /* Form Layout */
+        .form-layout {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 8px;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+            align-items: start;
         }
 
-        .form-group {
-            margin-bottom: 12px;
+        .form-main {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
-        .form-group.full-width {
-            grid-column: 1 / -1;
+        .form-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            position: sticky;
+            top: 2rem;
         }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #555;
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            border: 1px solid var(--border);
         }
 
-        .form-group label .required {
-            color: #dc3545;
-        }
-
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #4CAF50;
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 70px;
-        }
-
-        .checkbox-group {
+        .card-header {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 0.5rem;
         }
 
-        .checkbox-group input {
-            width: auto;
-        }
-
-        .section-divider {
-            margin: 20px 0 15px 0;
-            padding: 10px 0;
-            border-top: 2px solid #f0f0f0;
-            font-size: 18px;
+        .card-title {
+            font-size: 1.125rem;
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .section-divider:first-of-type {
-            margin-top: 0;
-            border-top: none;
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.25rem;
         }
 
-        .file-input-wrapper {
-            position: relative;
-            display: inline-block;
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .required {
+            color: var(--danger);
+            margin-left: 2px;
+        }
+
+        .form-control {
             width: 100%;
+            padding: 0.625rem 0.875rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            background: #fff;
         }
 
-        .file-input-wrapper input[type="file"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px dashed #e0e0e0;
-            border-radius: 6px;
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-text {
+            display: block;
+            margin-top: 0.375rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Grid inputs */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            text-align: center;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            background: #f9fafb;
         }
 
-        .file-input-wrapper input[type="file"]:hover {
-            border-color: #667eea;
-            background: #f8f9fa;
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: #f0fdf4;
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
         }
 
         /* Image Gallery */
         .image-gallery {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 10px;
-            margin-bottom: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
         }
 
         .image-item {
             position: relative;
-            background: #f8f9fa;
-            border-radius: 6px;
+            aspect-ratio: 1;
+            border-radius: var(--radius);
             overflow: hidden;
-            cursor: move;
-            border: 2px solid transparent;
-            transition: all 0.3s;
-        }
-
-        .image-item:hover {
-            border-color: #667eea;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-        }
-
-        .image-item.sortable-ghost {
-            opacity: 0.4;
+            border: 1px solid var(--border);
+            background: #fff;
         }
 
         .image-item img {
             width: 100%;
-            height: 120px;
+            height: 100%;
             object-fit: cover;
-            display: block;
         }
 
-        .image-item .drag-handle {
+        .image-item:hover .image-actions {
+            opacity: 1;
+        }
+
+        .image-actions {
             position: absolute;
-            top: 5px;
-            left: 5px;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: grab;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
         }
 
-        .image-item .drag-handle:active {
-            cursor: grabbing;
-        }
-
-        .image-item .btn-delete-image {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: #dc3545;
+        .btn-delete-image {
+            background: var(--danger);
             color: white;
             border: none;
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            font-size: 16px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s;
         }
 
-        .image-item .btn-delete-image:hover {
-            background: #c82333;
-            transform: scale(1.1);
-        }
-
-        .image-item .image-badge {
+        .image-badge {
             position: absolute;
-            bottom: 5px;
-            left: 5px;
-            background: rgba(102, 126, 234, 0.9);
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(79, 70, 229, 0.9);
             color: white;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
+            font-size: 0.7rem;
+            padding: 4px;
+            text-align: center;
             font-weight: 600;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 0.5rem 0;
+        }
+
+        .toggle-input {
+            display: none;
+        }
+
+        .toggle-slider {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background-color: var(--border);
+            border-radius: 24px;
+            transition: .3s;
+        }
+
+        .toggle-slider:before {
+            content: "";
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .3s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .toggle-input:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+
+        .toggle-input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        .toggle-label {
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        /* Buttons */
+        .btn-base {
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: 1px solid transparent;
+            font-size: 0.95rem;
+            height: 46px; /* Fixed height for consistency */
+            line-height: 1;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-main);
+            border-color: var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-main);
         }
 
         /* Responsive */
@@ -405,11 +453,14 @@ $user = get_logged_user();
             .main-content {
                 margin-left: 0;
             }
-
-            .form-grid {
+            .form-layout {
                 grid-template-columns: 1fr;
             }
+            .form-sidebar {
+                position: static;
+            }
         }
+
     </style>
 </head>
 <body>
@@ -420,6 +471,13 @@ $user = get_logged_user();
     <div class="main-content">
         <?php include __DIR__ . '/includes/header.php'; ?>
 
+        <div class="page-header">
+            <h1 class="page-title">Nuevo Producto</h1>
+            <a href="<?php echo url('/admin/productos-listado.php'); ?>" class="btn-base btn-secondary">
+                Cancelar
+            </a>
+        </div>
+
         <?php if ($message): ?>
             <div class="message success"><?php echo htmlspecialchars($message); ?></div>
         <?php endif; ?>
@@ -429,153 +487,164 @@ $user = get_logged_user();
         <?php endif; ?>
 
         <!-- Product Form -->
-        <div class="card">
-            <form method="POST" action="" enctype="multipart/form-data" id="productForm">
-                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+        <form method="POST" action="" enctype="multipart/form-data" id="productForm">
+            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
 
-                <!-- Basic Information -->
-                <div class="section-divider">📝 Información Básica</div>
+            <div class="form-layout">
+                <!-- Main Column -->
+                <div class="form-main">
+                    <!-- Basic Info -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">📝 Información Básica</h2>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="name">Nombre del Producto <span class="required">*</span></label>
+                            <input type="text" id="name" name="name" class="form-control" required
+                                   value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>"
+                                   placeholder="Ej: Remera Deportiva Premium">
+                        </div>
 
-                <div class="form-grid">
-                    <div class="form-group full-width">
-                        <label for="name">
-                            Nombre del Producto <span class="required">*</span>
+                        <div class="form-group">
+                            <label class="form-label" for="description">Descripción</label>
+                            <textarea id="description" name="description" class="form-control"
+                                      placeholder="Descripción detallada del producto..."><?php echo htmlspecialchars($_POST['description'] ?? ''); ?></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Images -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🖼️ Imágenes del Producto</h2>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="upload-area" id="uploadArea">
+                                <span class="upload-icon">☁️</span>
+                                <p style="font-weight: 500; margin-bottom: 0.5rem;">Haz clic o arrastra imágenes aquí</p>
+                                <p class="form-text">Soporta JPG, PNG, GIF, WebP. Máx 5MB.</p>
+                                <input type="file" id="product_images" name="product_images[]" accept="image/*" multiple hidden>
+                            </div>
+                        </div>
+
+                        <div class="image-gallery" id="image-gallery"></div>
+                        <input type="hidden" id="images_order" name="images_order" value="">
+                    </div>
+
+                    <!-- Pricing -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">💰 Precios</h2>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="price_ars">Precio ARS</label>
+                                <div style="position: relative;">
+                                    <span style="position: absolute; left: 12px; top: 10px; color: #6b7280;">$</span>
+                                    <input type="number" id="price_ars" name="price_ars" class="form-control" step="0.01"
+                                           style="padding-left: 30px;"
+                                           value="<?php echo htmlspecialchars($_POST['price_ars'] ?? ''); ?>"
+                                           placeholder="0.00">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="price_usd">Precio USD</label>
+                                <div style="position: relative;">
+                                    <span style="position: absolute; left: 12px; top: 10px; color: #6b7280;">u$s</span>
+                                    <input type="number" id="price_usd" name="price_usd" class="form-control" step="0.01"
+                                           style="padding-left: 45px;"
+                                           value="<?php echo htmlspecialchars($_POST['price_usd'] ?? ''); ?>"
+                                           placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                        <p class="form-text" style="margin-top: 10px;">Debe ingresar al menos un precio.</p>
+                    </div>
+
+                    <!-- SEO -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🔍 SEO (Opcional)</h2>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="seo_title">Título SEO</label>
+                            <input type="text" id="seo_title" name="seo_title" class="form-control"
+                                   value="<?php echo htmlspecialchars($_POST['seo_title'] ?? ''); ?>"
+                                   maxlength="60"
+                                   placeholder="Título para buscadores">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="seo_description">Descripción SEO</label>
+                            <textarea id="seo_description" name="seo_description" class="form-control"
+                                      style="min-height: 80px;"
+                                      maxlength="160"
+                                      placeholder="Descripción para buscadores"><?php echo htmlspecialchars($_POST['seo_description'] ?? ''); ?></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="seo_keywords">Keywords</label>
+                            <input type="text" id="seo_keywords" name="seo_keywords" class="form-control"
+                                   value="<?php echo htmlspecialchars($_POST['seo_keywords'] ?? ''); ?>"
+                                   placeholder="Ej: remera, deportiva, moda">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar Column -->
+                <div class="form-sidebar">
+                    <!-- Publish Action -->
+                    <div class="card" style="border-color: var(--primary);">
+                        <div class="card-header">
+                            <h2 class="card-title">🚀 Publicación</h2>
+                        </div>
+                        <button type="submit" name="save_product" class="btn-base btn-primary" id="saveBtn">
+                            💾 Crear Producto
+                        </button>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">⚙️ Estado</h2>
+                        </div>
+                        
+                        <label class="toggle-switch">
+                            <span class="toggle-label">Producto Activo</span>
+                            <input type="checkbox" class="toggle-input" id="active" name="active" 
+                                   <?php echo (isset($_POST['save_product']) ? (isset($_POST['active']) ? 'checked' : '') : 'checked'); ?>>
+                            <span class="toggle-slider"></span>
                         </label>
-                        <input type="text" id="name" name="name" required
-                               placeholder="Ej: Remera Deportiva Premium">
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label for="description">Descripción</label>
-                        <textarea id="description" name="description"
-                                  placeholder="Descripción detallada del producto..."></textarea>
-                    </div>
-                </div>
-
-                <!-- Images -->
-                <div class="section-divider">🖼️ Imágenes del Producto</div>
-
-                <div class="form-group">
-                    <label for="product_images">Subir Imágenes <span class="required">*</span></label>
-                    <div class="file-input-wrapper">
-                        <input type="file" id="product_images" name="product_images[]" accept="image/*" multiple required>
-                    </div>
-                    <small style="color: #666; margin-top: 5px; display: block;">
-                        Formatos: JPG, PNG, GIF, WebP. Tamaño máximo: 5MB por imagen. Puedes seleccionar múltiples imágenes.
-                    </small>
-                </div>
-
-                <!-- Image Preview Gallery -->
-                <div class="form-group" id="previewContainer" style="display: none;">
-                    <label>Previsualización (arrastra para reordenar, la primera será la principal)</label>
-                    <div class="image-gallery" id="image-gallery"></div>
-                    <input type="hidden" id="images_order" name="images_order" value="">
-                </div>
-
-                <!-- Pricing -->
-                <div class="section-divider">💰 Precios</div>
-
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="price_ars">
-                            Precio en Pesos (ARS)
+                        
+                        <hr style="border: 0; border-top: 1px solid var(--border); margin: 1rem 0;">
+                        
+                        <label class="toggle-switch">
+                            <span class="toggle-label">Solo Retiro</span>
+                            <input type="checkbox" class="toggle-input" id="pickup_only" name="pickup_only"
+                                   <?php echo (isset($_POST['pickup_only']) ? 'checked' : ''); ?>>
+                            <span class="toggle-slider"></span>
                         </label>
-                        <input type="number" id="price_ars" name="price_ars" step="0.01"
-                               placeholder="0.00">
-                        <small style="color: #666;">Al menos un precio debe estar completo</small>
+                        <p class="form-text">Si activas esto, no se ofrecerá envío.</p>
                     </div>
 
-                    <div class="form-group">
-                        <label for="price_usd">
-                            Precio en Dólares (USD)
-                        </label>
-                        <input type="number" id="price_usd" name="price_usd" step="0.01"
-                               placeholder="0.00">
-                        <small style="color: #666;">Puede dejarse vacío si solo usas ARS</small>
-                    </div>
-                </div>
-
-                <!-- Stock -->
-                <div class="section-divider">📦 Inventario</div>
-
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="stock">
-                            Stock Disponible <span class="required">*</span>
-                        </label>
-                        <input type="number" id="stock" name="stock" required
-                               value="0" min="0">
-                        <small style="color: #666;">Cantidad de unidades disponibles</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="stock_alert">Alerta de Stock Bajo</label>
-                        <input type="number" id="stock_alert" name="stock_alert"
-                               value="0" min="0">
-                        <small style="color: #666;">Te avisaremos cuando el stock llegue a este número</small>
+                    <!-- Inventory -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">📦 Inventario</h2>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="stock">Stock Disponible <span class="required">*</span></label>
+                            <input type="number" id="stock" name="stock" class="form-control" required
+                                   value="<?php echo htmlspecialchars($_POST['stock'] ?? '0'); ?>" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="stock_alert">Alerta de Stock Bajo</label>
+                            <input type="number" id="stock_alert" name="stock_alert" class="form-control"
+                                   value="<?php echo htmlspecialchars($_POST['stock_alert'] ?? '0'); ?>" min="0">
+                        </div>
                     </div>
                 </div>
-
-                <!-- Status -->
-                <div class="section-divider">⚙️ Estado</div>
-
-                <div class="form-group">
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="active" name="active" checked>
-                        <label for="active">
-                            Producto Activo (visible en el sitio público)
-                        </label>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="pickup_only" name="pickup_only">
-                        <label for="pickup_only">
-                            🏪 Solo Retiro en Persona (sin opción de envío)
-                        </label>
-                    </div>
-                    <small style="color: #666; margin-left: 28px; display: block;">
-                        Si activas esta opción, el producto solo podrá ser retirado en persona y no estará disponible la opción de envío en el checkout.
-                    </small>
-                </div>
-
-                <!-- SEO -->
-                <div class="section-divider">🔍 SEO (Opcional)</div>
-
-                <div class="form-grid">
-                    <div class="form-group full-width">
-                        <label for="seo_title">Título SEO</label>
-                        <input type="text" id="seo_title" name="seo_title"
-                               maxlength="60"
-                               placeholder="Título para motores de búsqueda (máx 60 caracteres)">
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label for="seo_description">Descripción SEO</label>
-                        <textarea id="seo_description" name="seo_description"
-                                  maxlength="160"
-                                  placeholder="Descripción para motores de búsqueda (máx 160 caracteres)"></textarea>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label for="seo_keywords">Keywords (separadas por comas)</label>
-                        <input type="text" id="seo_keywords" name="seo_keywords"
-                               placeholder="Ej: remera, deportiva, algodón, premium">
-                    </div>
-                </div>
-
-                <!-- Actions -->
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button type="submit" name="save_product" class="btn-save" id="saveBtn">
-                        💾 Crear Producto
-                    </button>
-                    <a href="<?php echo url('/admin/productos-listado.php'); ?>" class="btn btn-secondary">
-                        ❌ Cancelar
-                    </a>
-                </div>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -583,50 +652,63 @@ $user = get_logged_user();
         const form = document.getElementById('productForm');
         const saveBtn = document.getElementById('saveBtn');
         const fileInput = document.getElementById('product_images');
+        const uploadArea = document.getElementById('uploadArea');
         const inputs = form.querySelectorAll('input:not([type="file"]):not([type="hidden"]), textarea, select');
         const priceArs = document.getElementById('price_ars');
         const priceUsd = document.getElementById('price_usd');
-        const backBtn = document.getElementById('backBtn');
-        const unsavedWarning = document.getElementById('unsavedWarning');
         const gallery = document.getElementById('image-gallery');
-        const previewContainer = document.getElementById('previewContainer');
         const imagesOrderInput = document.getElementById('images_order');
 
         let hasChanges = false;
         let selectedFiles = [];
         let sortableInstance = null;
 
-        function updateUIForChanges() {
-            if (hasChanges) {
-                saveBtn.classList.add('changed');
-                backBtn.style.display = 'none';
-                unsavedWarning.style.display = 'inline';
-            } else {
-                saveBtn.classList.remove('changed');
-                backBtn.style.display = 'inline-block';
-                unsavedWarning.style.display = 'none';
-            }
-        }
+        // Upload Area Interactions
+        uploadArea.addEventListener('click', () => fileInput.click());
 
-        // Sort files by name alphabetically
-        function sortFilesByName(files) {
-            return Array.from(files).sort((a, b) => {
-                return a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'});
-            });
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--primary)';
+            uploadArea.style.backgroundColor = '#f0fdf4';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = 'var(--border)';
+            uploadArea.style.backgroundColor = '#f9fafb';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--border)';
+            uploadArea.style.backgroundColor = '#f9fafb';
+            
+            if (e.dataTransfer.files.length > 0) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                handleFiles(this.files);
+            }
+        });
+
+        function handleFiles(files) {
+            const newFiles = Array.from(files);
+            selectedFiles = [...selectedFiles, ...newFiles];
+            
+            // Sort alphabetically if needed, or just append
+            // selectedFiles = sortFilesByName(selectedFiles); 
+            
+            renderImageGallery();
+            updateDataTransfer();
+            hasChanges = true;
         }
 
         // Render image preview gallery
         async function renderImageGallery() {
-            if (selectedFiles.length === 0) {
-                previewContainer.style.display = 'none';
-                gallery.innerHTML = '';
-                return;
-            }
-
-            previewContainer.style.display = 'block';
             gallery.innerHTML = '';
 
-            // Read all files in order using Promise.all to maintain correct sequence
             const readPromises = selectedFiles.map((file, index) => {
                 return new Promise((resolve) => {
                     const reader = new FileReader();
@@ -641,7 +723,6 @@ $user = get_logged_user();
                 });
             });
 
-            // Wait for all files to be read, then render in correct order
             const readFiles = await Promise.all(readPromises);
 
             readFiles.forEach(({index, dataUrl, name}) => {
@@ -649,15 +730,15 @@ $user = get_logged_user();
                 div.className = 'image-item';
                 div.dataset.index = index;
                 div.innerHTML = `
-                    <span class="drag-handle">⋮⋮</span>
                     <img src="${dataUrl}" alt="${name}">
+                    <div class="image-actions">
+                        <button type="button" class="btn-delete-image" onclick="removeImage(event, ${index})">✕</button>
+                    </div>
                     ${index === 0 ? '<span class="image-badge">PRINCIPAL</span>' : ''}
-                    <button type="button" class="btn-delete-image" onclick="removeImage(${index})">✕</button>
                 `;
                 gallery.appendChild(div);
             });
 
-            // Initialize Sortable after all images are added to DOM
             initializeSortable();
         }
 
@@ -670,13 +751,11 @@ $user = get_logged_user();
             if (gallery && selectedFiles.length > 0) {
                 sortableInstance = Sortable.create(gallery, {
                     animation: 150,
-                    handle: '.drag-handle',
                     ghostClass: 'sortable-ghost',
                     onEnd: function() {
                         reorderFiles();
-                        updateBadges();
+                        renderImageGallery(); // Re-render to update badges
                         hasChanges = true;
-                        updateUIForChanges();
                     }
                 });
             }
@@ -688,74 +767,35 @@ $user = get_logged_user();
             const newOrder = items.map(item => parseInt(item.dataset.index));
             const reorderedFiles = newOrder.map(i => selectedFiles[i]);
             selectedFiles = reorderedFiles;
-
-            // Update data-index attributes
-            items.forEach((item, index) => {
-                item.dataset.index = index;
-            });
-
-            // Save order to hidden input
+            
+            // Update hidden input
             imagesOrderInput.value = JSON.stringify(newOrder);
+            updateDataTransfer();
         }
 
-        // Update "PRINCIPAL" badge
-        function updateBadges() {
-            const items = gallery.querySelectorAll('.image-item');
-            items.forEach((item, index) => {
-                const existingBadge = item.querySelector('.image-badge');
-                if (existingBadge) {
-                    existingBadge.remove();
-                }
-                if (index === 0) {
-                    const badge = document.createElement('span');
-                    badge.className = 'image-badge';
-                    badge.textContent = 'PRINCIPAL';
-                    item.appendChild(badge);
-                }
-            });
-        }
-
-        // Remove image from preview
-        window.removeImage = function(index) {
+        // Remove image
+        window.removeImage = function(event, index) {
+            event.stopPropagation(); // Prevent bubbling if any
             selectedFiles.splice(index, 1);
             renderImageGallery();
             updateDataTransfer();
             hasChanges = true;
-            updateUIForChanges();
         };
 
-        // Update FileList in input (DataTransfer trick)
+        // Update FileList in input
         function updateDataTransfer() {
             const dt = new DataTransfer();
             selectedFiles.forEach(file => dt.items.add(file));
             fileInput.files = dt.files;
         }
 
-        // Handle file selection
-        fileInput.addEventListener('change', function() {
-            if (this.files.length > 0) {
-                // Sort files alphabetically by name
-                selectedFiles = sortFilesByName(this.files);
-                renderImageGallery();
-                updateDataTransfer();
-                hasChanges = true;
-                updateUIForChanges();
-            }
-        });
-
-        // Detect changes in inputs
+        // Detect changes
         inputs.forEach(input => {
-            input.addEventListener('input', () => {
-                hasChanges = true;
-                updateUIForChanges();
-            });
-            input.addEventListener('change', () => {
-                hasChanges = true;
-                updateUIForChanges();
-            });
+            input.addEventListener('input', () => hasChanges = true);
+            input.addEventListener('change', () => hasChanges = true);
         });
 
-        // Allow form submission (don't warn when saving)
+        // Form submission
         form.addEventListener('submit', (e) => {
             const arsValue = parseFloat(priceArs.value) || 0;
             const usdValue = parseFloat(priceUsd.value) || 0;
@@ -765,26 +805,16 @@ $user = get_logged_user();
                 showModal({
                     title: 'Precio Requerido',
                     message: 'Debe ingresar al menos un precio (ARS o USD) mayor a 0.',
-                    details: 'Complete el campo de precio en pesos argentinos (ARS) o dólares (USD) antes de guardar el producto.',
                     icon: '⚠️',
                     iconClass: 'warning',
-                    confirmText: 'Entendido',
-                    confirmType: 'primary',
-                    cancelText: null,
-                    onConfirm: function() {}
+                    confirmText: 'Entendido'
                 });
                 return false;
             }
 
-            // Update DataTransfer one more time before submit to ensure order
             updateDataTransfer();
-
-            // Remove beforeunload listener when saving
             hasChanges = false;
         });
-
-        // Initial UI state
-        updateUIForChanges();
     </script>
 
     <!-- Modal Component -->
