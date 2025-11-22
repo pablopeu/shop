@@ -159,51 +159,68 @@ write_json($visits_file, $visits_data);
     <!-- Mobile Menu Styles -->
     <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 
-    <!-- Quantity Selector Styles -->
+    <!-- Product Page Styles -->
     <style>
-        .actions {
+        /* Product Actions Container */
+        .product-actions-container {
             display: flex;
-            gap: 15px;
+            flex-direction: column;
+            gap: 24px;
+            margin-top: 30px;
+        }
+
+        /* Quantity Section */
+        .quantity-section {
+            display: flex;
             align-items: center;
-            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .quantity-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text-dark, #2c3e50);
+            min-width: 80px;
         }
 
         .quantity-selector {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 0;
-            border: 2px solid var(--primary-color, #007bff);
+            border: 2px solid var(--color-primary, #2c3e50);
             border-radius: 8px;
             overflow: hidden;
         }
 
         .quantity-btn {
-            background: var(--primary-color, #007bff);
+            background: var(--color-primary, #2c3e50);
             color: white;
             border: none;
-            width: 40px;
-            height: 40px;
-            font-size: 20px;
+            width: 45px;
+            height: 45px;
+            font-size: 22px;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s;
         }
 
         .quantity-btn:hover:not(:disabled) {
-            background: var(--primary-hover, #0056b3);
+            background: var(--color-secondary, #d4af37);
+            color: var(--color-primary, #2c3e50);
         }
 
         .quantity-btn:disabled {
             background: #ccc;
             cursor: not-allowed;
+            opacity: 0.5;
         }
 
         #quantity-input {
-            width: 60px;
-            height: 40px;
+            width: 70px;
+            height: 45px;
             border: none;
             text-align: center;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             -moz-appearance: textfield;
         }
@@ -219,14 +236,165 @@ write_json($visits_file, $visits_data);
             cursor: not-allowed;
         }
 
+        /* Main Actions */
+        .main-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-large {
+            flex: 2;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-favorite {
+            flex: 1;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            background: white;
+            border: 2px solid var(--color-primary, #2c3e50);
+            color: var(--color-primary, #2c3e50);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-favorite::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--color-primary, #2c3e50);
+            transition: left 0.3s;
+            z-index: -1;
+        }
+
+        .btn-favorite:hover::before {
+            left: 0;
+        }
+
+        .btn-favorite:hover {
+            color: white;
+            border-color: var(--color-secondary, #d4af37);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Share Section */
+        .share-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding-top: 20px;
+            border-top: 1px solid var(--color-border, #e0e0e0);
+        }
+
+        .share-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-light, #666);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .share-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .share-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+        }
+
+        .share-btn.copy {
+            background: #6c757d;
+            color: white;
+        }
+
+        .share-btn.copy:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+        }
+
+        .share-btn.whatsapp {
+            background: #25D366;
+            color: white;
+        }
+
+        .share-btn.whatsapp:hover {
+            background: #1fb855;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(37, 211, 102, 0.3);
+        }
+
+        .share-btn.facebook {
+            background: #1877f2;
+            color: white;
+        }
+
+        .share-btn.facebook:hover {
+            background: #0d68d4;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(24, 119, 242, 0.3);
+        }
+
+        .share-btn.twitter {
+            background: #1DA1F2;
+            color: white;
+        }
+
+        .share-btn.twitter:hover {
+            background: #0d8bd9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(29, 161, 242, 0.3);
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            .actions {
-                flex-direction: column;
-                align-items: stretch;
+            .product-actions-container {
+                gap: 20px;
             }
 
-            .quantity-selector {
-                justify-content: center;
+            .quantity-section {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .main-actions {
+                flex-direction: column;
+            }
+
+            .btn-large,
+            .btn-favorite {
+                flex: 1;
+                width: 100%;
+            }
+
+            .share-section {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
             }
         }
     </style>
@@ -365,48 +533,59 @@ write_json($visits_file, $visits_data);
                         <p><?php echo nl2br(htmlspecialchars($product['description'])); ?></p>
                     </div>
 
-                    <!-- Actions -->
-                    <div class="actions">
-                        <div class="quantity-selector">
-                            <button class="quantity-btn" onclick="decreaseQuantity()" <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>-</button>
-                            <input type="number"
-                                   id="quantity-input"
-                                   value="1"
-                                   min="1"
-                                   max="<?php echo $product['stock']; ?>"
-                                   <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>
-                            <button class="quantity-btn" onclick="increaseQuantity()" <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>+</button>
+                    <!-- Quantity & Actions -->
+                    <div class="product-actions-container">
+                        <div class="quantity-section">
+                            <label class="quantity-label">Cantidad:</label>
+                            <div class="quantity-selector">
+                                <button class="quantity-btn" onclick="decreaseQuantity()" <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>-</button>
+                                <input type="number"
+                                       id="quantity-input"
+                                       value="1"
+                                       min="1"
+                                       max="<?php echo $product['stock']; ?>"
+                                       <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>
+                                <button class="quantity-btn" onclick="increaseQuantity()" <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>+</button>
+                            </div>
                         </div>
-                        <button class="btn btn-primary"
-                                onclick="addToCartWithQuantity('<?php echo $product['id']; ?>')"
-                                <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>
-                            <?php echo $product['stock'] === 0 ? '🚫 Agotado' : '🛒 Agregar al Carrito'; ?>
-                        </button>
-                        <button class="btn btn-secondary" onclick="toggleFavorite('<?php echo $product['id']; ?>')">
-                            ❤️ Favoritos
-                        </button>
-                    </div>
 
-                    <!-- Share Buttons -->
-                    <div class="share-buttons">
-                        <button class="share-btn copy" onclick="copyLink()">
-                            📋 Copiar Link
-                        </button>
-                        <a href="https://wa.me/?text=<?php echo urlencode($product['name'] . ' - ' . get_base_url() . '/producto.php?slug=' . $slug); ?>"
-                           class="share-btn whatsapp"
-                           target="_blank">
-                            📱 WhatsApp
-                        </a>
-                        <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode(get_base_url() . '/producto.php?slug=' . $slug); ?>"
-                           class="share-btn facebook"
-                           target="_blank">
-                            👥 Facebook
-                        </a>
-                        <a href="https://twitter.com/intent/tweet?url=<?php echo urlencode(get_base_url() . '/producto.php?slug=' . $slug); ?>&text=<?php echo urlencode($product['name']); ?>"
-                           class="share-btn twitter"
-                           target="_blank">
-                            🐦 Twitter
-                        </a>
+                        <div class="main-actions">
+                            <button class="btn btn-add-cart btn-large"
+                                    onclick="addToCartWithQuantity('<?php echo $product['id']; ?>')"
+                                    <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>
+                                <?php echo $product['stock'] === 0 ? '🚫 Agotado' : '🛒 Agregar al Carrito'; ?>
+                            </button>
+                            <button class="btn btn-favorite" onclick="toggleFavorite('<?php echo $product['id']; ?>')">
+                                ❤️ Favoritos
+                            </button>
+                        </div>
+
+                        <div class="share-section">
+                            <span class="share-label">Compartir:</span>
+                            <div class="share-buttons">
+                                <button class="share-btn copy" onclick="copyLink()" title="Copiar enlace">
+                                    📋
+                                </button>
+                                <a href="https://wa.me/?text=<?php echo urlencode($product['name'] . ' - ' . get_base_url() . '/producto.php?slug=' . $slug); ?>"
+                                   class="share-btn whatsapp"
+                                   target="_blank"
+                                   title="Compartir en WhatsApp">
+                                    📱
+                                </a>
+                                <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode(get_base_url() . '/producto.php?slug=' . $slug); ?>"
+                                   class="share-btn facebook"
+                                   target="_blank"
+                                   title="Compartir en Facebook">
+                                    👥
+                                </a>
+                                <a href="https://twitter.com/intent/tweet?url=<?php echo urlencode(get_base_url() . '/producto.php?slug=' . $slug); ?>&text=<?php echo urlencode($product['name']); ?>"
+                                   class="share-btn twitter"
+                                   target="_blank"
+                                   title="Compartir en Twitter">
+                                    🐦
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
