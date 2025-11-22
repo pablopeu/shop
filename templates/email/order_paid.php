@@ -52,7 +52,11 @@ $currency = ($order['currency'] ?? 'ARS') === 'USD' ? 'U$D' : '$';
                                     💰 Pago confirmado
                                 </p>
                                 <p style="margin: 10px 0 0 0; color: #065f46; font-size: 14px;">
-                                    Estamos procesando tu pedido y pronto recibirás actualizaciones sobre el envío.
+                                    <?php if (isset($order['delivery_method']) && $order['delivery_method'] === 'shipping'): ?>
+                                        Tu pedido está en proceso de envío. Te notificaremos cuando sea despachado.
+                                    <?php else: ?>
+                                        Tu pedido está siendo preparado para que puedas retirarlo. Te avisaremos cuando esté listo.
+                                    <?php endif; ?>
                                 </p>
                             </div>
 
@@ -176,9 +180,17 @@ $currency = ($order['currency'] ?? 'ARS') === 'USD' ? 'U$D' : '$';
                                     🎯 Próximos Pasos
                                 </h3>
                                 <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #3730a3; font-size: 14px; line-height: 1.8;">
-                                    <li>Estamos preparando tu pedido</li>
-                                    <li>Te notificaremos cuando sea enviado</li>
-                                    <li>Recibirás un número de seguimiento</li>
+                                    <?php if (isset($order['delivery_method']) && $order['delivery_method'] === 'shipping'): ?>
+                                        <li>Estamos preparando tu pedido para el envío</li>
+                                        <li>Te notificaremos cuando sea despachado</li>
+                                        <li>Recibirás un número de seguimiento para rastrear tu envío</li>
+                                        <li>El tiempo estimado de entrega dependerá de tu ubicación</li>
+                                    <?php else: ?>
+                                        <li>Estamos preparando tu pedido</li>
+                                        <li>Te avisaremos cuando esté listo para retirar</li>
+                                        <li>Recuerda traer tu número de pedido al momento del retiro</li>
+                                        <li>Podrás coordinar el horario de retiro cuando te contactemos</li>
+                                    <?php endif; ?>
                                 </ul>
                             </div>
 
