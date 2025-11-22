@@ -740,9 +740,12 @@ if ($notification_type === 'payment' || $notification_type === 'payments') {
                     log_notification_sent('EMAIL_PAYMENT_APPROVED', $updated_order['customer_email'], $customer_notif_sent, $order_id);
                 }
 
-                // Always send to admin via Telegram
+                // Always send to admin via Telegram AND Email
                 $telegram_sent = send_telegram_payment_approved($updated_order);
                 log_notification_sent('TELEGRAM_PAYMENT_APPROVED', 'admin', $telegram_sent, $order_id);
+
+                $admin_email_sent = send_admin_new_order_email($updated_order);
+                log_notification_sent('EMAIL_ADMIN_NEW_ORDER', 'admin', $admin_email_sent, $order_id);
 
                 log_mp_debug('PAYMENT_APPROVED', "Pago aprobado - Orden: $order_id", [
                     'order_id' => $order_id,
@@ -752,7 +755,8 @@ if ($notification_type === 'payment' || $notification_type === 'payments') {
                     'net_amount' => $net_received_amount,
                     'payment_method' => $payment['payment_method_id'] ?? 'unknown',
                     'customer_notif_sent' => $customer_notif_sent,
-                    'telegram_sent' => $telegram_sent
+                    'telegram_sent' => $telegram_sent,
+                    'admin_email_sent' => $admin_email_sent
                 ]);
             } elseif ($new_order_status === 'pendiente' && in_array($payment_status, ['pending', 'in_process', 'authorized', 'in_mediation'])) {
                 // Payment pending - send to customer based on preference
