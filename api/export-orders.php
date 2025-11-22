@@ -74,8 +74,9 @@ if ($format === 'csv') {
         'Subtotal',
         'Costo de Envío',
         'Descuento',
-        'Total',
-        'Moneda',
+        'Total ARS',
+        'Total USD',
+        'Cotización Dólar',
         'Productos',
         'Notas'
     ]);
@@ -88,6 +89,20 @@ if ($format === 'csv') {
             $products_str .= $item['name'] . ' (x' . $item['quantity'] . '), ';
         }
         $products_str = rtrim($products_str, ', ');
+
+        // Calculate amounts in ARS and USD
+        $exchange_rate = $order['exchange_rate'] ?? 1000;
+        $total = $order['total'];
+        $currency = $order['currency'];
+
+        if ($currency === 'USD') {
+            $total_usd = $total;
+            $total_ars = $total * $exchange_rate;
+        } else {
+            // ARS
+            $total_ars = $total;
+            $total_usd = $total / $exchange_rate;
+        }
 
         fputcsv($output, [
             $order['order_number'],
@@ -103,8 +118,9 @@ if ($format === 'csv') {
             $order['subtotal'] ?? 0,
             $order['shipping_cost'] ?? 0,
             ($order['discount_promotion'] ?? 0) + ($order['discount_coupon'] ?? 0),
-            $order['total'],
-            $order['currency'],
+            number_format($total_ars, 2, '.', ''),
+            number_format($total_usd, 2, '.', ''),
+            number_format($exchange_rate, 2, '.', ''),
             $products_str,
             $order['notes'] ?? ''
         ]);

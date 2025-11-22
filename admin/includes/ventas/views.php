@@ -155,7 +155,9 @@ function render_orders_table($orders, $filters, $status_labels) {
                     <th>Pedido #</th>
                     <th>Cliente</th>
                     <th>Fecha</th>
-                    <th>Total</th>
+                    <th>Total ARS</th>
+                    <th>Total USD</th>
+                    <th>Cotiz. $</th>
                     <th>Método de Pago</th>
                     <th>Estado</th>
                     <th>Acciones</th>
@@ -164,12 +166,26 @@ function render_orders_table($orders, $filters, $status_labels) {
             <tbody>
                 <?php if (empty($orders)): ?>
                     <tr>
-                        <td colspan="8" style="text-align: center; padding: 40px; color: #999;">
+                        <td colspan="10" style="text-align: center; padding: 40px; color: #999;">
                             No hay órdenes<?php echo $filters['status'] !== 'all' ? ' con este estado' : ''; ?>.
                         </td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($orders as $order): ?>
+                        <?php
+                        // Calculate amounts in ARS and USD
+                        $exchange_rate = $order['exchange_rate'] ?? 1000;
+                        $total = $order['total'];
+                        $currency = $order['currency'];
+
+                        if ($currency === 'USD') {
+                            $total_usd = $total;
+                            $total_ars = $total * $exchange_rate;
+                        } else {
+                            $total_ars = $total;
+                            $total_usd = $total / $exchange_rate;
+                        }
+                        ?>
                         <tr>
                             <td>
                                 <input type="checkbox" name="selected_orders[]"
@@ -191,7 +207,13 @@ function render_orders_table($orders, $filters, $status_labels) {
                                 <?php echo date('d/m/Y H:i', strtotime($order['date'])); ?>
                             </td>
                             <td>
-                                <strong>$<?php echo number_format($order['total'], 2, ',', '.'); ?></strong>
+                                <strong>$<?php echo number_format($total_ars, 2, ',', '.'); ?></strong>
+                            </td>
+                            <td>
+                                <strong>U$D <?php echo number_format($total_usd, 2, ',', '.'); ?></strong>
+                            </td>
+                            <td>
+                                <small><?php echo number_format($exchange_rate, 2, ',', '.'); ?></small>
                             </td>
                             <td>
                                 <?php

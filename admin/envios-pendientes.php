@@ -762,7 +762,9 @@ $user = get_logged_user();
                                 <th>Nº Orden</th>
                                 <th>Cliente</th>
                                 <th>Fecha</th>
-                                <th>Total</th>
+                                <th>Total ARS</th>
+                                <th>Total USD</th>
+                                <th>Cotiz. $</th>
                                 <th>Estado</th>
                                 <th>Entrega</th>
                                 <th>Acciones</th>
@@ -771,12 +773,26 @@ $user = get_logged_user();
                         <tbody>
                             <?php if (empty($orders)): ?>
                                 <tr>
-                                    <td colspan="8" style="text-align: center; padding: 40px; color: #999;">
+                                    <td colspan="10" style="text-align: center; padding: 40px; color: #999;">
                                         No hay envíos que coincidan con los filtros.
                                     </td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($orders as $order): ?>
+                                    <?php
+                                    // Calculate amounts in ARS and USD
+                                    $exchange_rate = $order['exchange_rate'] ?? 1000;
+                                    $total = $order['total'];
+                                    $currency = $order['currency'];
+
+                                    if ($currency === 'USD') {
+                                        $total_usd = $total;
+                                        $total_ars = $total * $exchange_rate;
+                                    } else {
+                                        $total_ars = $total;
+                                        $total_usd = $total / $exchange_rate;
+                                    }
+                                    ?>
                                     <tr data-id="<?php echo htmlspecialchars($order['id']); ?>">
                                         <td>
                                             <input type="checkbox" name="selected_orders[]"
@@ -797,7 +813,13 @@ $user = get_logged_user();
                                             <small style="color: #999;"><?php echo date('H:i', strtotime($order['date'])); ?></small>
                                         </td>
                                         <td>
-                                            <strong><?php echo format_price($order['total']); ?></strong>
+                                            <strong>$<?php echo number_format($total_ars, 2, ',', '.'); ?></strong>
+                                        </td>
+                                        <td>
+                                            <strong>U$D <?php echo number_format($total_usd, 2, ',', '.'); ?></strong>
+                                        </td>
+                                        <td>
+                                            <small><?php echo number_format($exchange_rate, 2, ',', '.'); ?></small>
                                         </td>
                                         <td>
                                             <span class="badge <?php echo $order['status']; ?>">
@@ -863,13 +885,35 @@ $user = get_logged_user();
                         </div>
 
                         <div class="mobile-card-body">
+                            <?php
+                            // Calculate amounts in ARS and USD for mobile view
+                            $exchange_rate = $order['exchange_rate'] ?? 1000;
+                            $total = $order['total'];
+                            $currency = $order['currency'];
+
+                            if ($currency === 'USD') {
+                                $total_usd = $total;
+                                $total_ars = $total * $exchange_rate;
+                            } else {
+                                $total_ars = $total;
+                                $total_usd = $total / $exchange_rate;
+                            }
+                            ?>
                             <div class="mobile-card-row">
                                 <span class="mobile-card-label">Fecha:</span>
                                 <span class="mobile-card-value"><?php echo date('d/m/Y H:i', strtotime($order['date'])); ?></span>
                             </div>
                             <div class="mobile-card-row">
-                                <span class="mobile-card-label">Total:</span>
-                                <span class="mobile-card-value"><strong><?php echo format_price($order['total']); ?></strong></span>
+                                <span class="mobile-card-label">Total ARS:</span>
+                                <span class="mobile-card-value"><strong>$<?php echo number_format($total_ars, 2, ',', '.'); ?></strong></span>
+                            </div>
+                            <div class="mobile-card-row">
+                                <span class="mobile-card-label">Total USD:</span>
+                                <span class="mobile-card-value"><strong>U$D <?php echo number_format($total_usd, 2, ',', '.'); ?></strong></span>
+                            </div>
+                            <div class="mobile-card-row">
+                                <span class="mobile-card-label">Cotiz. $:</span>
+                                <span class="mobile-card-value"><?php echo number_format($exchange_rate, 2, ',', '.'); ?></span>
                             </div>
                             <div class="mobile-card-row">
                                 <span class="mobile-card-label">Estado:</span>

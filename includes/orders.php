@@ -110,6 +110,10 @@ function create_order($order_data) {
     $tracking_token = generate_token(32);
     $timestamp = get_timestamp();
 
+    // Get current exchange rate from currency config
+    $currency_config = read_json(__DIR__ . '/../config/currency.json');
+    $exchange_rate = $currency_config['exchange_rate'] ?? 1000;
+
     // Build complete order
     $order = [
         'id' => $order_id,
@@ -118,6 +122,7 @@ function create_order($order_data) {
         'date' => $timestamp,
         'items' => $order_data['items'],
         'currency' => $order_data['currency'],
+        'exchange_rate' => $exchange_rate,
         'subtotal' => $order_data['subtotal'],
         'discount_promotion' => $order_data['discount_promotion'] ?? 0,
         'discount_coupon' => $order_data['discount_coupon'] ?? 0,
