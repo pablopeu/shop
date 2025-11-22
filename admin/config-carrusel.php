@@ -96,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
         $config['enabled'] = isset($_POST['enabled']);
         $config['alignment'] = sanitize_input($_POST['alignment'] ?? 'center');
         $config['auto_advance_time'] = intval($_POST['auto_advance_time'] ?? 5000);
+        $config['background_color'] = sanitize_input($_POST['background_color'] ?? '#f5f5f5');
         $config['slides'] = $slides;
 
         if (empty($error)) {
@@ -313,6 +314,21 @@ $visible_products = array_filter($all_products, function($product) {
                            value="<?php echo intval($carousel_config['auto_advance_time'] ?? 5000); ?>">
                     <small style="color: #666; margin-top: 5px; display: block;">
                         Tiempo en milisegundos entre slides. 1000ms = 1 segundo. Recomendado: 3000-7000ms
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="background_color">Color de Fondo del Carrusel</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="color" id="background_color" name="background_color"
+                               value="<?php echo htmlspecialchars($carousel_config['background_color'] ?? '#f5f5f5'); ?>"
+                               style="width: 60px; height: 40px; border: 2px solid #e0e0e0; border-radius: 6px; cursor: pointer;">
+                        <input type="text" id="background_color_text" readonly
+                               value="<?php echo htmlspecialchars($carousel_config['background_color'] ?? '#f5f5f5'); ?>"
+                               style="flex: 1; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-family: monospace; background: #f9f9f9;">
+                    </div>
+                    <small style="color: #666; margin-top: 5px; display: block;">
+                        Color que se muestra de fondo cuando las imágenes no ocupan todo el ancho.
                     </small>
                 </div>
 
@@ -562,6 +578,17 @@ $visible_products = array_filter($all_products, function($product) {
             const dt = new DataTransfer();
             selectedFiles.forEach(file => dt.items.add(file));
             fileInput.files = dt.files;
+        }
+
+        // ===== Color Picker Sync =====
+        const colorPicker = document.getElementById('background_color');
+        const colorText = document.getElementById('background_color_text');
+
+        if (colorPicker && colorText) {
+            colorPicker.addEventListener('input', function() {
+                colorText.value = this.value;
+                markChanged();
+            });
         }
     </script>
 </body>

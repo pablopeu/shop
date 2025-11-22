@@ -1,6 +1,6 @@
 /**
- * Carousel V2 JavaScript
- * Auto-rotación hacia la izquierda con puntos indicadores
+ * Carousel V2 JavaScript - Infinite Horizontal Scroll
+ * Desplazamiento continuo horizontal con efecto loop infinito
  */
 
 (function() {
@@ -14,157 +14,91 @@
     }
 
     function initCarouselV2() {
-        console.log('[CAROUSEL V2] Initializing...');
+        console.log('[CAROUSEL V2] Initializing infinite scroll...');
 
         const wrapper = document.querySelector('.carousel-v2-wrapper');
-        if (!wrapper) {
-            console.log('[CAROUSEL V2] No carousel wrapper found');
+        const track = document.getElementById('carousel-track');
+
+        if (!wrapper || !track) {
+            console.log('[CAROUSEL V2] No carousel found');
             return;
         }
 
-        const slides = document.querySelectorAll('.carousel-v2-slide');
-        const dots = document.querySelectorAll('.carousel-v2-dot');
+        const slides = track.querySelectorAll('.carousel-v2-slide');
         const carouselData = window.carouselV2Data || {};
+        const originalSlidesCount = carouselData.slides?.length || 0;
 
-        console.log('[CAROUSEL V2] Found', slides.length, 'slides');
+        console.log('[CAROUSEL V2] Original slides:', originalSlidesCount, 'Total rendered:', slides.length);
 
-        if (slides.length === 0) {
+        if (originalSlidesCount === 0) {
             console.log('[CAROUSEL V2] No slides found');
             return;
         }
 
-        let currentIndex = 0;
-        let isAnimating = false;
-        let autoPlayInterval = null;
-        const autoAdvanceTime = carouselData.autoAdvanceTime || 5000;
+        let currentPosition = 0;
+        let isPaused = false;
+        let animationFrame = null;
 
-        console.log('[CAROUSEL V2] Auto-advance time:', autoAdvanceTime, 'ms');
+        // Velocity: pixels per frame (60fps)
+        // Slower speed for better viewing: 0.5 pixels per frame = 30 pixels/sec
+        const scrollSpeed = 0.5;
+
+        // Calculate when to reset (after one full set of slides)
+        const slideWidth = slides[0].offsetWidth;
+        const resetPoint = slideWidth * originalSlidesCount;
+
+        console.log('[CAROUSEL V2] Slide width:', slideWidth, 'Reset point:', resetPoint);
 
         /**
-         * Go to next slide (always advances to the right in the array)
+         * Animate the carousel continuously
          */
-        function goToNextSlide() {
-            const nextIndex = (currentIndex + 1) % slides.length;
-            goToSlide(nextIndex);
-        }
+        function animate() {
+            if (!isPaused) {
+                currentPosition += scrollSpeed;
 
-        /**
-         * Go to a specific slide with animation
-         */
-        function goToSlide(targetIndex) {
-            if (isAnimating || targetIndex === currentIndex) {
-                return;
+                // Reset to start when we've scrolled through one full set
+                if (currentPosition >= resetPoint) {
+                    currentPosition = 0;
+                }
+
+                track.style.transform = `translateX(-${currentPosition}px)`;
             }
 
-            console.log('[CAROUSEL V2] Transitioning from slide', currentIndex, 'to', targetIndex);
-
-            isAnimating = true;
-
-            const currentSlide = slides[currentIndex];
-            const nextSlide = slides[targetIndex];
-
-            // Remove all animation classes from all slides
-            slides.forEach(slide => {
-                slide.classList.remove('active', 'slide-out', 'slide-in');
-            });
-
-            // Animate: current slide out to left, next slide in from right
-            currentSlide.classList.add('active', 'slide-out');
-            nextSlide.classList.add('active', 'slide-in');
-
-            // Update dots
-            dots.forEach((dot, i) => {
-                dot.classList.toggle('active', i === targetIndex);
-            });
-
-            // Clean up after animation completes
-            setTimeout(() => {
-                currentSlide.classList.remove('active', 'slide-out');
-                nextSlide.classList.remove('slide-in');
-
-                currentIndex = targetIndex;
-                isAnimating = false;
-
-                console.log('[CAROUSEL V2] Transition complete. Current slide:', currentIndex);
-            }, 600); // Match animation duration in CSS
+            animationFrame = requestAnimationFrame(animate);
         }
 
         /**
-         * Start auto-rotation
+         * Pause animation
          */
-        function startAutoPlay() {
-            if (slides.length > 1) {
-                console.log('[CAROUSEL V2] Starting auto-play');
-                autoPlayInterval = setInterval(() => {
-                    goToNextSlide();
-                }, autoAdvanceTime);
-            }
+        function pause() {
+            isPaused = true;
+            console.log('[CAROUSEL V2] Paused');
         }
 
         /**
-         * Stop auto-rotation
+         * Resume animation
          */
-        function stopAutoPlay() {
-            if (autoPlayInterval) {
-                console.log('[CAROUSEL V2] Stopping auto-play');
-                clearInterval(autoPlayInterval);
-                autoPlayInterval = null;
-            }
+        function resume() {
+            isPaused = false;
+            console.log('[CAROUSEL V2] Resumed');
         }
-
-        /**
-         * Reset auto-rotation (stop and start again)
-         */
-        function resetAutoPlay() {
-            stopAutoPlay();
-            startAutoPlay();
-        }
-
-        // Dot navigation - click on a dot to go to that slide
-        dots.forEach((dot, index) => {
-            dot.addEventListener('click', () => {
-                goToSlide(index);
-                resetAutoPlay(); // Reset timer when user manually navigates
-            });
-        });
 
         // Pause on hover
-        wrapper.addEventListener('mouseenter', () => {
-            console.log('[CAROUSEL V2] Mouse enter - pausing auto-play');
-            stopAutoPlay();
-        });
-
-        wrapper.addEventListener('mouseleave', () => {
-            console.log('[CAROUSEL V2] Mouse leave - resuming auto-play');
-            startAutoPlay();
-        });
+        wrapper.addEventListener('mouseenter', pause);
+        wrapper.addEventListener('mouseleave', resume);
 
         // Pause when tab is not visible
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
-                console.log('[CAROUSEL V2] Tab hidden - pausing auto-play');
-                stopAutoPlay();
+                pause();
             } else {
-                console.log('[CAROUSEL V2] Tab visible - resuming auto-play');
-                startAutoPlay();
+                resume();
             }
         });
 
-        // Keyboard navigation (optional)
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight') {
-                goToNextSlide();
-                resetAutoPlay();
-            } else if (e.key === 'ArrowLeft') {
-                const prevIndex = (currentIndex - 1 + slides.length) % slides.length;
-                goToSlide(prevIndex);
-                resetAutoPlay();
-            }
-        });
+        // Start animation
+        animate();
 
-        // Start auto-play
-        startAutoPlay();
-
-        console.log('[CAROUSEL V2] Initialization complete');
+        console.log('[CAROUSEL V2] Infinite scroll started');
     }
 })();

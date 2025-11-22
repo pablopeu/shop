@@ -13,18 +13,24 @@ if (!($carousel_config['enabled'] ?? false) || empty($carousel_config['slides'])
 
 // Get alignment configuration
 $alignment = $carousel_config['alignment'] ?? 'center';
+$background_color = $carousel_config['background_color'] ?? '#f5f5f5';
 ?>
 
 <div class="carousel-v2-wrapper" data-alignment="<?php echo htmlspecialchars($alignment); ?>">
-    <div class="carousel-v2-container">
-        <div class="carousel-v2-track">
-            <?php foreach ($carousel_config['slides'] as $index => $slide): ?>
-                <div class="carousel-v2-slide <?php echo $index === 0 ? 'active' : ''; ?>" data-index="<?php echo $index; ?>">
+    <div class="carousel-v2-container" style="background-color: <?php echo htmlspecialchars($background_color); ?>;">
+        <div class="carousel-v2-track" id="carousel-track">
+            <?php
+            // Duplicate slides for infinite scroll effect
+            $slides_to_render = array_merge($carousel_config['slides'], $carousel_config['slides'], $carousel_config['slides']);
+            foreach ($slides_to_render as $index => $slide):
+            ?>
+                <div class="carousel-v2-slide" data-index="<?php echo $index; ?>">
                     <?php if (!empty($slide['link'])): ?>
                         <a href="<?php echo htmlspecialchars($slide['link']); ?>" class="carousel-v2-link">
                             <img src="<?php echo htmlspecialchars(url($slide['image'])); ?>"
-                                 alt="<?php echo htmlspecialchars($slide['title'] ?? 'Slide ' . ($index + 1)); ?>"
-                                 class="carousel-v2-image">
+                                 alt="<?php echo htmlspecialchars($slide['title'] ?? 'Slide'); ?>"
+                                 class="carousel-v2-image"
+                                 draggable="false">
 
                             <?php if (!empty($slide['title'])): ?>
                                 <div class="carousel-v2-title">
@@ -33,31 +39,23 @@ $alignment = $carousel_config['alignment'] ?? 'center';
                             <?php endif; ?>
                         </a>
                     <?php else: ?>
-                        <img src="<?php echo htmlspecialchars(url($slide['image'])); ?>"
-                             alt="<?php echo htmlspecialchars($slide['title'] ?? 'Slide ' . ($index + 1)); ?>"
-                             class="carousel-v2-image">
+                        <div class="carousel-v2-item">
+                            <img src="<?php echo htmlspecialchars(url($slide['image'])); ?>"
+                                 alt="<?php echo htmlspecialchars($slide['title'] ?? 'Slide'); ?>"
+                                 class="carousel-v2-image"
+                                 draggable="false">
 
-                        <?php if (!empty($slide['title'])): ?>
-                            <div class="carousel-v2-title">
-                                <?php echo htmlspecialchars($slide['title']); ?>
-                            </div>
-                        <?php endif; ?>
+                            <?php if (!empty($slide['title'])): ?>
+                                <div class="carousel-v2-title">
+                                    <?php echo htmlspecialchars($slide['title']); ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         </div>
     </div>
-
-    <!-- Dots navigation -->
-    <?php if (count($carousel_config['slides']) > 1): ?>
-        <div class="carousel-v2-dots">
-            <?php foreach ($carousel_config['slides'] as $index => $slide): ?>
-                <button class="carousel-v2-dot <?php echo $index === 0 ? 'active' : ''; ?>"
-                        data-index="<?php echo $index; ?>"
-                        aria-label="Ir a slide <?php echo $index + 1; ?>"></button>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
 </div>
 
 <script>
