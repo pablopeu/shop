@@ -129,6 +129,32 @@ $site_url = $site_config['site_url'] ?? 'https://tienda.com';
                                 </p>
                             </div>
 
+                            <!-- MercadoPago Alternative Payment Option (for non-MP orders) -->
+                            <?php if (isset($order['payment_method']) && $order['payment_method'] !== 'mercadopago' && isset($order['payment_link']) && !empty($order['payment_link'])): ?>
+                            <div style="background-color: #e7f3ff; border-left: 4px solid #2196F3; padding: 20px; margin-bottom: 30px; border-radius: 6px;">
+                                <p style="margin: 0 0 12px 0; color: #0d47a1; font-size: 15px; line-height: 1.6;">
+                                    <strong>💳 ¿Preferís pagar con tarjeta o MercadoPago?</strong>
+                                </p>
+                                <p style="margin: 0 0 15px 0; color: #1565c0; font-size: 14px; line-height: 1.6;">
+                                    Si te resulta más cómodo, podés completar el pago de forma segura usando MercadoPago.
+                                    Aceptamos todas las tarjetas y podés pagar en cuotas.
+                                </p>
+                                <table width="100%" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td align="center">
+                                            <a href="<?= htmlspecialchars($order['payment_link']) ?>"
+                                               style="display: inline-block; background: #009ee3; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-size: 14px; font-weight: 600; box-shadow: 0 2px 6px rgba(0, 158, 227, 0.3);">
+                                                💳 Pagar con MercadoPago
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <p style="margin: 12px 0 0 0; color: #0d47a1; font-size: 12px; text-align: center;">
+                                    Es opcional - podés seguir con el método de pago que elegiste
+                                </p>
+                            </div>
+                            <?php endif; ?>
+
                             <!-- Tracking Link -->
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>

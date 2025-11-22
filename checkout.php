@@ -370,6 +370,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                 increment_coupon_usage($coupon_code);
             }
 
+            // Create MercadoPago payment link for ALL orders (for optional payment method)
+            // This allows customers to pay via MP even if they chose another method
+            try {
+                // Use localhost URL since this is an internal call
+                $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+                $mp_preference_url = $protocol . '://' . $host . url('/crear-preferencia-mp.php');
+                $mp_data = json_encode([
+                    'order_id' => $order['id'],
+                    'tracking_token' => $order['tracking_token']
+                ]);
+
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $mp_preference_url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $mp_data);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 5); // 5 second timeout
+
+                $mp_response = curl_exec($ch);
+                $mp_http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                if ($mp_http_code === 200) {
+                    $mp_result = json_decode($mp_response, true);
+                    if ($mp_result['success'] ?? false) {
+                        // Update order with payment link
+                        $payment_link = $mp_result['init_point'] ?? $mp_result['sandbox_init_point'] ?? null;
+                        if ($payment_link) {
+                            $orders_data = read_json(__DIR__ . '/data/orders.json');
+                            foreach ($orders_data['orders'] as $idx => $o) {
+                                if ($o['id'] === $order['id']) {
+                                    $orders_data['orders'][$idx]['payment_link'] = $payment_link;
+                                    $order['payment_link'] = $payment_link;
+                                    break;
+                                }
+                            }
+                            write_json(__DIR__ . '/data/orders.json', $orders_data);
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                // Silently fail - payment link is optional
+                error_log("Failed to create MP payment link: " . $e->getMessage());
+            }
+
             // Send order confirmation to customer based on their preference
             if ($order['contact_preference'] === 'telegram') {
                 send_telegram_order_confirmation($order);
