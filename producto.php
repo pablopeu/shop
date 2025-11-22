@@ -264,7 +264,6 @@ write_json($visits_file, $visits_data);
             flex-direction: column;
             gap: 15px;
             margin-top: 20px;
-            align-items: flex-start;
         }
 
         /* Main Action Row - Quantity + Add to Cart */
@@ -341,14 +340,12 @@ write_json($visits_file, $visits_data);
         .share-section {
             display: flex;
             align-items: center;
-            width: 100%;
         }
 
         .share-buttons {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            align-items: center;
         }
 
         .share-btn {
@@ -613,7 +610,7 @@ write_json($visits_file, $visits_data);
                                    class="share-btn x-twitter"
                                    target="_blank"
                                    title="Compartir en X (Twitter)">
-                                    <i class="fa-brands fa-x-twitter"></i>
+                                    <i class="fab fa-x-twitter"></i>
                                 </a>
                                 <a href="https://www.instagram.com/"
                                    class="share-btn instagram"
