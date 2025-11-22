@@ -56,9 +56,9 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
                 <span class="mobile-menu-badge"><?php echo $cart_count; ?></span>
             <?php endif; ?>
         </a>
-        <a href="<?php echo url('/pedido.php'); ?>">
+        <a href="<?php echo url('/track.php'); ?>">
             <span class="mobile-menu-icon">📦</span>
-            Mis Pedidos
+            Rastreo
         </a>
     </nav>
 </div>

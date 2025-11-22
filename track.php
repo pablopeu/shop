@@ -69,6 +69,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 </head>
 <body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="<?php echo url('/'); ?>" class="logo"><?php render_site_logo($site_config); ?></a>
+            <nav class="nav">
+                <a href="<?php echo url('/'); ?>">Inicio</a>
+                <a href="<?php echo url('/buscar.php'); ?>">Buscar</a>
+                <a href="<?php echo url('/favoritos.php'); ?>">Favoritos</a>
+                <a href="<?php echo url('/track.php'); ?>">📦 Rastrear</a>
+                <a href="<?php echo url('/carrito.php'); ?>">
+                    🛒 Carrito (<span id="cart-count">0</span>)
+                </a>
+            </nav>
+        </div>
+    </header>
+
     <div class="container">
         <div class="card">
             <div class="header">
@@ -130,6 +146,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
+
+    <script>
+        // Update cart count from localStorage
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cart-count').textContent = count;
+        }
+
+        // Update on page load
+        updateCartCount();
+    </script>
+
     <!-- Mobile Menu -->
     <?php include __DIR__ . '/includes/mobile-menu.php'; ?>
     <script src="<?php echo url('/includes/mobile-menu.js'); ?>"></script>
