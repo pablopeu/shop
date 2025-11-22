@@ -219,7 +219,7 @@ $status_labels = [
 
     <script type="module">
         // Import utility functions
-        import { showToast, copyPaymentLink, formatPrice, exportSelectedToCSV } from './assets/js/ventas-utils.js';
+        import { showToast, copyPaymentLink, formatPrice } from './assets/js/ventas-utils.js';
         import { initModal, viewOrder, switchTab, sendCustomMessage, saveAllChanges,
                  closeOrderModal, confirmCloseOrderModal, cancelCloseOrderModal,
                  showCancelModal, closeCancelModal } from './assets/js/ventas-modal.js';
@@ -230,7 +230,6 @@ $status_labels = [
         window.showToast = showToast;
         window.copyPaymentLink = copyPaymentLink;
         window.formatPrice = formatPrice;
-        window.exportSelectedToCSV = exportSelectedToCSV;
 
         // Initialize modal module and expose functions when page loads
         const ordersData = <?php echo json_encode($orders); ?>;
@@ -267,6 +266,51 @@ $status_labels = [
 
         // Initialize selected count on page load
         document.addEventListener('DOMContentLoaded', updateSelectedCount);
+    </script>
+
+    <script>
+        /**
+         * Exporta las órdenes seleccionadas a formato CSV
+         */
+        function exportSelectedToCSV() {
+            const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+            const orderIds = Array.from(checkboxes).map(cb => cb.value);
+
+            if (orderIds.length === 0) {
+                if (window.showToast) {
+                    window.showToast('⚠️ Debes seleccionar al menos una venta para exportar');
+                }
+                return;
+            }
+
+            // Create form and submit to export API
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '<?php echo url('/api/export-orders.php'); ?>';
+            form.target = '_blank';
+
+            const formatInput = document.createElement('input');
+            formatInput.type = 'hidden';
+            formatInput.name = 'format';
+            formatInput.value = 'csv';
+            form.appendChild(formatInput);
+
+            orderIds.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'order_ids[]';
+                input.value = id;
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+
+            if (window.showToast) {
+                window.showToast('📊 Exportando ' + orderIds.length + ' venta(s) a CSV...');
+            }
+        }
     </script>
 
     <!-- Modal Component -->
