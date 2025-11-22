@@ -171,9 +171,95 @@ $visible_products = array_filter($all_products, function($product) {
         .slide-fields input, .slide-fields textarea, .slide-fields select { padding: 8px 10px; font-size: 13px; border: 2px solid #e0e0e0; border-radius: 6px; transition: border-color 0.3s; }
         .slide-fields input:focus, .slide-fields textarea:focus, .slide-fields select:focus { outline: none; border-color: #667eea; }
 
-        .file-input-wrapper { position: relative; display: inline-block; width: 100%; }
-        .file-input-wrapper input[type="file"] { width: 100%; padding: 12px; border: 2px dashed #e0e0e0; border-radius: 6px; cursor: pointer; transition: all 0.3s; }
-        .file-input-wrapper input[type="file"]:hover { border-color: #667eea; background: #f8f9fa; }
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f9fafb;
+        }
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        .upload-area.drag-over {
+            border-color: #667eea;
+            background: #e8f0ff;
+            transform: scale(1.02);
+        }
+        .upload-icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 1rem;
+        }
+        .upload-area p {
+            margin: 0;
+            color: #555;
+        }
+        .upload-area .form-text {
+            font-size: 0.875rem;
+            color: #888;
+            margin-top: 0.5rem;
+        }
+
+        /* Image Gallery Preview */
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .image-item-new {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 2px solid #e0e0e0;
+            background: #fff;
+        }
+        .image-item-new img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .image-item-new .image-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: rgba(0,0,0,0.6);
+        }
+        .image-item-new .btn-delete-image {
+            background: #dc3545;
+            color: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 0 6px 0 6px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .image-item-new .btn-delete-image:hover {
+            background: #c82333;
+        }
+        .image-item-new .image-badge {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(102, 126, 234, 0.95);
+            color: white;
+            padding: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+        }
 
         .btn-save { padding: 12px 30px; background: #6c757d; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
         .btn-save.changed { background: #dc3545; animation: pulse 1.5s infinite; }
@@ -272,13 +358,14 @@ $visible_products = array_filter($all_products, function($product) {
                 <?php endif; ?>
 
                 <div class="form-group">
-                    <label for="carousel_images">Agregar Nuevos Slides</label>
-                    <div class="file-input-wrapper">
-                        <input type="file" id="carousel_images" name="carousel_images[]" accept="image/*" multiple>
+                    <label>Agregar Nuevos Slides</label>
+                    <div class="upload-area" id="uploadArea">
+                        <span class="upload-icon">☁️</span>
+                        <p style="font-weight: 500; margin-bottom: 0.5rem;">Haz clic o arrastra imágenes aquí</p>
+                        <p class="form-text">Formatos: JPG, PNG, GIF, WebP. Máx 5MB por imagen.</p>
+                        <input type="file" id="carousel_images" name="carousel_images[]" accept="image/*" multiple hidden>
                     </div>
-                    <small style="color: #666; margin-top: 5px; display: block;">
-                        Formatos: JPG, PNG, GIF, WebP. Tamaño máximo: 5MB por imagen. Puedes seleccionar múltiples imágenes.
-                    </small>
+                    <div class="image-gallery" id="imageGallery"></div>
                 </div>
 
                 <button type="submit" name="save_config" class="btn-save" id="saveBtn">
@@ -294,10 +381,14 @@ $visible_products = array_filter($all_products, function($product) {
         const saveBtn = document.getElementById('saveBtn');
         const gallery = document.getElementById('slides-gallery');
         const fileInput = document.getElementById('carousel_images');
+        const uploadArea = document.getElementById('uploadArea');
+        const imageGallery = document.getElementById('imageGallery');
         const inputs = form.querySelectorAll('input:not([type="file"]):not([type="hidden"]), textarea, select');
 
         let originalValues = {};
         let saveSuccess = <?php echo $message ? 'true' : 'false'; ?>;
+        let selectedFiles = [];
+        let hasChanges = false;
 
         // Store original values
         inputs.forEach(input => {
@@ -369,6 +460,108 @@ $visible_products = array_filter($all_products, function($product) {
         if (saveSuccess) {
             saveBtn.classList.add('saved');
             setTimeout(() => saveBtn.classList.remove('saved'), 3000);
+        }
+
+        // ===== Drag & Drop and Preview Functionality =====
+
+        // Click to upload
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Drag over
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        // Drag leave
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+        });
+
+        // Drop
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFiles(e.target.files);
+            }
+        });
+
+        // Handle files
+        function handleFiles(files) {
+            const newFiles = Array.from(files);
+            selectedFiles = [...selectedFiles, ...newFiles];
+            renderImageGallery();
+            updateDataTransfer();
+            hasChanges = true;
+            markChanged();
+        }
+
+        // Render image gallery with preview
+        async function renderImageGallery() {
+            imageGallery.innerHTML = '';
+
+            if (selectedFiles.length === 0) {
+                return;
+            }
+
+            const readPromises = selectedFiles.map((file, index) => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        resolve({
+                            index: index,
+                            dataUrl: e.target.result,
+                            name: file.name
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            const readFiles = await Promise.all(readPromises);
+
+            readFiles.forEach(({index, dataUrl, name}) => {
+                const div = document.createElement('div');
+                div.className = 'image-item-new';
+                div.innerHTML = `
+                    <img src="${dataUrl}" alt="${name}">
+                    <div class="image-actions">
+                        <button type="button" class="btn-delete-image" onclick="removeNewImage(${index})">✕</button>
+                    </div>
+                    ${index === 0 ? '<span class="image-badge">PRIMERA</span>' : ''}
+                `;
+                imageGallery.appendChild(div);
+            });
+        }
+
+        // Remove image from preview
+        window.removeNewImage = function(index) {
+            selectedFiles.splice(index, 1);
+            renderImageGallery();
+            updateDataTransfer();
+
+            if (selectedFiles.length === 0) {
+                hasChanges = false;
+                checkForChanges();
+            }
+        };
+
+        // Update file input DataTransfer
+        function updateDataTransfer() {
+            const dt = new DataTransfer();
+            selectedFiles.forEach(file => dt.items.add(file));
+            fileInput.files = dt.files;
         }
     </script>
 </body>
