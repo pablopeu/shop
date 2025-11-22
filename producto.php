@@ -340,15 +340,6 @@ write_json($visits_file, $visits_data);
         .share-section {
             display: flex;
             align-items: center;
-            gap: 12px;
-        }
-
-        .share-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--color-text-light, #666);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         .share-buttons {
@@ -358,33 +349,28 @@ write_json($visits_file, $visits_data);
         }
 
         .share-btn {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
+            width: 42px;
+            height: 36px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 18px;
             transition: all 0.3s;
             cursor: pointer;
             border: none;
             text-decoration: none;
             background: var(--color-text-lighter, #e0e0e0);
-            color: var(--color-text-light, #666);
+            color: var(--color-text, #666);
         }
 
         .share-btn:hover {
-            transform: translateY(-3px) scale(1.1);
+            transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         .share-btn.copy:hover {
             background: #6c757d;
-            color: white;
-        }
-
-        .share-btn.whatsapp:hover {
-            background: #25D366;
             color: white;
         }
 
@@ -395,6 +381,21 @@ write_json($visits_file, $visits_data);
 
         .share-btn.x-twitter:hover {
             background: #000000;
+            color: white;
+        }
+
+        .share-btn.instagram:hover {
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            color: white;
+        }
+
+        .share-btn.whatsapp:hover {
+            background: #25D366;
+            color: white;
+        }
+
+        .share-btn.telegram:hover {
+            background: #0088cc;
             color: white;
         }
 
@@ -595,17 +596,10 @@ write_json($visits_file, $visits_data);
                         </div>
 
                         <div class="share-section">
-                            <span class="share-label">Compartir:</span>
                             <div class="share-buttons">
                                 <button class="share-btn copy" onclick="copyLink()" title="Copiar enlace">
                                     <i class="fas fa-link"></i>
                                 </button>
-                                <a href="https://wa.me/?text=<?php echo urlencode($product['name'] . ' - ' . get_base_url() . '/producto.php?slug=' . $slug); ?>"
-                                   class="share-btn whatsapp"
-                                   target="_blank"
-                                   title="Compartir en WhatsApp">
-                                    <i class="fab fa-whatsapp"></i>
-                                </a>
                                 <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode(get_base_url() . '/producto.php?slug=' . $slug); ?>"
                                    class="share-btn facebook"
                                    target="_blank"
@@ -618,6 +612,26 @@ write_json($visits_file, $visits_data);
                                    title="Compartir en X (Twitter)">
                                     <i class="fab fa-x-twitter"></i>
                                 </a>
+                                <a href="https://www.instagram.com/"
+                                   class="share-btn instagram"
+                                   target="_blank"
+                                   title="Compartir en Instagram">
+                                    <i class="fab fa-instagram"></i>
+                                </a>
+                                <a href="https://wa.me/?text=<?php echo urlencode($product['name'] . ' - ' . get_base_url() . '/producto.php?slug=' . $slug); ?>"
+                                   class="share-btn whatsapp"
+                                   target="_blank"
+                                   title="Compartir en WhatsApp">
+                                    <i class="fab fa-whatsapp"></i>
+                                </a>
+                                <?php if (!empty($site_config['telegram'])): ?>
+                                <a href="https://t.me/share/url?url=<?php echo urlencode(get_base_url() . '/producto.php?slug=' . $slug); ?>&text=<?php echo urlencode($product['name']); ?>"
+                                   class="share-btn telegram"
+                                   target="_blank"
+                                   title="Compartir en Telegram">
+                                    <i class="fab fa-telegram-plane"></i>
+                                </a>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>

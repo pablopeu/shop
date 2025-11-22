@@ -658,6 +658,46 @@ select:focus {
     border-bottom: 1px solid var(--color-border-light);
 }
 
+/* Breadcrumb compact */
+.breadcrumb {
+    margin: var(--spacing-sm) auto var(--spacing-md) !important;
+    padding: var(--spacing-xs) var(--spacing-lg) !important;
+    font-size: 13px !important;
+}
+
+/* Footer Social Icons - FontAwesome 6 with Hover */
+.footer-icons a.social-icon {
+    display: inline-block;
+    transition: all 0.3s;
+}
+
+.footer-icons a.social-icon i {
+    transition: all 0.3s;
+}
+
+.footer-icons a.social-icon.facebook:hover i {
+    color: #1877f2 !important;
+}
+
+.footer-icons a.social-icon.x-twitter:hover i {
+    color: #000000 !important;
+}
+
+.footer-icons a.social-icon.instagram:hover i {
+    background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.footer-icons a.social-icon.whatsapp:hover i {
+    color: #25D366 !important;
+}
+
+.footer-icons a.social-icon.telegram:hover i {
+    color: #0088cc !important;
+}
+
 /* Add to Cart Button - Same effect as cards */
 .btn-add-cart {
     background: white;

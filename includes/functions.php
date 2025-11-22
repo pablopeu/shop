@@ -932,15 +932,15 @@ function render_footer($site_config, $footer_config) {
 
                 // Facebook
                 if (!empty($social['facebook'])) {
-                    echo '<a href="' . htmlspecialchars($social['facebook']) . '" target="_blank"><i class="fa fa-facebook"></i></a>';
+                    echo '<a href="' . htmlspecialchars($social['facebook']) . '" target="_blank" class="social-icon facebook"><i class="fab fa-facebook-f"></i></a>';
                 }
                 // X (Twitter)
                 if (!empty($social['twitter'])) {
-                    echo '<a href="' . htmlspecialchars($social['twitter']) . '" target="_blank"><i class="fa fa-twitter"></i></a>';
+                    echo '<a href="' . htmlspecialchars($social['twitter']) . '" target="_blank" class="social-icon x-twitter"><i class="fab fa-x-twitter"></i></a>';
                 }
                 // Instagram
                 if (!empty($social['instagram'])) {
-                    echo '<a href="' . htmlspecialchars($social['instagram']) . '" target="_blank"><i class="fa fa-instagram"></i></a>';
+                    echo '<a href="' . htmlspecialchars($social['instagram']) . '" target="_blank" class="social-icon instagram"><i class="fab fa-instagram"></i></a>';
                 }
                 // WhatsApp - read from central site config
                 if ($show_whatsapp) {
@@ -954,11 +954,11 @@ function render_footer($site_config, $footer_config) {
                     } else {
                         $wa_link = '#';
                     }
-                    echo '<a href="' . $wa_link . '" target="_blank"><i class="fa fa-whatsapp"></i></a>';
+                    echo '<a href="' . $wa_link . '" target="_blank" class="social-icon whatsapp"><i class="fab fa-whatsapp"></i></a>';
                 }
                 // Telegram
                 if (!empty($social['telegram'])) {
-                    echo '<a href="' . htmlspecialchars($social['telegram']) . '" target="_blank"><i class="fa fa-telegram"></i></a>';
+                    echo '<a href="' . htmlspecialchars($social['telegram']) . '" target="_blank" class="social-icon telegram"><i class="fab fa-telegram-plane"></i></a>';
                 }
 
                 echo '</div>';
