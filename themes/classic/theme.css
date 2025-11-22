@@ -660,9 +660,16 @@ select:focus {
 
 /* Breadcrumb compact */
 .breadcrumb {
-    margin: var(--spacing-sm) auto var(--spacing-md) !important;
+    margin: var(--spacing-xs) auto var(--spacing-xs) !important;
     padding: var(--spacing-xs) var(--spacing-lg) !important;
     font-size: 13px !important;
+}
+
+/* Product container - reduce top padding in desktop */
+@media (min-width: 769px) {
+    .product-container {
+        padding-top: var(--spacing-lg) !important;
+    }
 }
 
 /* Footer Social Icons - FontAwesome 6 with Hover */
