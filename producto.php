@@ -155,36 +155,126 @@ write_json($visits_file, $visits_data);
     <!-- Theme System CSS -->
     <?php render_theme_css($active_theme); ?>
 
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Mobile Menu Styles -->
     <link rel="stylesheet" href="<?php echo url('/includes/mobile-menu.css'); ?>">
 
     <!-- Product Page Styles -->
     <style>
+        /* Product Title with Favorite Heart */
+        .product-title-container {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .product-title-container h1 {
+            flex: 1;
+            margin-bottom: 0 !important;
+        }
+
+        .favorite-heart {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 28px;
+            color: var(--color-text-light, #999);
+            transition: all 0.3s;
+            padding: 5px;
+            margin-top: 5px;
+        }
+
+        .favorite-heart:hover {
+            color: #e74c3c;
+            transform: scale(1.2);
+        }
+
+        .favorite-heart.active {
+            color: #e74c3c;
+        }
+
+        .favorite-heart.active i {
+            font-weight: 900;
+        }
+
+        .favorite-heart.active::before {
+            content: '';
+        }
+
+        /* Compact Price */
+        .price-container {
+            margin-bottom: 12px !important;
+        }
+
+        /* Stock Info */
+        .stock-info {
+            padding: 10px 15px !important;
+            margin-bottom: 8px !important;
+        }
+
+        /* Pickup Only Badge */
+        .pickup-only-badge {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+
+        /* Rating Container */
+        .rating-container {
+            margin-bottom: 20px !important;
+        }
+
+        /* Description Box */
+        .description-box {
+            background: var(--color-bg-light, #f8f9fa);
+            border: 1px solid var(--color-border, #e0e0e0);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .description-box h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-primary, #2c3e50);
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--color-secondary, #d4af37);
+        }
+
+        .description-box p {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--color-text, #555);
+            margin: 0;
+        }
+
         /* Product Actions Container */
         .product-actions-container {
             display: flex;
             flex-direction: column;
-            gap: 24px;
-            margin-top: 30px;
-        }
-
-        /* Quantity Section */
-        .quantity-section {
-            display: flex;
-            align-items: center;
             gap: 15px;
+            margin-top: 20px;
         }
 
-        .quantity-label {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--color-text-dark, #2c3e50);
-            min-width: 80px;
+        /* Main Action Row - Quantity + Add to Cart */
+        .main-action-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
         }
 
         .quantity-selector {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             gap: 0;
             border: 2px solid var(--color-primary, #2c3e50);
@@ -196,9 +286,9 @@ write_json($visits_file, $visits_data);
             background: var(--color-primary, #2c3e50);
             color: white;
             border: none;
-            width: 45px;
-            height: 45px;
-            font-size: 22px;
+            width: 40px;
+            height: 48px;
+            font-size: 20px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
@@ -216,11 +306,11 @@ write_json($visits_file, $visits_data);
         }
 
         #quantity-input {
-            width: 70px;
-            height: 45px;
+            width: 60px;
+            height: 48px;
             border: none;
             text-align: center;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             -moz-appearance: textfield;
         }
@@ -236,69 +326,25 @@ write_json($visits_file, $visits_data);
             cursor: not-allowed;
         }
 
-        /* Main Actions */
-        .main-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        .btn-large {
-            flex: 2;
-            padding: 16px 32px;
+        .btn-add-cart {
+            flex: 1;
+            padding: 14px 24px;
             font-size: 16px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            height: 48px;
         }
 
-        .btn-favorite {
-            flex: 1;
-            padding: 16px 24px;
-            font-size: 16px;
-            font-weight: 600;
-            background: white;
-            border: 2px solid var(--color-primary, #2c3e50);
-            color: var(--color-primary, #2c3e50);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-favorite::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: var(--color-primary, #2c3e50);
-            transition: left 0.3s;
-            z-index: -1;
-        }
-
-        .btn-favorite:hover::before {
-            left: 0;
-        }
-
-        .btn-favorite:hover {
-            color: white;
-            border-color: var(--color-secondary, #d4af37);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Share Section */
+        /* Share Section - Compact */
         .share-section {
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding-top: 20px;
-            border-top: 1px solid var(--color-border, #e0e0e0);
+            gap: 12px;
         }
 
         .share-label {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: var(--color-text-light, #666);
             text-transform: uppercase;
@@ -312,82 +358,63 @@ write_json($visits_file, $visits_data);
         }
 
         .share-btn {
-            width: 42px;
-            height: 42px;
-            border-radius: 8px;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 16px;
             transition: all 0.3s;
             cursor: pointer;
             border: none;
             text-decoration: none;
+            background: var(--color-text-lighter, #e0e0e0);
+            color: var(--color-text-light, #666);
         }
 
-        .share-btn.copy {
+        .share-btn:hover {
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .share-btn.copy:hover {
             background: #6c757d;
             color: white;
         }
 
-        .share-btn.copy:hover {
-            background: #5a6268;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
-        }
-
-        .share-btn.whatsapp {
+        .share-btn.whatsapp:hover {
             background: #25D366;
             color: white;
         }
 
-        .share-btn.whatsapp:hover {
-            background: #1fb855;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(37, 211, 102, 0.3);
-        }
-
-        .share-btn.facebook {
+        .share-btn.facebook:hover {
             background: #1877f2;
             color: white;
         }
 
-        .share-btn.facebook:hover {
-            background: #0d68d4;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(24, 119, 242, 0.3);
-        }
-
-        .share-btn.twitter {
-            background: #1DA1F2;
+        .share-btn.x-twitter:hover {
+            background: #000000;
             color: white;
-        }
-
-        .share-btn.twitter:hover {
-            background: #0d8bd9;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(29, 161, 242, 0.3);
         }
 
         /* Responsive */
         @media (max-width: 768px) {
             .product-actions-container {
-                gap: 20px;
+                gap: 15px;
             }
 
-            .quantity-section {
+            .main-action-row {
                 flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
+                width: 100%;
             }
 
-            .main-actions {
-                flex-direction: column;
+            .quantity-selector {
+                width: 100%;
+                justify-content: center;
             }
 
-            .btn-large,
-            .btn-favorite {
-                flex: 1;
+            .btn-add-cart {
                 width: 100%;
             }
 
@@ -395,6 +422,14 @@ write_json($visits_file, $visits_data);
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 10px;
+            }
+
+            .description-box {
+                padding: 15px;
+            }
+
+            .description-box h3 {
+                font-size: 16px;
             }
         }
     </style>
@@ -464,24 +499,21 @@ write_json($visits_file, $visits_data);
                         <?php endforeach; ?>
                     </div>
                     <?php endif; ?>
+
+                    <!-- Description Box -->
+                    <div class="description-box">
+                        <h3>Descripción</h3>
+                        <p><?php echo nl2br(htmlspecialchars($product['description'])); ?></p>
+                    </div>
                 </div>
 
                 <!-- Product Info -->
                 <div class="product-info">
-                    <h1><?php echo htmlspecialchars($product['name']); ?></h1>
-
-                    <!-- Rating -->
-                    <div class="rating-container">
-                        <div class="stars">
-                            <?php
-                            for ($i = 1; $i <= 5; $i++) {
-                                echo $i <= $avg_rating ? '★' : '☆';
-                            }
-                            ?>
-                        </div>
-                        <span class="rating-text">
-                            <?php echo $avg_rating; ?> / 5 (<?php echo count($product_reviews); ?> reviews)
-                        </span>
+                    <div class="product-title-container">
+                        <h1><?php echo htmlspecialchars($product['name']); ?></h1>
+                        <button class="favorite-heart" onclick="toggleFavorite('<?php echo $product['id']; ?>')" id="favorite-btn-<?php echo $product['id']; ?>" title="Agregar a favoritos">
+                            <i class="far fa-heart"></i>
+                        </button>
                     </div>
 
                     <!-- Price -->
@@ -523,20 +555,28 @@ write_json($visits_file, $visits_data);
                     </div>
 
                     <?php if (!empty($product['pickup_only'])): ?>
-                        <div class="pickup-only-badge" style="margin-top: 10px;">
+                        <div class="pickup-only-badge">
                             🏪 Solo retiro en persona
                         </div>
                     <?php endif; ?>
 
-                    <!-- Description -->
-                    <div class="description">
-                        <p><?php echo nl2br(htmlspecialchars($product['description'])); ?></p>
+                    <!-- Rating -->
+                    <div class="rating-container">
+                        <div class="stars">
+                            <?php
+                            for ($i = 1; $i <= 5; $i++) {
+                                echo $i <= $avg_rating ? '★' : '☆';
+                            }
+                            ?>
+                        </div>
+                        <span class="rating-text">
+                            <?php echo $avg_rating; ?> / 5 (<?php echo count($product_reviews); ?> reviews)
+                        </span>
                     </div>
 
                     <!-- Quantity & Actions -->
                     <div class="product-actions-container">
-                        <div class="quantity-section">
-                            <label class="quantity-label">Cantidad:</label>
+                        <div class="main-action-row">
                             <div class="quantity-selector">
                                 <button class="quantity-btn" onclick="decreaseQuantity()" <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>-</button>
                                 <input type="number"
@@ -547,16 +587,10 @@ write_json($visits_file, $visits_data);
                                        <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>
                                 <button class="quantity-btn" onclick="increaseQuantity()" <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>+</button>
                             </div>
-                        </div>
-
-                        <div class="main-actions">
-                            <button class="btn btn-add-cart btn-large"
+                            <button class="btn btn-add-cart"
                                     onclick="addToCartWithQuantity('<?php echo $product['id']; ?>')"
                                     <?php echo $product['stock'] === 0 ? 'disabled' : ''; ?>>
-                                <?php echo $product['stock'] === 0 ? '🚫 Agotado' : '🛒 Agregar al Carrito'; ?>
-                            </button>
-                            <button class="btn btn-favorite" onclick="toggleFavorite('<?php echo $product['id']; ?>')">
-                                ❤️ Favoritos
+                                <i class="fas fa-shopping-cart"></i> <?php echo $product['stock'] === 0 ? 'Agotado' : 'Agregar al Carrito'; ?>
                             </button>
                         </div>
 
@@ -564,25 +598,25 @@ write_json($visits_file, $visits_data);
                             <span class="share-label">Compartir:</span>
                             <div class="share-buttons">
                                 <button class="share-btn copy" onclick="copyLink()" title="Copiar enlace">
-                                    📋
+                                    <i class="fas fa-link"></i>
                                 </button>
                                 <a href="https://wa.me/?text=<?php echo urlencode($product['name'] . ' - ' . get_base_url() . '/producto.php?slug=' . $slug); ?>"
                                    class="share-btn whatsapp"
                                    target="_blank"
                                    title="Compartir en WhatsApp">
-                                    📱
+                                    <i class="fab fa-whatsapp"></i>
                                 </a>
                                 <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode(get_base_url() . '/producto.php?slug=' . $slug); ?>"
                                    class="share-btn facebook"
                                    target="_blank"
                                    title="Compartir en Facebook">
-                                    👥
+                                    <i class="fab fa-facebook-f"></i>
                                 </a>
                                 <a href="https://twitter.com/intent/tweet?url=<?php echo urlencode(get_base_url() . '/producto.php?slug=' . $slug); ?>&text=<?php echo urlencode($product['name']); ?>"
-                                   class="share-btn twitter"
+                                   class="share-btn x-twitter"
                                    target="_blank"
-                                   title="Compartir en Twitter">
-                                    🐦
+                                   title="Compartir en X (Twitter)">
+                                    <i class="fab fa-x-twitter"></i>
                                 </a>
                             </div>
                         </div>
@@ -873,18 +907,46 @@ write_json($visits_file, $visits_data);
         // Toggle favorite
         function toggleFavorite(productId) {
             let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+            const heartBtn = document.getElementById('favorite-btn-' + productId);
+            const heartIcon = heartBtn ? heartBtn.querySelector('i') : null;
 
             const index = favorites.indexOf(productId);
             if (index > -1) {
                 favorites.splice(index, 1);
                 showToast('💔 Eliminado de favoritos');
+                if (heartBtn) heartBtn.classList.remove('active');
+                if (heartIcon) {
+                    heartIcon.classList.remove('fas');
+                    heartIcon.classList.add('far');
+                }
             } else {
                 favorites.push(productId);
                 showToast('❤️ Agregado a favoritos');
+                if (heartBtn) heartBtn.classList.add('active');
+                if (heartIcon) {
+                    heartIcon.classList.remove('far');
+                    heartIcon.classList.add('fas');
+                }
             }
 
             localStorage.setItem('favorites', JSON.stringify(favorites));
         }
+
+        // Check if product is in favorites on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+            const productId = '<?php echo $product['id']; ?>';
+
+            if (favorites.indexOf(productId) > -1) {
+                const heartBtn = document.getElementById('favorite-btn-' + productId);
+                const heartIcon = heartBtn ? heartBtn.querySelector('i') : null;
+                if (heartBtn) heartBtn.classList.add('active');
+                if (heartIcon) {
+                    heartIcon.classList.remove('far');
+                    heartIcon.classList.add('fas');
+                }
+            }
+        });
 
         // Copy link
         function copyLink() {
