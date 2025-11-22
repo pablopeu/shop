@@ -26,7 +26,7 @@ function render_theme_css($active_theme = 'minimal') {
     }
 
     // Font Awesome 4.7 for icons (compatible with footer design)
-    echo '<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">' . PHP_EOL . '    ';
+    echo '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">' . PHP_EOL . '    ';
 
     // Base path para themes
     $base_path = '/themes';

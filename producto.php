@@ -258,6 +258,17 @@ write_json($visits_file, $visits_data);
             margin: 0;
         }
 
+        /* Breadcrumb - reduce spacing */
+        .breadcrumb {
+            margin: 8px auto 8px !important;
+            padding: 4px var(--spacing-lg) !important;
+        }
+
+        /* Product container - reduce top padding */
+        .product-container {
+            padding-top: 20px !important;
+        }
+
         /* Product Actions Container */
         .product-actions-container {
             display: flex;
@@ -336,16 +347,18 @@ write_json($visits_file, $visits_data);
             height: 48px;
         }
 
-        /* Share Section - Compact */
+        /* Share Section - Compact and centered with stock */
         .share-section {
             display: flex;
             align-items: center;
+            justify-content: flex-start;
         }
 
         .share-buttons {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         .share-btn {
@@ -610,7 +623,7 @@ write_json($visits_file, $visits_data);
                                    class="share-btn x-twitter"
                                    target="_blank"
                                    title="Compartir en X (Twitter)">
-                                    <i class="fab fa-x-twitter"></i>
+                                    <i class="fab fa-twitter"></i>
                                 </a>
                                 <a href="https://www.instagram.com/"
                                    class="share-btn instagram"

@@ -936,7 +936,7 @@ function render_footer($site_config, $footer_config) {
                 }
                 // X (Twitter)
                 if (!empty($social['twitter'])) {
-                    echo '<a href="' . htmlspecialchars($social['twitter']) . '" target="_blank" class="social-icon x-twitter"><i class="fab fa-x-twitter"></i></a>';
+                    echo '<a href="' . htmlspecialchars($social['twitter']) . '" target="_blank" class="social-icon x-twitter"><i class="fab fa-twitter"></i></a>';
                 }
                 // Instagram
                 if (!empty($social['instagram'])) {
