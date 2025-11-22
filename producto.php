@@ -949,9 +949,36 @@ write_json($visits_file, $visits_data);
             openCartPanel();
         }
 
+        // Cookie helpers
+        function setCookie(name, value, days) {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + expires.toUTCString() + ';path=/';
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + '=';
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+            }
+            return null;
+        }
+
+        function getFavorites() {
+            const favorites = getCookie('favorites');
+            return favorites ? JSON.parse(favorites) : [];
+        }
+
+        function saveFavorites(favorites) {
+            setCookie('favorites', JSON.stringify(favorites), 365); // 1 year expiration
+        }
+
         // Toggle favorite
         function toggleFavorite(productId) {
-            let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+            let favorites = getFavorites();
             const heartBtn = document.getElementById('favorite-btn-' + productId);
             const heartIcon = heartBtn ? heartBtn.querySelector('i') : null;
 
@@ -974,12 +1001,12 @@ write_json($visits_file, $visits_data);
                 }
             }
 
-            localStorage.setItem('favorites', JSON.stringify(favorites));
+            saveFavorites(favorites);
         }
 
         // Check if product is in favorites on page load
         document.addEventListener('DOMContentLoaded', function() {
-            const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+            const favorites = getFavorites();
             const productId = '<?php echo $product['id']; ?>';
 
             if (favorites.indexOf(productId) > -1) {

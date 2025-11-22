@@ -82,6 +82,33 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
         const CURRENCY = '<?php echo $selected_currency; ?>';
         const EXCHANGE_RATE = <?php echo $currency_config['exchange_rate']; ?>;
 
+        // Cookie helpers
+        function setCookie(name, value, days) {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + expires.toUTCString() + ';path=/';
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + '=';
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+            }
+            return null;
+        }
+
+        function getFavorites() {
+            const favorites = getCookie('favorites');
+            return favorites ? JSON.parse(favorites) : [];
+        }
+
+        function saveFavorites(favorites) {
+            setCookie('favorites', JSON.stringify(favorites), 365); // 1 year expiration
+        }
+
         // Format product price intelligently
         function formatProductPrice(product, currency) {
             const priceArs = parseFloat(product.price_ars || 0);
@@ -108,7 +135,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
         // Load favorites
         function loadFavorites() {
-            const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+            const favorites = getFavorites();
 
             document.getElementById('favorites-count').textContent = favorites.length;
 
@@ -218,9 +245,9 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
         // Remove from favorites
         function removeFavorite(productId) {
-            let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+            let favorites = getFavorites();
             favorites = favorites.filter(id => id !== productId);
-            localStorage.setItem('favorites', JSON.stringify(favorites));
+            saveFavorites(favorites);
 
             loadFavorites();
             showToast('💔 Eliminado de favoritos');
@@ -255,7 +282,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
 
         // Share wishlist
         function shareWishlist() {
-            const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+            const favorites = getFavorites();
 
             if (favorites.length === 0) {
                 showToast('⚠️ Tu lista de favoritos está vacía');
@@ -300,7 +327,7 @@ $selected_currency = $_SESSION['currency'] ?? $currency_config['primary'];
         if (sharedFavorites) {
             // Load shared favorites
             const sharedIds = sharedFavorites.split(',');
-            localStorage.setItem('favorites', JSON.stringify(sharedIds));
+            saveFavorites(sharedIds);
             showToast('✅ Lista de favoritos compartida cargada');
 
             // Remove query parameter from URL
