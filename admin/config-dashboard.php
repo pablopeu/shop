@@ -33,14 +33,24 @@ if (!file_exists($dashboard_config_file)) {
             'ventas',
             'cupones',
             'reviews',
-            'config'
+            'config',
+            'envios',
+            'promociones',
+            'notificaciones',
+            'payment',
+            'analytics'
         ],
         'quick_actions' => [
             'productos' => true,
             'ventas' => true,
             'cupones' => true,
             'reviews' => true,
-            'config' => true
+            'config' => true,
+            'envios' => true,
+            'promociones' => true,
+            'notificaciones' => true,
+            'payment' => true,
+            'analytics' => true
         ]
     ];
     write_json($dashboard_config_file, $default_config);
@@ -77,7 +87,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
             'ventas' => isset($_POST['action_ventas']),
             'cupones' => isset($_POST['action_cupones']),
             'reviews' => isset($_POST['action_reviews']),
-            'config' => isset($_POST['action_config'])
+            'config' => isset($_POST['action_config']),
+            'envios' => isset($_POST['action_envios']),
+            'promociones' => isset($_POST['action_promociones']),
+            'notificaciones' => isset($_POST['action_notificaciones']),
+            'payment' => isset($_POST['action_payment']),
+            'analytics' => isset($_POST['action_analytics'])
         ];
         
         if (write_json(__DIR__ . '/../config/dashboard.json', $config)) {
@@ -92,7 +107,7 @@ $page_title = 'Configuración del Dashboard';
 $csrf_token = generate_csrf_token();
 $user = get_logged_user();
 $widget_names = ['productos_activos'=>'📦 Productos Activos','stock_bajo'=>'⚠️ Stock Bajo','sin_stock'=>'🚨 Sin Stock','ordenes_totales'=>'💰 Órdenes','ingreso_neto_ventas'=>'💵 Ingreso Neto','promociones'=>'🎯 Promociones','cupones'=>'🎫 Cupones','reviews_pendientes'=>'⭐ Reviews'];
-$action_names = ['productos'=>'📦 Productos','ventas'=>'💰 Ventas','cupones'=>'🎫 Cupones','reviews'=>'⭐ Reviews','config'=>'⚙️ Config'];
+$action_names = ['productos'=>'📦 Productos','ventas'=>'💰 Ventas','cupones'=>'🎫 Cupones','reviews'=>'⭐ Reviews','config'=>'⚙️ Config','envios'=>'📦 Envíos','promociones'=>'🎯 Promociones','notificaciones'=>'🔔 Notificaciones','payment'=>'💳 Medios de Pago','analytics'=>'📊 Analytics'];
 ?>
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Dashboard Config</title>

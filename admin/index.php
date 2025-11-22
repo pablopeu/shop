@@ -436,6 +436,41 @@ $user = get_logged_user();
                     <div class="text">Configuración</div>
                 </a>
                 <?php endif; ?>
+
+                <?php if ($dashboard_config['quick_actions']['envios'] ?? true): ?>
+                <a href="<?php echo url('/admin/envios-pendientes.php'); ?>" class="action-btn">
+                    <div class="icon">📦</div>
+                    <div class="text">Envíos</div>
+                </a>
+                <?php endif; ?>
+
+                <?php if ($dashboard_config['quick_actions']['promociones'] ?? true): ?>
+                <a href="<?php echo url('/admin/promociones-listado.php'); ?>" class="action-btn">
+                    <div class="icon">🎯</div>
+                    <div class="text">Promociones</div>
+                </a>
+                <?php endif; ?>
+
+                <?php if ($dashboard_config['quick_actions']['notificaciones'] ?? true): ?>
+                <a href="<?php echo url('/admin/notificaciones.php'); ?>" class="action-btn">
+                    <div class="icon">🔔</div>
+                    <div class="text">Notificaciones</div>
+                </a>
+                <?php endif; ?>
+
+                <?php if ($dashboard_config['quick_actions']['payment'] ?? true): ?>
+                <a href="<?php echo url('/admin/config-payment.php'); ?>" class="action-btn">
+                    <div class="icon">💳</div>
+                    <div class="text">Medios de Pago</div>
+                </a>
+                <?php endif; ?>
+
+                <?php if ($dashboard_config['quick_actions']['analytics'] ?? true): ?>
+                <a href="<?php echo url('/admin/config-analytics.php'); ?>" class="action-btn">
+                    <div class="icon">📊</div>
+                    <div class="text">Analytics</div>
+                </a>
+                <?php endif; ?>
             </div>
         </div>
     </main>
