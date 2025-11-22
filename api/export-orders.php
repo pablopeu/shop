@@ -42,6 +42,11 @@ if (empty($selected_orders)) {
     exit;
 }
 
+// Sort orders by order number (ascending)
+usort($selected_orders, function($a, $b) {
+    return strcmp($a['order_number'], $b['order_number']);
+});
+
 // Export based on format
 if ($format === 'csv') {
     // Set headers for CSV download
