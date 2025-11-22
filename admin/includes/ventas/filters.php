@@ -62,9 +62,9 @@ function apply_order_filters($all_orders, $filters) {
         });
     }
 
-    // Sort by date (newest first)
+    // Sort by order number (ascending)
     usort($orders, function($a, $b) {
-        return strtotime($b['date']) - strtotime($a['date']);
+        return strcmp($a['order_number'], $b['order_number']);
     });
 
     return $orders;

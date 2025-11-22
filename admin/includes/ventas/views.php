@@ -119,6 +119,7 @@ function render_compact_actions_bar($filters, $csrf_token) {
                 </select>
                 <button type="submit" class="btn btn-primary btn-sm" onclick="return confirmBulkAction()">Aplicar a Seleccionadas</button>
                 <a href="archivo-ventas.php" class="btn btn-secondary btn-sm">Ver Archivo</a>
+                <button type="button" class="btn btn-primary btn-sm" onclick="exportSelectedToCSV()">📊 Exportar CSV</button>
                 <span id="selectedCount"></span>
             </form>
 

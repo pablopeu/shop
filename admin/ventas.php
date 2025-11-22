@@ -219,7 +219,7 @@ $status_labels = [
 
     <script type="module">
         // Import utility functions
-        import { showToast, copyPaymentLink, formatPrice } from './assets/js/ventas-utils.js';
+        import { showToast, copyPaymentLink, formatPrice, exportSelectedToCSV } from './assets/js/ventas-utils.js';
         import { initModal, viewOrder, switchTab, sendCustomMessage, saveAllChanges,
                  closeOrderModal, confirmCloseOrderModal, cancelCloseOrderModal,
                  showCancelModal, closeCancelModal } from './assets/js/ventas-modal.js';
@@ -230,6 +230,7 @@ $status_labels = [
         window.showToast = showToast;
         window.copyPaymentLink = copyPaymentLink;
         window.formatPrice = formatPrice;
+        window.exportSelectedToCSV = exportSelectedToCSV;
 
         // Initialize modal module and expose functions when page loads
         const ordersData = <?php echo json_encode($orders); ?>;
