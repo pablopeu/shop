@@ -239,7 +239,7 @@ $visible_products = array_filter($all_products, function($product) {
                                     <div class="slide-content">
                                         <div class="slide-image">
                                             <span class="drag-handle">⋮⋮</span>
-                                            <img src="<?php echo htmlspecialchars($slide['image']); ?>" alt="Slide <?php echo $index + 1; ?>">
+                                            <img src="<?php echo htmlspecialchars(url($slide['image'])); ?>" alt="Slide <?php echo $index + 1; ?>">
                                             <a href="?action=delete_slide&index=<?php echo $index; ?>"
                                                class="btn-delete-slide"
                                                onclick="return confirm('¿Eliminar este slide?')">✕</a>

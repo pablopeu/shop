@@ -260,7 +260,7 @@ write_json($visits_file, $visits_data);
 
         /* Breadcrumb - reduce spacing */
         .breadcrumb {
-            margin: 8px auto 8px !important;
+            margin: 8px auto 2px !important;
             padding: 4px var(--spacing-lg) !important;
         }
 
@@ -352,6 +352,18 @@ write_json($visits_file, $visits_data);
             display: flex;
             align-items: center;
             justify-content: flex-start;
+            margin-left: 0;
+        }
+
+        @media (min-width: 769px) {
+            .share-section {
+                margin-left: 0;
+                align-items: center;
+            }
+
+            .main-action-row {
+                justify-content: flex-start;
+            }
         }
 
         .share-buttons {
@@ -395,6 +407,12 @@ write_json($visits_file, $visits_data);
         .share-btn.x-twitter:hover {
             background: #000000;
             color: white;
+        }
+
+        .x-icon {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            font-weight: 700;
+            font-size: 16px;
         }
 
         .share-btn.instagram:hover {
@@ -623,7 +641,7 @@ write_json($visits_file, $visits_data);
                                    class="share-btn x-twitter"
                                    target="_blank"
                                    title="Compartir en X (Twitter)">
-                                    <i class="fab fa-twitter"></i>
+                                    <span class="x-icon">𝕏</span>
                                 </a>
                                 <a href="https://www.instagram.com/"
                                    class="share-btn instagram"
