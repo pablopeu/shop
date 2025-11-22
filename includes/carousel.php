@@ -22,7 +22,7 @@ $alignment = $carousel_config['alignment'] ?? 'center';
                 <div class="carousel-v2-slide <?php echo $index === 0 ? 'active' : ''; ?>" data-index="<?php echo $index; ?>">
                     <?php if (!empty($slide['link'])): ?>
                         <a href="<?php echo htmlspecialchars($slide['link']); ?>" class="carousel-v2-link">
-                            <img src="<?php echo htmlspecialchars($slide['image']); ?>"
+                            <img src="<?php echo htmlspecialchars(url($slide['image'])); ?>"
                                  alt="<?php echo htmlspecialchars($slide['title'] ?? 'Slide ' . ($index + 1)); ?>"
                                  class="carousel-v2-image">
 
@@ -33,7 +33,7 @@ $alignment = $carousel_config['alignment'] ?? 'center';
                             <?php endif; ?>
                         </a>
                     <?php else: ?>
-                        <img src="<?php echo htmlspecialchars($slide['image']); ?>"
+                        <img src="<?php echo htmlspecialchars(url($slide['image'])); ?>"
                              alt="<?php echo htmlspecialchars($slide['title'] ?? 'Slide ' . ($index + 1)); ?>"
                              class="carousel-v2-image">
 
