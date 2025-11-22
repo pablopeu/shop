@@ -27,6 +27,7 @@ if (!isset($_POST['order_ids']) || !is_array($_POST['order_ids'])) {
 
 $order_ids = $_POST['order_ids'];
 $format = $_POST['format'] ?? 'json';
+$prefix = $_POST['prefix'] ?? 'ordenes'; // Default prefix if not specified
 
 // Get all orders
 $all_orders = get_all_orders();
@@ -51,7 +52,7 @@ usort($selected_orders, function($a, $b) {
 if ($format === 'csv') {
     // Set headers for CSV download
     header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="envios_' . date('Y-m-d_His') . '.csv"');
+    header('Content-Disposition: attachment; filename="' . $prefix . '_' . date('Y-m-d_His') . '.csv"');
 
     $output = fopen('php://output', 'w');
 
@@ -67,10 +68,11 @@ if ($format === 'csv') {
         'Teléfono',
         'Estado',
         'Método de Entrega',
-        'Dirección',
+        'Dirección de Envío',
         'Nº Seguimiento',
+        'URL Seguimiento',
         'Subtotal',
-        'Envío',
+        'Costo de Envío',
         'Descuento',
         'Total',
         'Moneda',
@@ -97,6 +99,7 @@ if ($format === 'csv') {
             ($order['delivery_method'] ?? 'pickup') === 'pickup' ? 'Retiro' : 'Envío',
             $order['shipping_address'] ?? 'N/A',
             $order['tracking_number'] ?? 'N/A',
+            $order['tracking_url'] ?? 'N/A',
             $order['subtotal'] ?? 0,
             $order['shipping_cost'] ?? 0,
             ($order['discount_promotion'] ?? 0) + ($order['discount_coupon'] ?? 0),
@@ -113,7 +116,7 @@ if ($format === 'csv') {
 } else {
     // JSON format
     header('Content-Type: application/json; charset=utf-8');
-    header('Content-Disposition: attachment; filename="envios_' . date('Y-m-d_His') . '.json"');
+    header('Content-Disposition: attachment; filename="' . $prefix . '_' . date('Y-m-d_His') . '.json"');
 
     // Format orders for JSON
     $export_data = [];

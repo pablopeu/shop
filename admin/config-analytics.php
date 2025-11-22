@@ -225,7 +225,77 @@ $user = get_logged_user();
         </form>
     </div>
 
+    <!-- Modal Component -->
+    <?php include __DIR__ . '/includes/modal.php'; ?>
+
     <!-- Unsaved Changes Warning -->
     <script src="/admin/includes/unsaved-changes-warning.js"></script>
+    <script>
+        // Override modal functions to use reusable modal system
+        (function() {
+            const originalCreateModal = window.createModal;
+            const originalShowModal = window.showModal;
+            let pendingNavigation = null;
+            let hasUnsavedChanges = false;
+
+            // Override the createModal to do nothing (we use the reusable modal)
+            if (typeof window.createModal !== 'undefined') {
+                // Modal already exists from modal.php, no need to create
+            }
+
+            // Intercept navigation and show reusable modal
+            document.addEventListener('click', (e) => {
+                const link = e.target.closest('a');
+
+                if (link && link.href) {
+                    // Check if there are unsaved changes
+                    const saveButton = document.querySelector('button[name="save_analytics"]');
+                    if (saveButton && saveButton.style.background === 'rgb(231, 76, 60)') {
+                        // Ignore links that open in new tab
+                        if (link.target === '_blank' || link.download) {
+                            return;
+                        }
+
+                        // Check if it's an internal navigation
+                        const currentOrigin = window.location.origin;
+                        try {
+                            const linkOrigin = new URL(link.href).origin;
+                            if (currentOrigin === linkOrigin) {
+                                e.preventDefault();
+                                pendingNavigation = link.href;
+
+                                // Show reusable modal
+                                showModal({
+                                    title: 'Cambios sin guardar',
+                                    message: 'Hay cambios que no han sido guardados.',
+                                    details: 'Si sales ahora, se perderán todos los cambios realizados. ¿Deseas salir sin guardar?',
+                                    icon: '⚠️',
+                                    iconClass: 'warning',
+                                    confirmText: 'Salir sin guardar',
+                                    cancelText: 'Quedarme y guardar',
+                                    confirmType: 'danger',
+                                    onConfirm: function() {
+                                        if (pendingNavigation) {
+                                            window.location.href = pendingNavigation;
+                                        }
+                                    },
+                                    onCancel: function() {
+                                        // Focus on save button
+                                        const saveBtn = document.querySelector('button[name="save_analytics"]');
+                                        if (saveBtn) {
+                                            saveBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            setTimeout(() => saveBtn.focus(), 500);
+                                        }
+                                    }
+                                });
+                            }
+                        } catch (e) {
+                            // Invalid URL, allow default behavior
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
 </body>
 </html>

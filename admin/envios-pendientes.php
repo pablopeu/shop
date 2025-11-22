@@ -1147,6 +1147,12 @@ $user = get_logged_user();
             formatInput.value = format;
             form.appendChild(formatInput);
 
+            const prefixInput = document.createElement('input');
+            prefixInput.type = 'hidden';
+            prefixInput.name = 'prefix';
+            prefixInput.value = 'envios';
+            form.appendChild(prefixInput);
+
             orderIds.forEach(id => {
                 const input = document.createElement('input');
                 input.type = 'hidden';
@@ -1174,6 +1180,12 @@ $user = get_logged_user();
             formatInput.name = 'format';
             formatInput.value = format;
             form.appendChild(formatInput);
+
+            const prefixInput = document.createElement('input');
+            prefixInput.type = 'hidden';
+            prefixInput.name = 'prefix';
+            prefixInput.value = 'envios';
+            form.appendChild(prefixInput);
 
             const idInput = document.createElement('input');
             idInput.type = 'hidden';

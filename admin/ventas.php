@@ -295,6 +295,12 @@ $status_labels = [
             formatInput.value = 'csv';
             form.appendChild(formatInput);
 
+            const prefixInput = document.createElement('input');
+            prefixInput.type = 'hidden';
+            prefixInput.name = 'prefix';
+            prefixInput.value = 'ventas';
+            form.appendChild(prefixInput);
+
             orderIds.forEach(id => {
                 const input = document.createElement('input');
                 input.type = 'hidden';
