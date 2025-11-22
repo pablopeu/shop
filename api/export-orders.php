@@ -115,9 +115,9 @@ if ($format === 'csv') {
             $order['shipping_address'] ?? 'N/A',
             $order['tracking_number'] ?? 'N/A',
             $order['tracking_url'] ?? 'N/A',
-            $order['subtotal'] ?? 0,
-            $order['shipping_cost'] ?? 0,
-            ($order['discount_promotion'] ?? 0) + ($order['discount_coupon'] ?? 0),
+            number_format($order['subtotal'] ?? 0, 2, '.', ''),
+            number_format($order['shipping_cost'] ?? 0, 2, '.', ''),
+            number_format(($order['discount_promotion'] ?? 0) + ($order['discount_coupon'] ?? 0), 2, '.', ''),
             number_format($total_ars, 2, '.', ''),
             number_format($total_usd, 2, '.', ''),
             number_format($exchange_rate, 2, '.', ''),
@@ -137,6 +137,19 @@ if ($format === 'csv') {
     // Format orders for JSON
     $export_data = [];
     foreach ($selected_orders as $order) {
+        // Calculate amounts in ARS and USD
+        $exchange_rate = $order['exchange_rate'] ?? 1000;
+        $total = $order['total'];
+        $currency = $order['currency'];
+
+        if ($currency === 'USD') {
+            $total_usd = $total;
+            $total_ars = $total * $exchange_rate;
+        } else {
+            $total_ars = $total;
+            $total_usd = $total / $exchange_rate;
+        }
+
         $export_data[] = [
             'order_number' => $order['order_number'],
             'date' => $order['date'],
@@ -151,12 +164,15 @@ if ($format === 'csv') {
             'tracking_number' => $order['tracking_number'] ?? null,
             'tracking_url' => $order['tracking_url'] ?? null,
             'items' => $order['items'],
-            'subtotal' => $order['subtotal'] ?? 0,
-            'shipping_cost' => $order['shipping_cost'] ?? 0,
-            'discount_promotion' => $order['discount_promotion'] ?? 0,
-            'discount_coupon' => $order['discount_coupon'] ?? 0,
+            'subtotal' => round($order['subtotal'] ?? 0, 2),
+            'shipping_cost' => round($order['shipping_cost'] ?? 0, 2),
+            'discount_promotion' => round($order['discount_promotion'] ?? 0, 2),
+            'discount_coupon' => round($order['discount_coupon'] ?? 0, 2),
             'coupon_code' => $order['coupon_code'] ?? null,
-            'total' => $order['total'],
+            'total' => round($order['total'], 2),
+            'total_ars' => round($total_ars, 2),
+            'total_usd' => round($total_usd, 2),
+            'exchange_rate' => round($exchange_rate, 2),
             'currency' => $order['currency'],
             'notes' => $order['notes'] ?? ''
         ];
